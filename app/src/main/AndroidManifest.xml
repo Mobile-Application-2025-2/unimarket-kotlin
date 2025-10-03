@@ -19,7 +19,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
+        <activity
+            android:name=".ui.auth.StudentCodeActivity"
+            android:exported="false"
+            android:theme="@style/Theme.App" />
         <activity android:name=".MainActivity" />
     </application>
 

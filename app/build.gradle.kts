@@ -37,7 +37,6 @@ android {
 dependencies {
     implementation(platform("androidx.compose:compose-bom:2024.06.00"))
     implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
-    implementation("com.google.firebase:firebase-auth-ktx")
     
     // Compose UI
     implementation("androidx.compose.ui:ui")

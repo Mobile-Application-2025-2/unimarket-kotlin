@@ -6,12 +6,17 @@
     <string name="continue_with_google">CONTINUE WITH GOOGLE</string>
     <string name="or_login_with_email">OR LOG IN WITH EMAIL</string>
 
-    <string name="hint_name">Camilo Martinez</string>
-    <string name="hint_email">camimartinez@gmail.com</string>
+    <string name="hint_name">User</string>
+    <string name="hint_email">Email</string>
     <string name="hint_password">Password</string>
 
     <string name="i_have_read_the">I have read the</string>
     <string name="privacy_policy">Privacy Policy</string>
     <string name="sign_in">SIGN IN</string>
     <string name="back">Back</string>
+    <string name="complete_the_fields">Please complete the fields</string>
+    <string name="error_name_min3">Name must be at least 3 characters</string>
+    <string name="error_email_invalid">Invalid email</string>
+    <string name="error_password_min8">Password must be at least 8 characters</string>
+    <string name="accept_privacy">Please accept the Privacy Policy</string>
 </resources>
