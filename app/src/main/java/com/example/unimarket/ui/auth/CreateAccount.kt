@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doAfterTextChanged
 import com.example.unimarket.databinding.ActivityCreateAccountBinding
 import com.google.android.material.textfield.TextInputLayout
+import android.view.ViewGroup
 
 class CreateAccountActivity : AppCompatActivity() {
 
@@ -14,6 +15,8 @@ class CreateAccountActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         b = ActivityCreateAccountBinding.inflate(layoutInflater)
+        (b.root.parent as? ViewGroup)?.removeView(b.root)
+
         setContentView(b.root)
 
         // ---- Navegación back

@@ -3,15 +3,23 @@
 
     <!-- Tema de la app -->
     <style name="Theme.App" parent="Theme.Material3.Light.NoActionBar">
-        <!-- Si quieres, fija primarios del UI -->
+
+        <!-- Fondo BLANCO en toda la app (evita el magenta de M3 por defecto) -->
+        <item name="android:windowBackground">@color/white</item>
+        <item name="colorSurface">@color/white</item>
+        <item name="colorSurfaceVariant">@color/white</item>
+        <item name="colorSurfaceContainer">@color/white</item>
+
+        <!-- (Opcional) primarios si los quieres fijar -->
         <!-- <item name="colorPrimary">@color/yellowLight</item> -->
         <!-- <item name="colorSecondary">@color/accent</item> -->
 
-        <!-- Radio por defecto para componentes "small" (CheckBox, etc.) -->
+        <!-- Componentes pequeños (CheckBox) con radio redondeado -->
         <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.App.SmallComponent</item>
 
-        <!-- Opcional, status bar transparente -->
+        <!-- Barra de estado clara sobre fondo blanco -->
         <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 
     <!-- Radio 8dp redondeado para small components -->
@@ -21,3 +29,4 @@
     </style>
 
 </resources>
+
