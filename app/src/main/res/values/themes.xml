@@ -1,5 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.Unimarket" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Tema de la app -->
+    <style name="Theme.App" parent="Theme.Material3.Light.NoActionBar">
+        <!-- Si quieres, fija primarios del UI -->
+        <!-- <item name="colorPrimary">@color/yellowLight</item> -->
+        <!-- <item name="colorSecondary">@color/accent</item> -->
+
+        <!-- Radio por defecto para componentes "small" (CheckBox, etc.) -->
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.App.SmallComponent</item>
+
+        <!-- Opcional, status bar transparente -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+
+    <!-- Radio 8dp redondeado para small components -->
+    <style name="ShapeAppearance.App.SmallComponent" parent="ShapeAppearance.Material3.Corner.None">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">8dp</item>
+    </style>
+
 </resources>

@@ -1,3 +1,17 @@
 <resources>
-    <string name="app_name">Unimarket</string>
+    <string name="app_name">UniMarket</string>
+
+    <string name="create_your_account">Create your account</string>
+    <string name="continue_with_outlook">CONTINUE WITH OUTLOOK</string>
+    <string name="continue_with_google">CONTINUE WITH GOOGLE</string>
+    <string name="or_login_with_email">OR LOG IN WITH EMAIL</string>
+
+    <string name="hint_name">Camilo Martinez</string>
+    <string name="hint_email">camimartinez@gmail.com</string>
+    <string name="hint_password">Password</string>
+
+    <string name="i_have_read_the">I have read the</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="sign_in">SIGN IN</string>
+    <string name="back">Back</string>
 </resources>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Dimensiones reutilizables -->
+    <dimen name="screen_padding_horizontal">24dp</dimen>
+    <dimen name="screen_padding_vertical">24dp</dimen>
+
+    <dimen name="height_pill_button">63dp</dimen>
+    <dimen name="height_input">63dp</dimen>
+
+    <dimen name="radius_pill">38dp</dimen>
+    <dimen name="radius_input">15dp</dimen>
+
+    <dimen name="elevation_card_small">2dp</dimen>
+
+    <!-- Flags y parámetros -->
+    <bool name="feature_social_enabled">true</bool>
+    <integer name="min_password_length">8</integer>
+
+</resources>

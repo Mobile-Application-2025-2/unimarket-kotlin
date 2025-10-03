@@ -7,4 +7,11 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="accent">#D09306</color>
+    <color name="outlookBlue">#0082C6</color>
+    <color name="googleStroke">#E0E0E0</color>
+    <color name="lightGray">#F2F3F7</color>
+    <color name="text_primary">#3F414E</color>
+    <color name="textGray">#A1A4B2</color>
+    <color name="yellowLight">#FFC436</color>
 </resources>
