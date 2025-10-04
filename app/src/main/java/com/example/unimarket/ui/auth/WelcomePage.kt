@@ -1,108 +1,100 @@
-package com.example.unimarket.ui.welcome
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.ClickableText
-import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+package com.example.unimarket.ui.auth
+
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
+import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
+import android.os.Bundle
+import android.view.Gravity
+import android.view.View
+import android.widget.FrameLayout
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.content.ContextCompat
 import com.example.unimarket.R
+import com.google.android.material.button.MaterialButton
+import kotlin.math.sqrt //
 
-private val Accent = Color(0xFFFFC436)
+class WelcomePage : AppCompatActivity() {
 
-@Composable
-fun WelcomeScreen(
-    onSignUp: () -> Unit = {},
-    onLogin: () -> Unit = {}
-) {
-    Scaffold(containerColor = Color.White) { inner ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(inner)
-                .padding(horizontal = 2.dp)
-        ) {
-            Spacer(Modifier.height(24.dp))
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 48.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Image(
-                            painter = painterResource(R.drawable.personajesingup),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .height(88.dp)
-                        .wrapContentWidth(),
-                    contentScale = ContentScale.Fit
-                )
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    "UNIMARKET",
-                    color = Accent,
-                    fontSize = 36.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 1.sp
-                )
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.welcome_page)
+        val root = findViewById<ConstraintLayout>(R.id.root_welcome)
+        val btnSignUp = findViewById<MaterialButton>(R.id.btn_sign_up)
+        val tvLogIn   = findViewById<TextView>(R.id.tv_login_action)
+
+        btnSignUp.setOnClickListener {
+            startActivity(Intent(this, CreateAccountActivity::class.java))
+        }
+        tvLogIn.setOnClickListener {
+            startActivity(Intent(this, LoginActivity::class.java))
+        }
+
+        playIntroOverlay(root)
+    }
+
+    private fun playIntroOverlay(root: ConstraintLayout) {
+        // Contenedor a pantalla completa por encima del layout
+        val overlay = FrameLayout(this).apply {
+            setBackgroundColor(ContextCompat.getColor(this@WelcomePage, R.color.yellowLight))
+            isClickable = true   // mientras dura la animación, captura toques
+            alpha = 1f
+        }
+        val lp = ConstraintLayout.LayoutParams(
+            ConstraintLayout.LayoutParams.MATCH_PARENT,
+            ConstraintLayout.LayoutParams.MATCH_PARENT
+        )
+        root.addView(overlay, lp)
+        overlay.bringToFront()
+
+        // Círculo blanco creado en código (sin drawable externo)
+        val circleSizeDp = 120f
+        val circleSizePx = (circleSizeDp * resources.displayMetrics.density).toInt()
+        val circle = View(this).apply {
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(Color.WHITE)
             }
+            scaleX = 0.1f
+            scaleY = 0.1f
+        }
+        val circleLp = FrameLayout.LayoutParams(circleSizePx, circleSizePx).apply {
+            gravity = Gravity.CENTER
+        }
+        overlay.addView(circle, circleLp)
 
-            Spacer(Modifier.weight(1f))
-            Button(
-                onClick = onSignUp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(28.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Accent,
-                    contentColor = Color.White
-                ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
-            ) {
-                Text("SIGN UP", fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
-            }
+        // Esperamos a que el root tenga medidas para calcular la escala
+        overlay.post {
+            val w = root.width
+            val h = root.height
 
-            Spacer(Modifier.height(12.dp))
-            val annotated = buildAnnotatedString {
-                withStyle(SpanStyle(color = Color(0xFFB0B4BF))) {
-                    append("ALREADY HAVE AN ACCOUNT? ")
-                }
-                pushStringAnnotation(tag = "login", annotation = "login")
-                withStyle(SpanStyle(color = Accent, fontWeight = FontWeight.SemiBold)) {
-                    append("LOG IN")
-                }
-                pop()
-            }
-            ClickableText(
-                text = annotated,
-                style = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp),
-            ) { offset ->
-                annotated.getStringAnnotations("login", offset, offset).firstOrNull()
-                    ?.let { onLogin() }
+            // Diagonal en píxeles (sin toDouble(); usamos sqrt)
+            val diag = sqrt((w * w + h * h).toDouble()).toFloat()
+            val targetScale = (diag / circleSizePx) * 1.2f
+
+            val animX = ObjectAnimator.ofFloat(circle, View.SCALE_X, targetScale)
+            val animY = ObjectAnimator.ofFloat(circle, View.SCALE_Y, targetScale)
+
+            AnimatorSet().apply {
+                duration = 650
+                playTogether(animX, animY)
+                addListener(object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator) {
+                        // Quitamos el overlay para que no tape los botones
+                        overlay.animate()
+                            .alpha(0f)
+                            .setDuration(250)
+                            .withEndAction { root.removeView(overlay) }
+                            .start()
+                    }
+                })
+                start()
             }
         }
     }
-}
-
-@Preview(showSystemUi = true, showBackground = true, device = "id:pixel_6")
-@Composable
-private fun PreviewWelcome() {
-    WelcomeScreen()
 }

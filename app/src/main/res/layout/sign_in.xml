@@ -13,6 +13,7 @@
         android:layout_height="match_parent"
         android:paddingBottom="24dp">
 
+        <!-- Fondo -->
         <ImageView
             android:id="@+id/bgShapes"
             android:layout_width="0dp"
@@ -23,63 +24,57 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- Contenido con padding lateral -->
+        <!-- BACK: fuera del contenedor con padding -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/backCard"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="18dp"
+            android:layout_marginTop="18dp"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageButton
+                android:id="@+id/btnBack"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/back"
+                android:padding="0dp"
+                android:scaleType="centerCrop"
+                android:src="@drawable/back"
+                app:tint="@null" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- CONTENIDO con padding lateral (40dp) -->
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/content_container"
+            android:id="@+id/content_padded"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:paddingStart="40dp"
             android:paddingEnd="40dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.0">
+            app:layout_constraintBottom_toBottomOf="parent">
 
-            <!-- Back redondo (card “invisible”, solo contiene tu imagen) -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/backCard"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:layout_marginTop="16dp"
-                app:cardBackgroundColor="@android:color/transparent"
-                app:cardElevation="0dp"
-                app:contentPadding="0dp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-
-                app:strokeWidth="0dp">
-
-                <ImageButton
-                    android:id="@+id/btnBack"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="@string/back"
-                    android:minWidth="0dp"
-                    android:minHeight="0dp"
-                    android:padding="0dp"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/back"
-                    app:tint="@null" />
-            </com.google.android.material.card.MaterialCardView>
-
-
-            <!-- Título -->
+            <!-- Título (ya no depende del back) -->
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tvTitle"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="76dp"
                 android:text="Welcome Back!"
                 android:textAlignment="center"
                 android:textColor="@color/yellowLight"
                 android:textSize="28sp"
                 android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/backCard" />
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <!-- Outlook (relleno) -->
             <com.google.android.material.card.MaterialCardView
@@ -90,12 +85,12 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
-                app:strokeColor="@color/outlookBlue"
                 app:cardBackgroundColor="@color/outlookBlue"
+                app:strokeColor="@color/outlookBlue"
                 app:cardCornerRadius="28dp"
                 app:cardElevation="0dp"
-                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/tvTitle">
 
                 <LinearLayout
@@ -123,7 +118,6 @@
                         android:textColor="@android:color/white"
                         android:textStyle="bold" />
                 </LinearLayout>
-
             </com.google.android.material.card.MaterialCardView>
 
             <!-- Google (borde) -->
@@ -138,11 +132,11 @@
                 app:cardBackgroundColor="@android:color/white"
                 app:cardCornerRadius="28dp"
                 app:cardElevation="0dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/btnOutlook"
                 app:strokeColor="@color/googleStroke"
-                app:strokeWidth="1dp">
+                app:strokeWidth="1dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/btnOutlook">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -182,8 +176,8 @@
                 android:textAlignment="center"
                 android:textColor="@color/textGray"
                 android:textSize="13sp"
-                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/btnGoogle" />
 
             <!-- Email -->
@@ -199,8 +193,8 @@
                 app:boxBackgroundColor="@color/lightGray"
                 app:boxStrokeWidth="0dp"
                 app:hintEnabled="false"
-                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/tvOr">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -212,7 +206,7 @@
                     android:paddingStart="18dp"
                     android:paddingEnd="18dp"
                     android:textColor="@color/textGray"
-                    android:textColorHint="@color/textGray"/>
+                    android:textColorHint="@color/textGray" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Password con icono superpuesto -->
@@ -220,10 +214,10 @@
                 android:id="@+id/password_container"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="25dp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tilEmail"
-                android:layout_marginTop="25dp">
+                app:layout_constraintTop_toBottomOf="@id/tilEmail">
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilPassword"
@@ -245,14 +239,14 @@
                         android:inputType="textPassword"
                         android:paddingStart="16dp"
                         android:paddingEnd="48dp"
-                         android:textColorHint="@color/textGray"/>
+                        android:textColorHint="@color/textGray" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <!-- Icono superpuesto a la derecha -->
                 <ImageView
                     android:id="@+id/ivTogglePassword"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
                     android:layout_gravity="end|center_vertical"
                     android:layout_marginEnd="16dp"
                     android:src="@drawable/open"
@@ -260,7 +254,6 @@
                     android:clickable="true"
                     android:focusable="true" />
             </FrameLayout>
-
 
             <!-- SIGN IN -->
             <com.google.android.material.button.MaterialButton
@@ -273,8 +266,8 @@
                 android:textStyle="bold"
                 app:backgroundTint="@color/yellowLight"
                 app:cornerRadius="28dp"
-                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/password_container" />
 
             <!-- Forgot Password -->
@@ -286,8 +279,8 @@
                 android:text="@string/forgot_password_q"
                 android:textColor="@color/textGray"
                 android:textSize="12sp"
-                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/btnSignIn" />
 
             <!-- Bottom row -->
@@ -298,10 +291,10 @@
                 android:layout_marginTop="70.4dp"
                 android:layout_marginBottom="8dp"
                 android:orientation="horizontal"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvForgot">
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvForgot"
+                app:layout_constraintBottom_toBottomOf="parent">
 
                 <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/tvHaveAccount"
