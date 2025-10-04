@@ -5,27 +5,88 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doAfterTextChanged
+import androidx.core.widget.NestedScrollView
+import androidx.lifecycle.lifecycleScope
+import com.example.unimarket.SupaConst
 import com.example.unimarket.R
 import com.example.unimarket.databinding.ActivityCreateAccountBinding
 import com.google.android.material.textfield.TextInputLayout
-import androidx.core.widget.NestedScrollView
-import com.example.unimarket.ui.auth.StudentCodeActivity
+import kotlinx.coroutines.launch
+import okhttp3.Interceptor
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.converter.moshi.MoshiConverterFactory
+import retrofit2.http.Body
+import retrofit2.http.Headers
+import retrofit2.http.POST
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+
+data class SignUpBody(
+    val email: String,
+    val password: String,
+    val data: Map<String, String>
+)
+
+interface AuthApi {
+    @Headers("Content-Type: application/json")
+    @POST("auth/v1/signup")
+    suspend fun signUp(@Body body: SignUpBody): Response<Unit>
+}
+
+private fun buildAuthApi(): AuthApi {
+    // 1) Moshi con soporte para data classes de Kotlin
+    val moshi = Moshi.Builder()
+        .add(KotlinJsonAdapterFactory())
+        .build()
+
+    // 2) Headers obligatorios de Supabase
+    val apikeyInterceptor = Interceptor { chain ->
+        val req = chain.request().newBuilder()
+            .addHeader("apikey", SupaConst.SUPABASE_ANON_KEY)
+            .build()
+        chain.proceed(req)
+    }
+
+    // 3) Cliente HTTP con logs
+    val logging = HttpLoggingInterceptor().apply {
+        level = HttpLoggingInterceptor.Level.BODY
+    }
+    val client = OkHttpClient.Builder()
+        .addInterceptor(apikeyInterceptor)
+        .addInterceptor(logging)
+        .build()
+
+    // 4) Retrofit con Moshi configurado
+    return Retrofit.Builder()
+        .baseUrl(SupaConst.SUPABASE_URL) // debe terminar en /
+        .addConverterFactory(MoshiConverterFactory.create(moshi))
+        .client(client)
+        .build()
+        .create(AuthApi::class.java)
+}
+
+// =====================================================
 
 class CreateAccountActivity : AppCompatActivity() {
 
     private lateinit var b: ActivityCreateAccountBinding
     private var canProceed: Boolean = false
+    private val authApi: AuthApi by lazy { buildAuthApi() }
+
+    private val DEFAULT_USER_TYPE = "buyer"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContentView(R.layout.activity_create_account)
         val root = findViewById<NestedScrollView>(R.id.createAccountRoot)
         b = ActivityCreateAccountBinding.bind(root)
 
         b.btnBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
-        b.btnOutlook.setOnClickListener { /* TODO social */ }
-        b.btnGoogle.setOnClickListener  { /* TODO social */ }
+        b.btnOutlook.setOnClickListener { /* TODO */ }
+        b.btnGoogle.setOnClickListener  { /* TODO  */ }
 
         b.etName.doAfterTextChanged     { refreshState() }
         b.etEmail.doAfterTextChanged    { refreshState() }
@@ -40,7 +101,52 @@ class CreateAccountActivity : AppCompatActivity() {
                 Toast.makeText(this, getString(R.string.complete_the_fields), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            startActivity(Intent(this, StudentCodeActivity::class.java))
+            doSignUp()
+        }
+    }
+
+    private fun doSignUp() {
+        val name  = b.etName.text?.toString()?.trim().orEmpty()
+        val email = b.etEmail.text?.toString()?.trim().orEmpty()
+        val pass  = b.etPassword.text?.toString().orEmpty()
+
+        // feedback UI
+        val oldText = b.btnSignIn.text
+        b.btnSignIn.isEnabled = false
+        b.btnSignIn.text = getString(R.string.creating_account)
+
+        lifecycleScope.launch {
+            try {
+                val body = SignUpBody(
+                    email = email,
+                    password = pass,
+                    data = mapOf(
+                        "name" to name,
+                        "type" to DEFAULT_USER_TYPE,
+                        "id_type" to "id",
+                        "id_number" to ""
+                    )
+                )
+                val res = authApi.signUp(body)
+
+                if (res.isSuccessful) {
+
+                    Toast.makeText(this@CreateAccountActivity, getString(R.string.account_created), Toast.LENGTH_SHORT).show()
+                    startActivity(Intent(this@CreateAccountActivity, StudentCodeActivity::class.java))
+                    finish()
+                } else {
+                    val err = res.errorBody()?.string().orEmpty()
+                    // mensaje claro si el trigger exigió 'type'
+                    val msg = err.ifBlank { "Sign-up falló (HTTP ${res.code()})" }
+                    Toast.makeText(this@CreateAccountActivity, msg, Toast.LENGTH_LONG).show()
+                }
+            } catch (t: Throwable) {
+                android.util.Log.d("NET", "BASE_URL='${SupaConst.SUPABASE_URL}' length=${SupaConst.SUPABASE_URL.length}")
+                Toast.makeText(this@CreateAccountActivity, "Error: ${t.message}", Toast.LENGTH_LONG).show()
+            } finally {
+                b.btnSignIn.isEnabled = true
+                b.btnSignIn.text = oldText
+            }
         }
     }
 
@@ -59,7 +165,6 @@ class CreateAccountActivity : AppCompatActivity() {
 
         canProceed = validName && validEmail && validPass && accepted
 
-        // el botón siempre clickeable; solo feedback visual
         b.btnSignIn.isEnabled = true
         b.btnSignIn.alpha = if (canProceed) 1f else 0.6f
 

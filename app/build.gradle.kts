@@ -25,6 +25,7 @@ android {
     buildFeatures {
         compose = true
         viewBinding = true
+        buildConfig = true
     }
 
     composeOptions {
@@ -60,4 +61,17 @@ dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.compose.ui:ui-text-google-fonts")
 
+    // HTTP
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-moshi:2.11.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    // Logs HTTP (solo debug)
+    debugImplementation( "com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+    // JSON
+    implementation( "com.squareup.moshi:moshi-kotlin:1.15.1")
+
+    // Guardar el JWT
+    implementation( "androidx.datastore:datastore-preferences:1.1.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
 }
