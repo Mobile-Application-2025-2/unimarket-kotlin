@@ -1,29 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
+<<<<<<< HEAD
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
+=======
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+>>>>>>> c209a66494ee982fcc863f7e2ecc5585d4220b19
     <application
         android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.App">
+
+        <!-- PANTALLA INICIAL -->
         <activity
-            android:name=".ui.auth.CreateAccountActivity"
+            android:name=".ui.auth.WelcomePage"
             android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
+        <!-- Crear cuenta -->
+        <activity
+            android:name=".ui.auth.CreateAccountActivity"
+            android:exported="false" />
+
+        <!-- Login (actividad que abre tu sign_in.xml o Compose de login) -->
+        <activity
+            android:name=".ui.auth.LoginActivity"
+            android:exported="false" />
+
+        <!-- Pantalla de código de estudiante (si la usas desde CreateAccountActivity) -->
         <activity
             android:name=".ui.auth.StudentCodeActivity"
-            android:exported="false"
-            android:theme="@style/Theme.App" />
-        <activity android:name=".MainActivity" />
+            android:exported="false" />
+
+        <!-- Si tienes otra MainActivity para otras partes, déjala sin intent-filter -->
+        <!-- <activity android:name=".MainActivity" /> -->
+
     </application>
 
 </manifest>

@@ -16,5 +16,23 @@
     <!-- Flags y parámetros -->
     <bool name="feature_social_enabled">true</bool>
     <integer name="min_password_length">8</integer>
+    
+    <!-- Welcome page -->
+    <dimen name="space_xs">4dp</dimen>
+    <dimen name="space_s">8dp</dimen>
+    <dimen name="space_m">16dp</dimen>
+    <dimen name="space_l">24dp</dimen>
+    <dimen name="space_xl">32dp</dimen>
 
+    <dimen name="logo_box">120dp</dimen>
+    <dimen name="star_size">36dp</dimen>
+    <dimen name="star_offset_x">-8dp</dimen>
+    <dimen name="star_offset_y">-10dp</dimen>
+
+    <dimen name="btn_height_l">56dp</dimen>
+    <dimen name="btn_radius_pill">28dp</dimen>
+    <dimen name="btn_elevation">2dp</dimen>
+
+    <dimen name="text_display">28sp</dimen>
+    <dimen name="text_caption">12sp</dimen>
 </resources>
