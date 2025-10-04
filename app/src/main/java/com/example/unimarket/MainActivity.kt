@@ -1,14 +1,12 @@
+// MainActivity.kt
 package com.example.unimarket
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.material3.MaterialTheme
-import com.example.unimarket.ui.home.CourierHomeScreen
+import androidx.appcompat.app.AppCompatActivity
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { MaterialTheme { CourierHomeScreen() } }
+        setContentView(R.layout.welcome_page) // ← usa tu XML
     }
 }

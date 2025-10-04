@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/createAccountRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:background="@android:color/white">
+    android:background="@android:color/white"
+    android:clipToPadding="false"
+    android:clipChildren="false">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/root"
@@ -12,9 +15,10 @@
         android:layout_height="wrap_content"
         android:paddingStart="24dp"
         android:paddingEnd="24dp"
-        android:paddingBottom="24dp">
+        android:paddingBottom="24dp"
+        android:clipToPadding="false"
+        android:clipChildren="false">
 
-        <!-- Formas de fondo -->
         <ImageView
             android:id="@+id/bgShapes"
             android:layout_width="0dp"
@@ -22,11 +26,12 @@
             android:alpha="0.25"
             android:scaleType="centerCrop"
             android:src="@drawable/formas"
+            android:clickable="false"
+            android:focusable="false"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- Botón back -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/backCard"
             android:layout_width="44dp"
@@ -46,13 +51,15 @@
                 android:layout_height="match_parent"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/back"
-                android:padding="10dp"
-                android:scaleType="centerInside"
-                android:src="@drawable/check"
-                app:tint="@color/textGray" />
+                android:padding="2dp"
+                android:scaleType="fitCenter"
+                android:adjustViewBounds="true"
+                android:scaleX="2.3"
+                android:scaleY="2.3"
+                app:tint="@color/textGray"
+                android:src="@drawable/back" />
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Título -->
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvTitle"
             style="@style/TextAppearance.App.Title"
@@ -66,7 +73,6 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/backCard" />
 
-        <!-- Outlook -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/btnOutlook"
             android:layout_width="0dp"
@@ -97,7 +103,9 @@
                     android:adjustViewBounds="true"
                     android:scaleType="fitCenter"
                     android:src="@drawable/outlook"
-                    app:tint="@null" />
+                    app:tint="@null"
+                    android:clickable="false"
+                    android:focusable="false" />
 
                 <TextView
                     android:layout_width="0dp"
@@ -111,7 +119,6 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Google -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/btnGoogle"
             android:layout_width="0dp"
@@ -144,7 +151,9 @@
                     android:adjustViewBounds="true"
                     android:scaleType="fitCenter"
                     android:src="@drawable/google"
-                    app:tint="@null" />
+                    app:tint="@null"
+                    android:clickable="false"
+                    android:focusable="false" />
 
                 <TextView
                     android:layout_width="0dp"
@@ -158,7 +167,6 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Separador -->
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvOr"
             style="@style/TextAppearance.App.Caption"
@@ -172,20 +180,24 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/btnGoogle" />
 
-        <!-- Name (LinearLayout + FrameLayout para overlay del check) -->
+        <!-- Name -->
         <LinearLayout
             android:id="@+id/rowName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:orientation="horizontal"
+            android:clickable="false"
+            android:focusable="false"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvOr">
 
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:clickable="false"
+                android:focusable="false">
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilName"
@@ -205,7 +217,7 @@
                         android:hint="@string/hint_name"
                         android:textColorHint="@color/textGray"
                         android:paddingStart="16dp"
-                        android:paddingEnd="48dp"/>
+                        android:paddingEnd="48dp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <ImageView
@@ -217,24 +229,30 @@
                     android:src="@drawable/check"
                     app:tint="@color/accent"
                     android:contentDescription="@null"
-                    android:visibility="visible"/>
+                    android:clickable="false"
+                    android:focusable="false"
+                    android:visibility="visible" />
             </FrameLayout>
         </LinearLayout>
 
-        <!-- Email (mismo patrón) -->
+        <!-- Email -->
         <LinearLayout
             android:id="@+id/rowEmail"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:orientation="horizontal"
+            android:clickable="false"
+            android:focusable="false"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/rowName">
 
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:clickable="false"
+                android:focusable="false">
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilEmail"
@@ -255,7 +273,7 @@
                         android:hint="@string/hint_email"
                         android:textColorHint="@color/textGray"
                         android:paddingStart="16dp"
-                        android:paddingEnd="48dp"/>
+                        android:paddingEnd="48dp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <ImageView
@@ -267,11 +285,12 @@
                     android:src="@drawable/check"
                     app:tint="@color/accent"
                     android:contentDescription="@null"
-                    android:visibility="visible"/>
+                    android:clickable="false"
+                    android:focusable="false"
+                    android:visibility="visible" />
             </FrameLayout>
         </LinearLayout>
 
-        <!-- Password -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilPassword"
             style="@style/Widget.App.FilledInput"
@@ -300,7 +319,6 @@
                 android:textColorHint="@color/textGray" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Términos -->
         <LinearLayout
             android:id="@+id/rowTerms"
             android:layout_width="0dp"
@@ -342,7 +360,6 @@
                 app:useMaterialThemeColors="false" />
         </LinearLayout>
 
-        <!-- SIGN IN -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSignIn"
             style="@style/Widget.Material3.Button"
@@ -352,8 +369,11 @@
             android:text="@string/sign_in"
             android:textAllCaps="true"
             android:textAppearance="@style/TextAppearance.App.Button"
+            android:textColor="@android:color/white"
             app:backgroundTint="@color/yellowLight"
             app:cornerRadius="28dp"
+            android:elevation="12dp"
+            android:translationZ="12dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/rowTerms" />

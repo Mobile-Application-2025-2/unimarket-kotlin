@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root_welcome"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    android:fitsSystemWindows="true">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/header_block"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/bottom_block"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintVertical_bias="0.46">
+
+        <ImageView
+            android:id="@+id/img_logo"
+            android:layout_width="120dp"
+            android:layout_height="150dp"
+            android:layout_marginStart="45dp"
+            android:adjustViewBounds="true"
+            android:contentDescription="@string/cd_welcome_logo"
+            android:scaleType="fitCenter"
+            android:src="@drawable/personajesingup"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/tv_brand"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintHorizontal_chainStyle="packed"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.0" />
+
+        <TextView
+            android:id="@+id/tv_brand"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/brand_unimarket"
+            android:textSize="36sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="@color/yellowLight"
+            android:includeFontPadding="false"
+            android:letterSpacing="0.02"
+            android:layout_marginStart="0dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@id/img_logo"
+            app:layout_constraintEnd_toEndOf="parent"/>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <LinearLayout
+        android:id="@+id/bottom_block"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="40dp"
+        android:paddingEnd="40dp"
+        android:paddingBottom="28dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_sign_up"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="@string/action_sign_up"
+            android:textAllCaps="true"
+            android:textStyle="bold"
+            android:textColor="@android:color/white"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.05"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:stateListAnimator="@null"
+            app:cornerRadius="28dp"
+            android:backgroundTint="@color/yellowLight"/>
+
+        <LinearLayout
+            android:id="@+id/login_row"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tv_login_hint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/login_hint"
+                android:textSize="12sp"
+                android:fontFamily="sans-serif"
+                android:textColor="@color/textGray"/>
+
+            <TextView
+                android:id="@+id/tv_login_action"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="@string/action_log_in"
+                android:textAllCaps="true"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif"
+                android:textColor="@color/yellowLight"/>
+        </LinearLayout>
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

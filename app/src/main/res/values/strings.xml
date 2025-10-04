@@ -6,8 +6,8 @@
     <string name="continue_with_google">CONTINUE WITH GOOGLE</string>
     <string name="or_login_with_email">OR LOG IN WITH EMAIL</string>
 
-    <string name="hint_name">Camilo Martinez</string>
-    <string name="hint_email">camimartinez@gmail.com</string>
+    <string name="hint_name">User</string>
+    <string name="hint_email">Email</string>
     <string name="hint_password">Password</string>
 
     <string name="i_have_read_the">I have read the</string>
@@ -15,4 +15,25 @@
     <string name="sign_in">SIGN IN</string>
     <string name="back">Back</string>
     <string name="google_maps_key">AIzaSyCh96Hwz7ipyaot0PjzPkqdY1pAcWmku7U</string>
+    <string name="complete_the_fields">Please complete the fields</string>
+    <string name="error_name_min3">Name must be at least 3 characters</string>
+    <string name="error_email_invalid">Invalid email</string>
+    <string name="error_password_min8">Password must be at least 8 characters</string>
+    <string name="accept_privacy">Please accept the Privacy Policy</string>
+    <string name="creating_account">Creando cuenta…</string>
+    <string name="account_created">Cuenta creada</string>
+    <!-- Welcome page -->
+    <string name="brand_unimarket">UNIMARKET</string>
+    <string name="action_sign_up">SIGN UP</string>
+    <string name="login_hint">ALREADY HAVE AN ACCOUNT?</string>
+    <string name="action_log_in">LOG IN</string>
+    <string name="cd_welcome_logo">Logo de bienvenida</string>
+
+    <!-- Sign in -->
+    <string name="forgot_password_q">Forgot Password?</string>
+    <string name="already_have_account_q">DO NOT HAVE AN ACCOUNT?</string>
+    <string name="escribe_email">Email address</string>
+    <string name="escribe_password">Password</string>
+
+
 </resources>

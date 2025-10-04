@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="360dp"
+    android:height="140dp"
+    android:viewportWidth="360"
+    android:viewportHeight="140">
+
+    <!-- Relleno blanco que “muerde” el header -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="nonZero"
+        android:pathData="
+            M0,26
+            C60,48 120,12 190,46
+            C250,78 300,70 360,100
+            L360,140 L0,140 Z"/>
+
+    <!-- Trazo inferior (paralelo, ligeramente desplazado) -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#F7B500"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="
+            M0,46
+            C60,68 120,32 190,66
+            C250,98 300,90 360,120"/>
+</vector>
+
