@@ -8,7 +8,6 @@
     android:background="@color/white"
     android:fitsSystemWindows="true">
 
-    <!-- Bloque: imagen a la izquierda (con margen al borde) + texto pegado SIN hueco -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/header_block"
         android:layout_width="0dp"
@@ -54,7 +53,6 @@
             app:layout_constraintEnd_toEndOf="parent"/>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- Bloque: CTA y texto inferior -->
     <LinearLayout
         android:id="@+id/bottom_block"
         android:layout_width="0dp"
@@ -83,7 +81,6 @@
             app:cornerRadius="28dp"
             android:backgroundTint="@color/yellowLight"/>
 
-        <!-- Una sola línea: "ALREADY HAVE AN ACCOUNT?" + "LOG IN" -->
         <LinearLayout
             android:id="@+id/login_row"
             android:layout_width="wrap_content"
@@ -114,5 +111,4 @@
                 android:textColor="@color/yellowLight"/>
         </LinearLayout>
     </LinearLayout>
-
 </androidx.constraintlayout.widget.ConstraintLayout>

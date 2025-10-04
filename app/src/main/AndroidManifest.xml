@@ -18,25 +18,14 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-
-        <!-- Crear cuenta -->
         <activity
             android:name=".ui.auth.CreateAccountActivity"
             android:exported="false" />
-
-        <!-- Login (actividad que abre tu sign_in.xml o Compose de login) -->
         <activity
             android:name=".ui.auth.LoginActivity"
             android:exported="false" />
-
-        <!-- Pantalla de código de estudiante (si la usas desde CreateAccountActivity) -->
         <activity
             android:name=".ui.auth.StudentCodeActivity"
             android:exported="false" />
-
-        <!-- Si tienes otra MainActivity para otras partes, déjala sin intent-filter -->
-        <!-- <activity android:name=".MainActivity" /> -->
-
     </application>
-
 </manifest>

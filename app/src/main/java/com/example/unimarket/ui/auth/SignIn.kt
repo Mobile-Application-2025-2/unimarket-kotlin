@@ -21,26 +21,22 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.sign_in)
 
-        // Referencias del layout
         val btnBack   = findViewById<ImageButton>(R.id.btnBack)
         val tvSignUp  = findViewById<TextView>(R.id.tvSignUp)
         val btnSignIn = findViewById<MaterialButton>(R.id.btnSignIn)
 
         val tilPassword = findViewById<TextInputLayout>(R.id.tilPassword)
         val etPassword  = findViewById<TextInputEditText>(R.id.etPassword)
-        val ivToggle    = findViewById<ImageView>(R.id.ivTogglePassword) // puede no existir si usas endIcon
+        val ivToggle    = findViewById<ImageView>(R.id.ivTogglePassword)
 
-        // Guardamos el icono “cerrado” definido en XML por si hay que volver a él
         val closedFromIv  = ivToggle?.drawable
         val closedFromTil = tilPassword?.endIconDrawable
 
         fun renderPasswordUi() {
-            // 1) Mostrar/ocultar texto
             etPassword?.transformationMethod =
                 if (passwordVisible) null else PasswordTransformationMethod.getInstance()
             etPassword?.setSelection(etPassword?.text?.length ?: 0)
 
-            // 2) Cambiar icono (superpuesto o endIcon del TextInputLayout)
             if (ivToggle != null) {
                 ivToggle.setImageDrawable(
                     if (passwordVisible)
@@ -48,7 +44,7 @@ class LoginActivity : AppCompatActivity() {
                     else
                         closedFromIv ?: ContextCompat.getDrawable(this, R.drawable.open)
                 )
-                ivToggle.imageTintList = null // no aplicar tint para respetar colores del drawable
+                ivToggle.imageTintList = null
             } else if (tilPassword != null) {
                 tilPassword.endIconMode = TextInputLayout.END_ICON_CUSTOM
                 tilPassword.setEndIconTintList(null)
@@ -60,7 +56,6 @@ class LoginActivity : AppCompatActivity() {
             }
         }
 
-        // Listeners del toggle
         ivToggle?.setOnClickListener {
             passwordVisible = !passwordVisible
             renderPasswordUi()
@@ -72,11 +67,9 @@ class LoginActivity : AppCompatActivity() {
             }
         }
 
-        // Estado inicial: oculto + icono “closed”
         passwordVisible = false
         renderPasswordUi()
 
-        // Navegación
         btnBack?.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
         tvSignUp?.setOnClickListener {
             startActivity(Intent(this, CreateAccountActivity::class.java))
