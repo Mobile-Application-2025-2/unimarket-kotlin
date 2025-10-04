@@ -19,7 +19,8 @@
     <string name="error_email_invalid">Invalid email</string>
     <string name="error_password_min8">Password must be at least 8 characters</string>
     <string name="accept_privacy">Please accept the Privacy Policy</string>
-
+    <string name="creating_account">Creando cuenta…</string>
+    <string name="account_created">Cuenta creada</string>
     <!-- Welcome page -->
     <string name="brand_unimarket">UNIMARKET</string>
     <string name="action_sign_up">SIGN UP</string>
@@ -32,4 +33,6 @@
     <string name="already_have_account_q">DO NOT HAVE AN ACCOUNT?</string>
     <string name="escribe_email">Email address</string>
     <string name="escribe_password">Password</string>
+
+
 </resources>
