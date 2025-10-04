@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<<<<<<< HEAD
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
-=======
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
->>>>>>> c209a66494ee982fcc863f7e2ecc5585d4220b19
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
