@@ -20,7 +20,6 @@ import com.google.android.material.button.MaterialButton
 import kotlin.math.sqrt //
 
 class WelcomePage : AppCompatActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.welcome_page)
