@@ -68,18 +68,18 @@
     <style name="TextAppearance.Unimarket.Display" parent="TextAppearance.Material3.TitleLarge">
         <item name="android:textSize">@dimen/text_display</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:textColor">@color/brand_text</item>
+
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
     <style name="TextAppearance.Unimarket.Caption" parent="TextAppearance.Material3.BodySmall">
         <item name="android:textSize">@dimen/text_caption</item>
-        <item name="android:textColor">@color/text_secondary</item>
+
         <item name="android:fontFamily">sans-serif</item>
     </style>
 
     <style name="TextAppearance.Unimarket.Caption.Link" parent="TextAppearance.Unimarket.Caption">
-        <item name="android:textColor">@color/accent_link</item>
+
         <item name="android:textStyle">bold</item>
     </style>
 
@@ -88,11 +88,10 @@
         <item name="android:insetBottom">0dp</item>
         <item name="android:stateListAnimator">@null</item>
         <item name="cornerRadius">@dimen/btn_radius_pill</item>
-        <item name="backgroundTint">@color/brand_primary</item>
-        <item name="rippleColor">@color/btn_ripple</item>
+
         <item name="android:textAllCaps">true</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:textColor">@color/btn_text_on_primary</item>
+
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:letterSpacing">0.05</item>
         <item name="elevation">@dimen/btn_elevation</item>

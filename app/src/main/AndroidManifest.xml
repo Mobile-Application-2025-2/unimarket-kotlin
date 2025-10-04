@@ -12,7 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.App">
         <activity
-            android:name=".ui.auth.CreateAccountActivity"
+            android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -23,7 +23,7 @@
             android:name=".ui.auth.StudentCodeActivity"
             android:exported="false"
             android:theme="@style/Theme.App" />
-        <activity android:name=".MainActivity" />
+        <activity android:name=".ui.auth.CreateAccountActivity" />
     </application>
 
 </manifest>
