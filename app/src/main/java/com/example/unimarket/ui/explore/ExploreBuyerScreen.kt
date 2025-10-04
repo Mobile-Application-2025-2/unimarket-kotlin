@@ -193,7 +193,6 @@ private fun CategoryChipsRow(
     }
 }
 
-/** Tarjeta de producto con PNG */
 @Composable
 private fun ExploreCard(item: ExploreItem, modifier: Modifier = Modifier) {
     Surface(
@@ -209,7 +208,6 @@ private fun ExploreCard(item: ExploreItem, modifier: Modifier = Modifier) {
                 .fillMaxSize()
                 .padding(14.dp)
         ) {
-            // 🔹 PNG real
             Image(
                 painter = painterResource(id = item.imageRes),
                 contentDescription = item.title,

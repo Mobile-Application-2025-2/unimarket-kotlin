@@ -37,28 +37,21 @@ android {
 dependencies {
     implementation(platform("androidx.compose:compose-bom:2024.06.00"))
     implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
-    implementation("com.google.firebase:firebase-auth-ktx")
-    
-    // Compose UI
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.maps.android:maps-compose:6.1.0")
+    implementation("com.google.accompanist:accompanist-permissions:0.36.0")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation(libs.androidx.fragment)
     debugImplementation("androidx.compose.ui:ui-tooling")
-
-    // Material 3
     implementation("androidx.compose.material3:material3")
-
-    // Icons.Outlined.*
     implementation("androidx.compose.material:material-icons-extended")
-
-    // Activity para Compose
     implementation("androidx.activity:activity-compose:1.9.0")
-
-    //Views/XML
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.constraintlayout:constraintlayout:2.2.0")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.compose.ui:ui-text-google-fonts")
-
 }
+
