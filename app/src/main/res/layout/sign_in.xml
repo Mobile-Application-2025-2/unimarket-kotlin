@@ -81,7 +81,7 @@
                 android:id="@+id/btnOutlook"
                 android:layout_width="0dp"
                 android:layout_height="56dp"
-                android:layout_marginTop="35dp"
+                android:layout_marginTop="50dp"
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
@@ -125,7 +125,7 @@
                 android:id="@+id/btnGoogle"
                 android:layout_width="0dp"
                 android:layout_height="56dp"
-                android:layout_marginTop="18dp"
+                android:layout_marginTop="24dp"
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
@@ -171,7 +171,7 @@
                 android:id="@+id/tvOr"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="25dp"
+                android:layout_marginTop="35dp"
                 android:text="@string/or_login_with_email"
                 android:textAlignment="center"
                 android:textColor="@color/textGray"
@@ -185,14 +185,16 @@
                 android:id="@+id/tilEmail"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="25dp"
+                android:layout_marginTop="35dp"
                 app:boxCornerRadiusBottomEnd="10dp"
                 app:boxCornerRadiusBottomStart="10dp"
                 app:boxCornerRadiusTopEnd="10dp"
                 app:boxCornerRadiusTopStart="10dp"
                 app:boxBackgroundColor="@color/lightGray"
-                app:boxStrokeWidth="0dp"
                 app:hintEnabled="false"
+                app:boxStrokeColor="@color/textGray"
+                app:boxStrokeWidth="0dp"
+                app:boxStrokeWidthFocused="2dp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/tvOr">
@@ -228,31 +230,36 @@
                     app:boxCornerRadiusTopEnd="10dp"
                     app:boxCornerRadiusTopStart="10dp"
                     app:boxBackgroundColor="@color/lightGray"
+                    app:hintEnabled="false"
+                    app:boxStrokeColor="@color/textGray"
                     app:boxStrokeWidth="0dp"
-                    app:hintEnabled="false">
+                    app:boxStrokeWidthFocused="2dp">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etPassword"
                         android:layout_width="match_parent"
                         android:layout_height="56dp"
                         android:hint="@string/hint_password"
-                        android:inputType="textPassword"
+                        android:inputType="textPassword|textNoSuggestions"
                         android:paddingStart="16dp"
-                        android:paddingEnd="48dp"
-                        android:textColorHint="@color/textGray" />
+                        android:paddingEnd="56dp"
+                        android:textColorHint="@color/textGray"/>
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <!-- Icono superpuesto a la derecha -->
                 <ImageView
                     android:id="@+id/ivTogglePassword"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:layout_gravity="end|center_vertical"
-                    android:layout_marginEnd="16dp"
+                    android:layout_marginEnd="12dp"
+                    android:padding="8dp"
                     android:src="@drawable/open"
+                    android:scaleType="centerInside"
+                    android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/hint_password"
                     android:clickable="true"
-                    android:focusable="true" />
+                    android:focusable="true"/>
             </FrameLayout>
 
             <!-- SIGN IN -->
@@ -260,7 +267,7 @@
                 android:id="@+id/btnSignIn"
                 android:layout_width="0dp"
                 android:layout_height="56dp"
-                android:layout_marginTop="45dp"
+                android:layout_marginTop="50dp"
                 android:text="@string/sign_in"
                 android:textAllCaps="true"
                 android:textStyle="bold"
@@ -288,7 +295,7 @@
                 android:id="@+id/login_bottom_row"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="70.4dp"
+                android:layout_marginTop="170dp"
                 android:layout_marginBottom="8dp"
                 android:orientation="horizontal"
                 app:layout_constraintStart_toStartOf="parent"

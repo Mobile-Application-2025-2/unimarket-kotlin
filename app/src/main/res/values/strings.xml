@@ -29,7 +29,7 @@
 
     <!-- Sign in -->
     <string name="forgot_password_q">Forgot Password?</string>
-    <string name="already_have_account_q">ALREADY HAVE AN ACCOUNT?</string>
+    <string name="already_have_account_q">DO NOT HAVE AN ACCOUNT?</string>
     <string name="escribe_email">Email address</string>
     <string name="escribe_password">Password</string>
 </resources>
