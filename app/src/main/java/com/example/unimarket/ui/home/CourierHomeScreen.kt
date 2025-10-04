@@ -2,6 +2,7 @@ package com.example.unimarket.ui.home
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.location.Geocoder
 import android.os.Looper
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -9,8 +10,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.outlined.Call
-import androidx.compose.material.icons.outlined.Chat
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,26 +25,31 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.unimarket.ui.scaffold.AppScaffold
-import com.example.unimarket.ui.scaffold.BottomDest
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.android.gms.location.*
-import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.CameraUpdateFactory as GmsCameraUpdateFactory
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MapProperties
-import com.google.maps.android.compose.MapUiSettings
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
+import com.google.maps.android.compose.*
+
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.util.Locale
 
 private val Accent = Color(0xFFF7B500)
 private val CardBg = Color(0xFFFDFCFB)
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun CourierHomeScreen() {
+fun CourierHomeScreen(
+    deliveryAddress: String = "Cra 1 E #19a-70, Bogotá, Colombia",
+    clientName: String = "Cliff Rogers",
+    clientPlaceLabel: String = "W - 403",
+    etaLabel: String = "10 mins",
+) {
+    val context = LocalContext.current
+
     val permissions = rememberMultiplePermissionsState(
         listOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
@@ -56,77 +62,97 @@ fun CourierHomeScreen() {
         }
     }
     val hasPermission = permissions.allPermissionsGranted
-    val context = LocalContext.current
 
-    var myPosition by remember { mutableStateOf<LatLng?>(null) }
+    var courierPos by remember { mutableStateOf<LatLng?>(null) }
+    var destPos by remember { mutableStateOf<LatLng?>(null) }
+
     val cameraPositionState = rememberCameraPositionState()
 
-    LaunchedEffect(myPosition) {
-        val p = myPosition ?: return@LaunchedEffect
-        cameraPositionState.animate(
-            update = GmsCameraUpdateFactory.newLatLngZoom(p, 16f),
-            durationMs = 700
-        )
+    LaunchedEffect(deliveryAddress) {
+        destPos = geocodeOnce(context = context, address = deliveryAddress)
+    }
+
+    LaunchedEffect(courierPos, destPos) {
+        val a = courierPos
+        val b = destPos
+        if (a != null && b != null) {
+            val bounds = LatLngBounds.builder().include(a).include(b).build()
+            cameraPositionState.animate(
+                update = GmsCameraUpdateFactory.newLatLngBounds(bounds, 120),
+                durationMs = 700
+            )
+        } else if (a != null) {
+            cameraPositionState.animate(
+                update = GmsCameraUpdateFactory.newLatLngZoom(a, 16f),
+                durationMs = 700
+            )
+        } else if (b != null) {
+            cameraPositionState.animate(
+                update = GmsCameraUpdateFactory.newLatLngZoom(b, 16f),
+                durationMs = 700
+            )
+        }
     }
 
     DisposableEffect(hasPermission) {
         if (!hasPermission) return@DisposableEffect onDispose {}
         val client = LocationServices.getFusedLocationProviderClient(context)
         val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2000L)
-            .setMinUpdateIntervalMillis(2000L)
+            .setMinUpdateIntervalMillis(1500L)
             .setWaitForAccurateLocation(true)
             .build()
         val callback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
-                val l = result.lastLocation ?: return
-                myPosition = LatLng(l.latitude, l.longitude)
+                result.lastLocation?.let { loc ->
+                    courierPos = LatLng(loc.latitude, loc.longitude)
+                }
             }
         }
         startLocationUpdates(client, request, callback)
         onDispose { client.removeLocationUpdates(callback) }
     }
 
-    AppScaffold(current = BottomDest.Home, onNavigate = { }) { inner ->
+    Scaffold(
+        topBar = {},
+        bottomBar = {},
+        containerColor = Color.White
+    ) { inner ->
         Box(
             Modifier
                 .fillMaxSize()
                 .padding(inner)
         ) {
-            if (hasPermission) {
-                GoogleMap(
-                    modifier = Modifier.fillMaxSize(),
-                    cameraPositionState = cameraPositionState,
-                    properties = MapProperties(isMyLocationEnabled = true),
-                    uiSettings = MapUiSettings(
-                        myLocationButtonEnabled = true,
-                        zoomControlsEnabled = false,
-                        compassEnabled = true
+            GoogleMap(
+                modifier = Modifier.fillMaxSize(),
+                cameraPositionState = cameraPositionState,
+                properties = MapProperties(isMyLocationEnabled = hasPermission),
+                uiSettings = MapUiSettings(
+                    myLocationButtonEnabled = true,
+                    zoomControlsEnabled = false,
+                    compassEnabled = true
+                )
+            ) {
+                courierPos?.let {
+                    Marker(
+                        state = MarkerState(it),
+                        title = "Tú",
+                        snippet = "Ubicación del repartidor"
                     )
-                ) {
-                    myPosition?.let {
-                        Marker(
-                            state = MarkerState(position = it),
-                            title = "Tu ubicación",
-                            snippet = "En tiempo real"
-                        )
-                    }
                 }
-            } else {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        "Otorga permisos de ubicación para ver el mapa en tiempo real.",
-                        style = MaterialTheme.typography.bodyLarge
+                destPos?.let {
+                    Marker(
+                        state = MarkerState(it),
+                        title = "Entrega",
+                        snippet = deliveryAddress
                     )
+                }
+                if (courierPos != null && destPos != null) {
+                    Polyline(points = listOf(courierPos!!, destPos!!))
                 }
             }
 
             Button(
-                onClick = { },
+                onClick = { /* verificar pedido */ },
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = 16.dp)
@@ -143,10 +169,10 @@ fun CourierHomeScreen() {
             }
 
             ClientCard(
-                name = "Cliff Rogers",
+                name = clientName,
                 role = "Client",
-                eta = "10 mins",
-                deliverTo = "W - 403",
+                eta = etaLabel,
+                deliverTo = clientPlaceLabel,
                 onChat = { },
                 onCall = { },
                 modifier = Modifier
@@ -164,6 +190,20 @@ private fun startLocationUpdates(
     callback: LocationCallback
 ) {
     client.requestLocationUpdates(request, callback, Looper.getMainLooper())
+}
+
+private suspend fun geocodeOnce(
+    context: android.content.Context,
+    address: String
+): LatLng? = withContext(Dispatchers.IO) {
+    try {
+        val geo = Geocoder(context, Locale.getDefault())
+        val list = geo.getFromLocationName(address, 1)
+        val first = list?.firstOrNull()
+        if (first != null) LatLng(first.latitude, first.longitude) else null
+    } catch (_: Throwable) {
+        null
+    }
 }
 
 @Composable
@@ -201,17 +241,14 @@ private fun ClientCard(
                     )
                     Text(role, color = Color.Gray, fontSize = 13.sp)
                 }
-                YellowIconButton(icon = Icons.Outlined.Chat, onClick = onChat)
+                YellowIconButton(icon = Icons.AutoMirrored.Outlined.Chat, onClick = onChat)
                 Spacer(Modifier.width(8.dp))
                 YellowIconButton(icon = Icons.Outlined.Call, onClick = onCall)
             }
-
             HorizontalDivider(Modifier.padding(vertical = 12.dp), color = Color(0xFFEAEAEA))
-
             InfoRow(title = "Estimated time", value = eta)
             Spacer(Modifier.height(6.dp))
             InfoRow(title = "Deliver to", value = deliverTo)
-
             Spacer(Modifier.height(12.dp))
             MoreDetailsButton(onClick = { })
         }
@@ -267,6 +304,6 @@ private fun InfoRow(title: String, value: String) {
 
 @Preview(showBackground = true, showSystemUi = true, device = "id:pixel_6")
 @Composable
-private fun PreviewCourierHomeScreen() {
+private fun PreviewCourierHome() {
     CourierHomeScreen()
 }
