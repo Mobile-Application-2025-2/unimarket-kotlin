@@ -45,9 +45,6 @@ private val Pastels = listOf(
     Color(0xFFFFF8D9),
     Color(0xFFEAF5FF)
 )
-
-/* ------------------------- DATA ------------------------- */
-
 private data class ExploreItem(
     val title: String,
     val type: String,
@@ -112,7 +109,7 @@ private val demoItems: List<ExploreItem> = listOf(
     ExploreItem(
         title = "Batas laboratorio",
         type = "Otro",
-        imageRes = R.drawable.papeleria, // TODO: placeholder hasta tener PNG real
+        imageRes = R.drawable.papeleria,
         selectionCount = 1,
         bg = Pastels[1]
     )
@@ -127,14 +124,10 @@ private val catChips = listOf(
     CatChip("Papelería", Icons.Outlined.Edit),
     CatChip("Otro", Icons.Outlined.Category)
 )
-
-/* ------------------------- SCREEN ------------------------- */
-
 @Composable
 fun ExploreBuyerScreen() {
     var selectedChip by remember { mutableStateOf(0) }
 
-    // Filtro por chip
     val filtered = remember(selectedChip) {
         val base = if (selectedChip == 0) {
             demoItems
@@ -142,7 +135,6 @@ fun ExploreBuyerScreen() {
             val label = catChips[selectedChip].label
             demoItems.filter { it.type.equals(label, ignoreCase = true) }
         }
-        // Aseguramos orden por selection_count desc siempre
         base.sortedByDescending { it.selectionCount }
     }
 
@@ -193,8 +185,6 @@ fun ExploreBuyerScreen() {
     }
 }
 
-/* ------------------------- SUBCOMPONENTES ------------------------- */
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ExploreTopBar() {
@@ -234,7 +224,6 @@ private fun SearchBox() {
     )
 }
 
-/** Chips en scroll horizontal (LazyRow) */
 @Composable
 private fun CategoryChipsRow(
     chips: List<CatChip>,
@@ -334,8 +323,6 @@ private fun BuyerBottomBar(current: Int, onClick: (Int) -> Unit) {
         }
     }
 }
-
-/* ------------------------- PREVIEW ------------------------- */
 
 @Preview(showBackground = true, showSystemUi = true, device = "id:pixel_6")
 @Composable

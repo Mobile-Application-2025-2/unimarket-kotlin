@@ -73,19 +73,17 @@ object CategoriesRepository {
         @Headers("Prefer: return=representation")
         @POST("rest/v1/categories")
         suspend fun create(@Body body: CategoryCreate): List<Category>
-
-        // UPDATE parcial (PATCH) por id
         @Headers("Prefer: return=representation")
         @PATCH("rest/v1/categories")
         suspend fun updateById(
-            @Query("id") idFilter: String, // "eq.<uuid>"
+            @Query("id") idFilter: String,
             @Body body: CategoryPatch
         ): List<Category>
 
         // DELETE por id
         @DELETE("rest/v1/categories")
         suspend fun deleteById(
-            @Query("id") idFilter: String // "eq.<uuid>"
+            @Query("id") idFilter: String
         ): okhttp3.ResponseBody
     }
     private val api: Api = retrofit.create(Api::class.java)
