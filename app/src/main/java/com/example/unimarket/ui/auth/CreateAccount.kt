@@ -30,6 +30,7 @@ data class SignUpBody(
     val data: Map<String, String>
 )
 
+
 interface AuthApi {
     @Headers("Content-Type: application/json")
     @POST("auth/v1/signup")
