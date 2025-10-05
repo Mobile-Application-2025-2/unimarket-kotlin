@@ -36,6 +36,9 @@ import com.google.maps.android.compose.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Locale
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 
 class CourierHomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
