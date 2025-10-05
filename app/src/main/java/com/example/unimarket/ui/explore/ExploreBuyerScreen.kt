@@ -26,6 +26,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.unimarket.R
 
+
+
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+
+class ExploreBuyerActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // Muestra tu pantalla composable
+        setContent { ExploreBuyerScreen() }
+    }
+}
 private val Accent = Color(0xFFF7B500)
 private val Pastels = listOf(
     Color(0xFFFFF1E0),
@@ -37,6 +51,7 @@ private val Pastels = listOf(
 )
 
 /* ------------------------- DATA ------------------------- */
+
 
 private data class ExploreItem(
     val title: String,

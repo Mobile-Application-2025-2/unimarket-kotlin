@@ -27,6 +27,17 @@ import com.example.unimarket.R
 import com.example.unimarket.ui.scaffold.AppScaffold
 import com.example.unimarket.ui.scaffold.BottomDest
 
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+
+class CourierHomeActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // Muestra tu pantalla composable
+        setContent { CourierHomeScreen() }
+    }
+}
 private val Accent = Color(0xFFF7B500)
 private val CardBg = Color(0xFFFDFCFB)
 
