@@ -37,6 +37,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
+class CourierHomeActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent { CourierHomeScreen() }
+    }
+}
+
 private val Accent = Color(0xFFF7B500)
 private val CardBg = Color(0xFFFDFCFB)
 

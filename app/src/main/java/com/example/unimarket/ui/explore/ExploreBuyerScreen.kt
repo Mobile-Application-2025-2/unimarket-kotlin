@@ -26,6 +26,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.unimarket.R
 
+class ExploreBuyerActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent { ExploreBuyerScreen() }
+    }
+}
+
 private val Accent = Color(0xFFF7B500)
 private val Pastels = listOf(
     Color(0xFFFFF1E0),

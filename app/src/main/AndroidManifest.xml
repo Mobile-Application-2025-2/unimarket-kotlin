@@ -34,7 +34,12 @@
         <activity
             android:name=".ui.auth.StudentCodeActivity"
             android:exported="false" />
-
+        <activity
+            android:name=".ui.explore.ExploreBuyerActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.home.CourierHomeActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
