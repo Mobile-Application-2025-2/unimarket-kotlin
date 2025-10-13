@@ -37,12 +37,10 @@ interface AuthApi {
 }
 
 private fun buildAuthApi(): AuthApi {
-    // 1) Moshi con soporte para data classes de Kotlin
     val moshi = Moshi.Builder()
         .add(KotlinJsonAdapterFactory())
         .build()
 
-    // 2) Headers obligatorios de Supabase
     val apikeyInterceptor = Interceptor { chain ->
         val req = chain.request().newBuilder()
             .addHeader("apikey", SupaConst.SUPABASE_ANON_KEY)
@@ -50,7 +48,6 @@ private fun buildAuthApi(): AuthApi {
         chain.proceed(req)
     }
 
-    // 3) Cliente HTTP con logs
     val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
@@ -59,7 +56,6 @@ private fun buildAuthApi(): AuthApi {
         .addInterceptor(logging)
         .build()
 
-    // 4) Retrofit con Moshi configurado
     return Retrofit.Builder()
         .baseUrl(SupaConst.SUPABASE_URL) // debe terminar en /
         .addConverterFactory(MoshiConverterFactory.create(moshi))
@@ -67,9 +63,6 @@ private fun buildAuthApi(): AuthApi {
         .build()
         .create(AuthApi::class.java)
 }
-
-// =====================================================
-
 class CreateAccountActivity : AppCompatActivity() {
 
     private lateinit var b: ActivityCreateAccountBinding
@@ -136,7 +129,6 @@ class CreateAccountActivity : AppCompatActivity() {
                     finish()
                 } else {
                     val err = res.errorBody()?.string().orEmpty()
-                    // mensaje claro si el trigger exigió 'type'
                     val msg = err.ifBlank { "Sign-up falló (HTTP ${res.code()})" }
                     Toast.makeText(this@CreateAccountActivity, msg, Toast.LENGTH_LONG).show()
                 }

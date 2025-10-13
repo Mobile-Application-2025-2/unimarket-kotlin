@@ -6,13 +6,11 @@
     android:fillViewport="true"
     android:background="@android:color/white">
 
-    <!-- =================== PANTALLA =================== -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/root"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <!-- =============== HEADER (fondo + contenido + onda) =============== -->
         <FrameLayout
             android:id="@+id/header"
             android:layout_width="0dp"
@@ -113,7 +111,6 @@
                 android:layout_marginBottom="-1dp" />
         </FrameLayout>
 
-        <!-- =============== ILUSTRACIÓN =============== -->
         <ImageView
             android:id="@+id/illustration"
             android:layout_width="0dp"
@@ -127,7 +124,6 @@
             app:layout_constraintDimensionRatio="1:0.88"
             android:layout_marginTop="-50dp" />
 
-        <!-- =============== BOTÓN =============== -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnGetStarted"
             style="@style/Widget.Material3.Button"

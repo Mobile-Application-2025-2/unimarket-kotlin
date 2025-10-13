@@ -1,5 +1,8 @@
 package com.example.unimarket.view.explore
 
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -25,9 +28,6 @@ import androidx.compose.view.tooling.preview.Preview
 import androidx.compose.view.unit.dp
 import androidx.compose.view.unit.sp
 import com.example.unimarket.R
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 
 class ExploreBuyerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,42 +45,98 @@ private val Pastels = listOf(
     Color(0xFFFFF8D9),
     Color(0xFFEAF5FF)
 )
-
-/* ------------------------- DATA ------------------------- */
-
 private data class ExploreItem(
     val title: String,
+    val type: String,
     @DrawableRes val imageRes: Int,
+    val selectionCount: Int,
     val bg: Color,
     val highlighted: Boolean = false
 )
 
-private val demoItems = listOf(
-    ExploreItem("Tutorías IIND-2106", R.drawable.tutoriasiind2106, Pastels[0]),
-    ExploreItem("Tutorías ISIS-1221", R.drawable.tutoriasisis1221, Pastels[1]),
-    ExploreItem("Venta de brownies", R.drawable.brownies, Pastels[3]),
-    ExploreItem("Venta de funkos",   R.drawable.funko,    Pastels[2]),
-    ExploreItem("Comida mexicana",   R.drawable.tacos,    Pastels[5], highlighted = true),
-    ExploreItem("Comida italiana",   R.drawable.pasta,    Pastels[4])
+private val demoItems: List<ExploreItem> = listOf(
+    ExploreItem(
+        title = "Tutoría introducción a la programación",
+        type = "Tutorías",
+        imageRes = R.drawable.tutoriasiind2106,
+        selectionCount = 10,
+        bg = Pastels[0],
+        highlighted = true
+    ),
+    ExploreItem(
+        title = "Tutoría Probabilidad y Estadística",
+        type = "Tutorías",
+        imageRes = R.drawable.tutoriasisis1221,
+        selectionCount = 8,
+        bg = Pastels[1],
+        highlighted = true
+    ),
+    ExploreItem(
+        title = "Papelería",
+        type = "Papelería",
+        imageRes = R.drawable.papeleria,
+        selectionCount = 7,
+        bg = Pastels[2]
+    ),
+    ExploreItem(
+        title = "Comida mexicana",
+        type = "Comida",
+        imageRes = R.drawable.tacos,
+        selectionCount = 7,
+        bg = Pastels[5]
+    ),
+    ExploreItem(
+        title = "Brownies",
+        type = "Emprendimiento",
+        imageRes = R.drawable.brownies,
+        selectionCount = 7,
+        bg = Pastels[3]
+    ),
+    ExploreItem(
+        title = "Funkos",
+        type = "Emprendimiento",
+        imageRes = R.drawable.funko,
+        selectionCount = 5,
+        bg = Pastels[2]
+    ),
+    ExploreItem(
+        title = "Comida italiana",
+        type = "Comida",
+        imageRes = R.drawable.pasta,
+        selectionCount = 3,
+        bg = Pastels[4]
+    ),
+    ExploreItem(
+        title = "Batas laboratorio",
+        type = "Otro",
+        imageRes = R.drawable.papeleria,
+        selectionCount = 1,
+        bg = Pastels[1]
+    )
 )
 
 private data class CatChip(val label: String, val icon: ImageVector? = null)
 private val catChips = listOf(
     CatChip("Todos", Icons.Outlined.AllInbox),
-    CatChip("Comida", Icons.Outlined.Fastfood),
-    CatChip("Papelería", Icons.Outlined.Edit),
-    CatChip("Tecnología", Icons.Outlined.Memory),
     CatChip("Tutorías", Icons.Outlined.School),
-    CatChip("Ropa", Icons.Outlined.Checkroom),
-    CatChip("Arte", Icons.Outlined.Brush),
-    CatChip("Deporte", Icons.Outlined.SportsBasketball)
+    CatChip("Comida", Icons.Outlined.Fastfood),
+    CatChip("Emprendimiento", Icons.Outlined.TrendingUp),
+    CatChip("Papelería", Icons.Outlined.Edit),
+    CatChip("Otro", Icons.Outlined.Category)
 )
-
-/* ------------------------- SCREEN ------------------------- */
-
 @Composable
 fun ExploreBuyerScreen() {
     var selectedChip by remember { mutableStateOf(0) }
+
+    val filtered = remember(selectedChip) {
+        val base = if (selectedChip == 0) {
+            demoItems
+        } else {
+            val label = catChips[selectedChip].label
+            demoItems.filter { it.type.equals(label, ignoreCase = true) }
+        }
+        base.sortedByDescending { it.selectionCount }
+    }
 
     Scaffold(
         topBar = { ExploreTopBar() },
@@ -105,7 +161,7 @@ fun ExploreBuyerScreen() {
 
             Spacer(Modifier.height(8.dp))
 
-            val rows = remember(demoItems) { demoItems.chunked(2) }
+            val rows = remember(filtered) { filtered.chunked(2) }
             rows.forEach { row ->
                 Row(
                     Modifier.fillMaxWidth(),
@@ -116,7 +172,7 @@ fun ExploreBuyerScreen() {
                             item = item,
                             modifier = Modifier
                                 .weight(1f)
-                                .height(150.dp)
+                                .height(160.dp)
                         )
                     }
                     if (row.size == 1) Spacer(Modifier.weight(1f))
@@ -128,8 +184,6 @@ fun ExploreBuyerScreen() {
         }
     }
 }
-
-/* ------------------------- SUBCOMPONENTES ------------------------- */
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -170,7 +224,6 @@ private fun SearchBox() {
     )
 }
 
-/** Chips en scroll horizontal (LazyRow) */
 @Composable
 private fun CategoryChipsRow(
     chips: List<CatChip>,
@@ -236,11 +289,15 @@ private fun ExploreCard(item: ExploreItem, modifier: Modifier = Modifier) {
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Popularidad: ${item.selectionCount}",
+                fontSize = 12.sp,
+                color = Color(0xFF5F6368)
+            )
         }
     }
 }
-
-/* ------------------------- BOTTOM BAR ------------------------- */
 
 @Composable
 private fun BuyerBottomBar(current: Int, onClick: (Int) -> Unit) {
@@ -266,8 +323,6 @@ private fun BuyerBottomBar(current: Int, onClick: (Int) -> Unit) {
         }
     }
 }
-
-/* ------------------------- PREVIEW ------------------------- */
 
 @Preview(showBackground = true, showSystemUi = true, device = "id:pixel_6")
 @Composable

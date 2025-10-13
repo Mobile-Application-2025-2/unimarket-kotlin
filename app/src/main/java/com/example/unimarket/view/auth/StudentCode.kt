@@ -19,10 +19,7 @@ class StudentCodeActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         b = ActivityStudentCodeBinding.inflate(layoutInflater)
-
-        // FIX: por si la vista llega con padre (pasa a veces al recrear/preview)
         (b.root.parent as? ViewGroup)?.removeView(b.root)
 
         setContentView(b.root)
@@ -49,8 +46,6 @@ class StudentCodeActivity : AppCompatActivity() {
     private fun refreshState() {
         b.btnGetStarted.isEnabled = !b.etStudentId.text?.toString()?.trim().isNullOrEmpty()
     }
-
-    /** Reemplaza TODO el contenido de la Activity con un ComposeView nuevo. */
     private inline fun showCompose(crossinline content: @Composable () -> Unit) {
         val composeView = ComposeView(this).apply {
             setContent { MaterialTheme { content() } }
