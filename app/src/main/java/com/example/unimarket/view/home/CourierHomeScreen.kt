@@ -1,4 +1,4 @@
-package com.example.unimarket.ui.home
+package com.example.unimarket.view.home
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -14,17 +14,17 @@ import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.outlined.Call
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.view.Alignment
+import androidx.compose.view.Modifier
+import androidx.compose.view.draw.clip
+import androidx.compose.view.graphics.Color
+import androidx.compose.view.graphics.vector.ImageVector
+import androidx.compose.view.platform.LocalContext
+import androidx.compose.view.text.font.FontWeight
+import androidx.compose.view.text.style.TextOverflow
+import androidx.compose.view.tooling.preview.Preview
+import androidx.compose.view.unit.dp
+import androidx.compose.view.unit.sp
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.android.gms.location.*

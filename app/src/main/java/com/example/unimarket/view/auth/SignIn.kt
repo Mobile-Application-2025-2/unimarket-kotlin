@@ -12,8 +12,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.unimarket.R
 import com.example.unimarket.SupaConst
-import com.example.unimarket.ui.explore.ExploreBuyerActivity
-import com.example.unimarket.ui.home.CourierHomeActivity
+import com.example.unimarket.view.explore.ExploreBuyerActivity
+import com.example.unimarket.view.home.CourierHomeActivity
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout

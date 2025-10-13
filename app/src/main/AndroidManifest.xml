@@ -18,7 +18,7 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
         <activity
-            android:name=".ui.auth.WelcomePage"
+            android:name=".view.auth.WelcomePage"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -26,19 +26,19 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ui.auth.CreateAccountActivity"
+            android:name=".view.auth.CreateAccountActivity"
             android:exported="true" />
         <activity
-            android:name=".ui.auth.LoginActivity"
+            android:name=".view.auth.LoginActivity"
             android:exported="false" />
         <activity
-            android:name=".ui.auth.StudentCodeActivity"
+            android:name=".view.auth.StudentCodeActivity"
             android:exported="false" />
         <activity
-            android:name=".ui.explore.ExploreBuyerActivity"
+            android:name=".view.explore.ExploreBuyerActivity"
             android:exported="false" />
         <activity
-            android:name=".ui.home.CourierHomeActivity"
+            android:name=".view.home.CourierHomeActivity"
             android:exported="false" />
     </application>
 

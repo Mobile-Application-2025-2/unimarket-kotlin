@@ -1,4 +1,4 @@
-package com.example.unimarket.ui.auth
+package com.example.unimarket.view.auth
 
 import android.os.Bundle
 import android.view.ViewGroup
@@ -7,11 +7,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doAfterTextChanged
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.ComposeView
+import androidx.compose.view.platform.ComposeView
 import com.example.unimarket.databinding.ActivityStudentCodeBinding
 
-import com.example.unimarket.ui.explore.ExploreBuyerScreen
-import com.example.unimarket.ui.home.CourierHomeScreen
+import com.example.unimarket.view.explore.ExploreBuyerScreen
+import com.example.unimarket.view.home.CourierHomeScreen
 
 class StudentCodeActivity : AppCompatActivity() {
 

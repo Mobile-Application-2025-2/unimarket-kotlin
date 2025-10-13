@@ -1,4 +1,4 @@
-package com.example.unimarket.ui.auth
+package com.example.unimarket.view.auth
 
 import android.content.Intent
 import android.os.Bundle

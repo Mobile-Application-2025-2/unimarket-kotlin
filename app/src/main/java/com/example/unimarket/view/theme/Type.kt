@@ -1,10 +1,10 @@
-package com.example.unimarket.ui.theme
+package com.example.unimarket.view.theme
 
 import androidx.compose.material3.Typography
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
+import androidx.compose.view.text.TextStyle
+import androidx.compose.view.text.font.FontFamily
+import androidx.compose.view.text.font.FontWeight
+import androidx.compose.view.unit.sp
 
 // Set of Material typography styles to start with
 val Typography = Typography(
