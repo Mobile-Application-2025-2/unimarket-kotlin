@@ -1,297 +1,172 @@
 package com.example.unimarket.view.home
 
 import android.Manifest
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Chat
-import androidx.compose.material.icons.outlined.Call
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import androidx.core.content.ContextCompat
+import com.example.unimarket.model.geocode.AndroidGeocodingRepository
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.maps.CameraUpdateFactory as GmsCameraUpdateFactory
+import com.google.android.gms.location.Priority
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.compose.*
 
-/* --- MVC imports (controller + repos en sus propias carpetas) --- */
-import com.example.unimarket.controller.home.CameraCommand
-import com.example.unimarket.controller.home.CourierHomeController
-import com.example.unimarket.controller.home.CourierHomeViewPort
-import com.example.unimarket.model.geocode.impl.AndroidGeocodingRepository
-import com.example.unimarket.model.location.impl.AndroidLocationRepository
-
-class CourierHomeActivity : ComponentActivity(), CourierHomeViewPort {
-
-    private lateinit var controller: CourierHomeController
-
-    // Estado UI
-    private var isLoading by mutableStateOf(false)
-    private var courierPos by mutableStateOf<LatLng?>(null)
-    private var destPos by mutableStateOf<LatLng?>(null)
-    private var pendingCameraCmd by mutableStateOf<CameraCommand?>(null)
-
-    @OptIn(ExperimentalPermissionsApi::class)
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        val geocoder = AndroidGeocodingRepository(this)
-        val locationRepo = AndroidLocationRepository()
-        controller = CourierHomeController(this, geocoder, locationRepo)
-
-        val deliveryAddress = "Cra 1 E #19a-70, Bogotá, Colombia"
-        val clientName = "Cliff Rogers"
-        val clientPlaceLabel = "W - 403"
-        val etaLabel = "10 mins"
-
-        setContent {
-            val permissions = rememberMultiplePermissionsState(
-                listOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                )
-            )
-
-            val cameraPositionState = rememberCameraPositionState()
-
-            LaunchedEffect(Unit) {
-                if (!permissions.allPermissionsGranted) permissions.launchMultiplePermissionRequest()
-                val fused = LocationServices.getFusedLocationProviderClient(this@CourierHomeActivity)
-                controller.onInit(deliveryAddress, fused)
-            }
-
-            LaunchedEffect(permissions.allPermissionsGranted) {
-                if (permissions.allPermissionsGranted) controller.onPermissionsGranted()
-            }
-
-            LaunchedEffect(pendingCameraCmd) {
-                when (val cmd = pendingCameraCmd) {
-                    is CameraCommand.FitBounds -> {
-                        cameraPositionState.animate(
-                            update = GmsCameraUpdateFactory.newLatLngBounds(cmd.bounds, cmd.padding),
-                            durationMs = 700
-                        )
-                    }
-                    is CameraCommand.ZoomTo -> {
-                        cameraPositionState.animate(
-                            update = GmsCameraUpdateFactory.newLatLngZoom(cmd.target, cmd.zoom),
-                            durationMs = 700
-                        )
-                    }
-                    null -> Unit
-                }
-            }
-
-            LaunchedEffect(courierPos, destPos) {
-                controller.onPositionsChanged(courierPos, destPos)
-            }
-
-            CourierHomeScreen(
-                hasPermission = permissions.allPermissionsGranted,
-                cameraPositionState = cameraPositionState,
-                courierPos = courierPos,
-                destPos = destPos,
-                isLoading = isLoading,
-                clientName = clientName,
-                clientPlaceLabel = clientPlaceLabel,
-                etaLabel = etaLabel,
-                onVerify = { /* TODO: acción de verificación */ },
-                onChat = { /* TODO */ },
-                onCall = { /* TODO */ }
-            )
-        }
-    }
-
-    override fun onStop() {
-        super.onStop()
-        controller.onStop()
-    }
-    override fun setLoading(show: Boolean) { isLoading = show }
-    override fun setCourierPosition(pos: LatLng?) { courierPos = pos }
-    override fun setDestinationPosition(pos: LatLng?) { destPos = pos }
-    override fun applyCamera(cmd: CameraCommand) { pendingCameraCmd = cmd }
-    override fun showMessage(msg: String) { /* usa Toast si quieres */ }
-}
-
 @Composable
 fun CourierHomeScreen(
-    hasPermission: Boolean,
-    cameraPositionState: CameraPositionState,
-    courierPos: LatLng?,
-    destPos: LatLng?,
-    isLoading: Boolean,
-    clientName: String,
-    clientPlaceLabel: String,
-    etaLabel: String,
-    onVerify: () -> Unit,
-    onChat: () -> Unit,
-    onCall: () -> Unit
+    deliveryAddress: String = "Cra 1 #1-1, Bogotá",
 ) {
-    val Accent = Color(0xFFF7B500)
-    val CardBg = Color(0xFFFDFCFB)
+    val context = LocalContext.current
 
-    Scaffold(
-        topBar = {},
-        bottomBar = {},
-        containerColor = Color.White
-    ) { inner ->
-        Box(
-            Modifier
-                .fillMaxSize()
-                .padding(inner)
-        ) {
-            GoogleMap(
-                modifier = Modifier.fillMaxSize(),
-                cameraPositionState = cameraPositionState,
-                properties = MapProperties(isMyLocationEnabled = hasPermission),
-                uiSettings = MapUiSettings(
-                    myLocationButtonEnabled = true,
-                    zoomControlsEnabled = false,
-                    compassEnabled = true
-                )
-            ) {
-                courierPos?.let {
-                    Marker(MarkerState(it), title = "Tú", snippet = "Ubicación del repartidor")
-                }
-                destPos?.let {
-                    Marker(MarkerState(it), title = "Entrega", snippet = "Destino")
-                }
-                if (courierPos != null && destPos != null) {
-                    Polyline(points = listOf(courierPos, destPos))
-                }
+    // --- Estado UI ---
+    var isLoading by remember { mutableStateOf(true) }
+    var dest by remember { mutableStateOf<LatLng?>(null) }
+    var courier by remember { mutableStateOf<LatLng?>(null) }
+    var hasCenteredOnce by remember { mutableStateOf(false) }
+
+    // Permisos
+    var locationGranted by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { result ->
+        locationGranted = (result[Manifest.permission.ACCESS_FINE_LOCATION] == true) ||
+                (result[Manifest.permission.ACCESS_COARSE_LOCATION] == true)
+    }
+
+    // Mapa
+    val cameraState = rememberCameraPositionState()
+
+    // Geocodificación una sola vez
+    LaunchedEffect(deliveryAddress) {
+        val geocoder = AndroidGeocodingRepository(context.applicationContext)
+        dest = geocoder.geocodeOnce(deliveryAddress)
+        isLoading = false
+    }
+
+    // Ubicación en tiempo real (start/stop)
+    DisposableEffect(locationGranted) {
+        if (!locationGranted) {
+            // No arrancamos updates. Igual devolvemos un onDispose "no-op".
+            return@DisposableEffect onDispose { /* no-op */ }
+        }
+
+        val fused = LocationServices.getFusedLocationProviderClient(context)
+        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2000L)
+            .setMinUpdateIntervalMillis(1500L)
+            .setWaitForAccurateLocation(true)
+            .build()
+
+        val callback = object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                val last = result.lastLocation ?: return
+                courier = LatLng(last.latitude, last.longitude)
             }
+        }
 
-            Button(
-                onClick = onVerify,
+        try {
+            fused.requestLocationUpdates(request, callback, context.mainLooper)
+        } catch (_: SecurityException) { /* permiso no concedido */ }
+
+        // <- Aquí sí retornas el DisposableEffectResult correcto
+        onDispose {
+            fused.removeLocationUpdates(callback)
+        }
+    }
+
+
+    // Comandos de cámara reactivos
+    LaunchedEffect(courier, dest) {
+        when {
+            courier != null && dest != null -> {
+                val bounds = LatLngBounds.builder().include(courier!!).include(dest!!).build()
+                cameraState.animate(CameraUpdateFactory.newLatLngBounds(bounds, 120))
+                hasCenteredOnce = true
+            }
+            !hasCenteredOnce && dest != null -> {
+                cameraState.animate(CameraUpdateFactory.newLatLngZoom(dest!!, 16f))
+                hasCenteredOnce = true
+            }
+            !hasCenteredOnce && courier != null -> {
+                cameraState.animate(CameraUpdateFactory.newLatLngZoom(courier!!, 16f))
+                hasCenteredOnce = true
+            }
+        }
+    }
+
+    // UI
+    Box(Modifier.fillMaxSize()) {
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraState,
+            properties = MapProperties(isMyLocationEnabled = locationGranted),
+            uiSettings = MapUiSettings(myLocationButtonEnabled = true, zoomControlsEnabled = false)
+        ) {
+            dest?.let { Marker(state = rememberMarkerState(position = it), title = "Destino") }
+            courier?.let { Marker(state = rememberMarkerState(position = it), title = "Repartidor") }
+        }
+
+        if (!locationGranted) {
+            PermissionBanner(
+                text = "Activa el permiso de ubicación para ver tu posición.",
+                onGrant = {
+                    permissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
+                },
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 16.dp)
-                    .fillMaxWidth(0.92f)
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Accent,
-                    contentColor = Color.White
-                ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
-            ) {
-                Text("Verify the order", fontWeight = FontWeight.SemiBold)
-            }
-
-            ClientCard(
-                name = clientName,
-                role = "Client",
-                eta = etaLabel,
-                deliverTo = clientPlaceLabel,
-                onChat = onChat,
-                onCall = onCall,
-                accent = Accent,
-                cardBg = CardBg,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp)
+                    .fillMaxWidth()
+                    .padding(12.dp)
             )
+        }
 
-            if (isLoading) {
-                CircularProgressIndicator(Modifier.align(Alignment.Center))
-            }
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(56.dp)
+            )
         }
     }
 }
 
 @Composable
-private fun ClientCard(
-    name: String,
-    role: String,
-    eta: String,
-    deliverTo: String,
-    onChat: () -> Unit,
-    onCall: () -> Unit,
-    accent: Color,
-    cardBg: Color,
+private fun PermissionBanner(
+    text: String,
+    onGrant: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = cardBg),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-    ) {
-        Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFDADADA))
-                )
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(name, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(role, color = Color.Gray, fontSize = 13.sp)
-                }
-                YellowIconButton(icon = Icons.AutoMirrored.Outlined.Chat, onClick = onChat, accent = accent)
-                Spacer(Modifier.width(8.dp))
-                YellowIconButton(icon = Icons.Outlined.Call, onClick = onCall, accent = accent)
-            }
-            HorizontalDivider(Modifier.padding(vertical = 12.dp), color = Color(0xFFEAEAEA))
-            InfoRow(title = "Estimated time", value = eta)
-            Spacer(Modifier.height(6.dp))
-            InfoRow(title = "Deliver to", value = deliverTo)
-            Spacer(Modifier.height(12.dp))
-            MoreDetailsButton(onClick = { }, accent = accent)
-        }
-    }
-}
-
-@Composable
-private fun YellowIconButton(icon: ImageVector, onClick: () -> Unit, accent: Color) {
-    OutlinedIconButton(
-        onClick = onClick,
-        shape = RoundedCornerShape(10.dp),
-        border = BorderStroke(1.5.dp, accent),
-        colors = IconButtonDefaults.outlinedIconButtonColors(contentColor = accent)
-    ) { Icon(icon, contentDescription = null) }
-}
-
-@Composable
-private fun MoreDetailsButton(onClick: () -> Unit, accent: Color, modifier: Modifier = Modifier) {
-    Button(
-        onClick = onClick,
+    Surface(
+        tonalElevation = 4.dp,
+        shadowElevation = 2.dp,
         modifier = modifier
-            .fillMaxWidth()
-            .height(44.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = accent.copy(alpha = 0.18f),
-            contentColor = accent
-        ),
-        border = BorderStroke(1.dp, accent),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
-    ) { Text("MORE DETAILS", letterSpacing = 1.2.sp) }
-}
-
-@Composable
-private fun InfoRow(title: String, value: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(title, color = Color.Gray, fontSize = 14.sp, modifier = Modifier.weight(1f))
-        Text(value, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(text = text, modifier = Modifier.weight(1f))
+            Spacer(Modifier.width(8.dp))
+            Button(onClick = onGrant) { Text("Conceder") }
+        }
     }
 }
