@@ -1,21 +1,32 @@
 package com.example.unimarket.controller.auth
 
-interface WelcomePageViewPort {
+import com.example.unimarket.model.session.SessionManager
+
+interface WelcomeViewPort {
     fun playIntroOverlay()
     fun navigateToSignUp()
-    fun navigateToLogin()
+    fun navigateToSignIn()
+    fun navigateToBuyer()
+    fun navigateToCourier()
 }
 
 class WelcomePageController(
-    private val view: WelcomePageViewPort
+    private val view: WelcomeViewPort
 ) {
+
     fun onInit() {
         view.playIntroOverlay()
     }
-    fun onSignUpClicked() {
-        view.navigateToSignUp()
+
+    fun checkExistingSession() {
+        if (!SessionManager.isLoggedIn) return
+        when (SessionManager.get()!!.type.trim().lowercase()) {
+            "buyer" -> view.navigateToBuyer()
+            "deliver", "delivery", "courier" -> view.navigateToCourier()
+            else -> { /* si el tipo no es reconocido, te quedas en welcome */ }
+        }
     }
-    fun onLoginClicked() {
-        view.navigateToLogin()
-    }
+
+    fun onClickSignUp() = view.navigateToSignUp()
+    fun onClickSignIn() = view.navigateToSignIn()
 }

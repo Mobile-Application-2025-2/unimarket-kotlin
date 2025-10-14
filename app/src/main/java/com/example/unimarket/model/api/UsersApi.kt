@@ -11,7 +11,6 @@ interface UsersApi {
     suspend fun userByEmail(
         @Query("email") emailEq: String,
         @Query("select") select: String = "type,email",
-        @Header("Authorization") bearer: String,
         @Header("Range") range: String = "0-0"
     ): Response<List<UserRow>>
 }

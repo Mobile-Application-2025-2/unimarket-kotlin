@@ -1,5 +1,6 @@
 package com.example.unimarket.model.api
 
+import com.example.unimarket.model.session.SessionManager
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -10,80 +11,78 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 
 object AuthApiFactory {
 
-    fun create(baseUrl: String, anonKey: String, enableLogging: Boolean = true): SignUpAuthApi {
-        val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+    private fun baseMoshi(): Moshi =
+        Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
 
-        val apikeyInterceptor = Interceptor { chain ->
+    fun createSignUpAuthApi(baseUrl: String, anonKey: String, enableLogging: Boolean = true): SignUpAuthApi {
+        val moshi = baseMoshi()
+        val apikey = Interceptor { chain ->
             val req = chain.request().newBuilder()
                 .addHeader("apikey", anonKey)
+                .addHeader("Content-Type", "application/json")
                 .build()
             chain.proceed(req)
         }
-
-        val clientBuilder = OkHttpClient.Builder().addInterceptor(apikeyInterceptor)
-        if (enableLogging) {
-            clientBuilder.addInterceptor(HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BODY
-            })
-        }
+        val client = OkHttpClient.Builder()
+            .addInterceptor(apikey)
+            .apply {
+                if (enableLogging) addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
+            }
+            .build()
 
         return Retrofit.Builder()
             .baseUrl(baseUrl)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
-            .client(clientBuilder.build())
+            .client(client)
             .build()
             .create(SignUpAuthApi::class.java)
     }
 
-    fun login(baseUrl: String, anonKey: String, enableLogging: Boolean = true): LoginAuthApi {
-        val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
-
-        val apikeyInterceptor = Interceptor { chain ->
+    fun createLoginAuthApi(baseUrl: String, anonKey: String, enableLogging: Boolean = true): LoginAuthApi {
+        val moshi = baseMoshi()
+        val apikey = Interceptor { chain ->
             val req = chain.request().newBuilder()
                 .addHeader("apikey", anonKey)
                 .addHeader("Accept", "application/json")
+                .addHeader("Content-Type", "application/json")
                 .build()
             chain.proceed(req)
         }
-
-        val clientBuilder = OkHttpClient.Builder().addInterceptor(apikeyInterceptor)
-        if (enableLogging) {
-            clientBuilder.addInterceptor(
-                HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
-            )
-        }
+        val client = OkHttpClient.Builder()
+            .addInterceptor(apikey)
+            .apply {
+                if (enableLogging) addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
+            }
+            .build()
 
         return Retrofit.Builder()
             .baseUrl(baseUrl)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
-            .client(clientBuilder.build())
+            .client(client)
             .build()
             .create(LoginAuthApi::class.java)
     }
 
-    /** REST users table: UsersApi */
-    fun getUsers(baseUrl: String, anonKey: String, enableLogging: Boolean = true): UsersApi {
-        val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
-
-        val apikeyInterceptor = Interceptor { chain ->
-            val req = chain.request().newBuilder()
+    fun createUsersApi(baseUrl: String, anonKey: String, enableLogging: Boolean = true): UsersApi {
+        val moshi = baseMoshi()
+        val headers = Interceptor { chain ->
+            val builder = chain.request().newBuilder()
                 .addHeader("apikey", anonKey)
                 .addHeader("Accept", "application/json")
-                .build()
-            chain.proceed(req)
+            SessionManager.bearerOrNull()?.let { builder.addHeader("Authorization", it) }
+            chain.proceed(builder.build())
         }
-
-        val clientBuilder = OkHttpClient.Builder().addInterceptor(apikeyInterceptor)
-        if (enableLogging) {
-            clientBuilder.addInterceptor(
-                HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
-            )
-        }
+        val client = OkHttpClient.Builder()
+            .addInterceptor(headers)
+            .apply {
+                if (enableLogging) addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
+            }
+            .build()
 
         return Retrofit.Builder()
             .baseUrl(baseUrl)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
-            .client(clientBuilder.build())
+            .client(client)
             .build()
             .create(UsersApi::class.java)
     }
