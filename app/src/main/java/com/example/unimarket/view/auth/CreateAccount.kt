@@ -11,71 +11,27 @@ import com.example.unimarket.SupaConst
 import com.example.unimarket.R
 import com.example.unimarket.databinding.ActivityCreateAccountBinding
 import com.google.android.material.textfield.TextInputLayout
+import com.example.unimarket.controller.auth.CreateAccountController
+import com.example.unimarket.controller.auth.CreateAccountViewPort
+import com.example.unimarket.model.api.AuthApiFactory
+import com.example.unimarket.model.repository.AuthRepository
 import kotlinx.coroutines.launch
-import okhttp3.Interceptor
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
-import retrofit2.http.Body
-import retrofit2.http.Headers
-import retrofit2.http.POST
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 
-data class SignUpBody(
-    val email: String,
-    val password: String,
-    val data: Map<String, String>
-)
-
-interface AuthApi {
-    @Headers("Content-Type: application/json")
-    @POST("auth/v1/signup")
-    suspend fun signUp(@Body body: SignUpBody): Response<Unit>
-}
-
-private fun buildAuthApi(): AuthApi {
-    val moshi = Moshi.Builder()
-        .add(KotlinJsonAdapterFactory())
-        .build()
-
-    val apikeyInterceptor = Interceptor { chain ->
-        val req = chain.request().newBuilder()
-            .addHeader("apikey", SupaConst.SUPABASE_ANON_KEY)
-            .build()
-        chain.proceed(req)
-    }
-
-    val logging = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY
-    }
-    val client = OkHttpClient.Builder()
-        .addInterceptor(apikeyInterceptor)
-        .addInterceptor(logging)
-        .build()
-
-    return Retrofit.Builder()
-        .baseUrl(SupaConst.SUPABASE_URL) // debe terminar en /
-        .addConverterFactory(MoshiConverterFactory.create(moshi))
-        .client(client)
-        .build()
-        .create(AuthApi::class.java)
-}
-class CreateAccountActivity : AppCompatActivity() {
+class CreateAccountActivity : AppCompatActivity(), CreateAccountViewPort {
 
     private lateinit var b: ActivityCreateAccountBinding
     private var canProceed: Boolean = false
-    private val authApi: AuthApi by lazy { buildAuthApi() }
-
-    private val DEFAULT_USER_TYPE = "buyer"
+    private lateinit var controller: CreateAccountController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_create_account)
         val root = findViewById<NestedScrollView>(R.id.createAccountRoot)
         b = ActivityCreateAccountBinding.bind(root)
+
+        val createApi = AuthApiFactory.create(SupaConst.SUPABASE_URL, SupaConst.SUPABASE_ANON_KEY, enableLogging = true)
+        val repo = AuthRepository(createApi)
+        controller = CreateAccountController(this, repo)
 
         b.btnBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
         b.btnOutlook.setOnClickListener { /* TODO */ }
@@ -94,50 +50,13 @@ class CreateAccountActivity : AppCompatActivity() {
                 Toast.makeText(this, getString(R.string.complete_the_fields), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            doSignUp()
-        }
-    }
+            val name  = b.etName.text?.toString()?.trim().orEmpty()
+            val email = b.etEmail.text?.toString()?.trim().orEmpty()
+            val pass  = b.etPassword.text?.toString().orEmpty()
+            val accepted = b.cbAccept.isChecked
 
-    private fun doSignUp() {
-        val name  = b.etName.text?.toString()?.trim().orEmpty()
-        val email = b.etEmail.text?.toString()?.trim().orEmpty()
-        val pass  = b.etPassword.text?.toString().orEmpty()
-
-        // feedback UI
-        val oldText = b.btnSignIn.text
-        b.btnSignIn.isEnabled = false
-        b.btnSignIn.text = getString(R.string.creating_account)
-
-        lifecycleScope.launch {
-            try {
-                val body = SignUpBody(
-                    email = email,
-                    password = pass,
-                    data = mapOf(
-                        "name" to name,
-                        "type" to DEFAULT_USER_TYPE,
-                        "id_type" to "id",
-                        "id_number" to ""
-                    )
-                )
-                val res = authApi.signUp(body)
-
-                if (res.isSuccessful) {
-
-                    Toast.makeText(this@CreateAccountActivity, getString(R.string.account_created), Toast.LENGTH_SHORT).show()
-                    startActivity(Intent(this@CreateAccountActivity, StudentCodeActivity::class.java))
-                    finish()
-                } else {
-                    val err = res.errorBody()?.string().orEmpty()
-                    val msg = err.ifBlank { "Sign-up falló (HTTP ${res.code()})" }
-                    Toast.makeText(this@CreateAccountActivity, msg, Toast.LENGTH_LONG).show()
-                }
-            } catch (t: Throwable) {
-                android.util.Log.d("NET", "BASE_URL='${SupaConst.SUPABASE_URL}' length=${SupaConst.SUPABASE_URL.length}")
-                Toast.makeText(this@CreateAccountActivity, "Error: ${t.message}", Toast.LENGTH_LONG).show()
-            } finally {
-                b.btnSignIn.isEnabled = true
-                b.btnSignIn.text = oldText
+            lifecycleScope.launch {
+                controller.onSignUpClicked(name, email, pass, accepted)
             }
         }
     }
@@ -192,6 +111,25 @@ class CreateAccountActivity : AppCompatActivity() {
 
     private fun TextInputLayout.setEndIconVisibleCompat(visible: Boolean) {
         try { isEndIconVisible = visible } catch (_: Throwable) { }
+    }
+
+    override fun setSubmitting(submitting: Boolean) {
+        if (submitting) {
+            b.btnSignIn.isEnabled = false
+            b.btnSignIn.text = getString(R.string.creating_account)
+        } else {
+            b.btnSignIn.isEnabled = true
+            b.btnSignIn.text = getString(R.string.creating_account)
+        }
+    }
+
+    override fun toast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+    }
+
+    override fun navigateToStudentCode() {
+        startActivity(Intent(this, StudentCodeActivity::class.java))
+        finish()
     }
 
     companion object {

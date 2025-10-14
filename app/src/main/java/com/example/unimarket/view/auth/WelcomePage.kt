@@ -16,30 +16,43 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import com.example.unimarket.R
+import com.example.unimarket.controller.auth.WelcomePageController
+import com.example.unimarket.controller.auth.WelcomePageViewPort
 import com.google.android.material.button.MaterialButton
 import kotlin.math.sqrt
 
-class WelcomePage : AppCompatActivity() {
+class WelcomePage : AppCompatActivity(), WelcomePageViewPort {
+
+    private lateinit var controller: WelcomePageController
+    private lateinit var root: ConstraintLayout
+    private lateinit var btnSignUp: MaterialButton
+    private lateinit var tvLogIn: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.welcome_page)
 
-        val root = findViewById<ConstraintLayout>(R.id.root_welcome)
-        val btnSignUp = findViewById<MaterialButton>(R.id.btn_sign_up)
-        val tvLogIn   = findViewById<TextView>(R.id.tv_login_action)
+        root = findViewById(R.id.root_welcome)
+        btnSignUp = findViewById(R.id.btn_sign_up)
+        tvLogIn = findViewById(R.id.tv_login_action)
 
-        btnSignUp.setOnClickListener {
-            startActivity(Intent(this, CreateAccountActivity::class.java))
-        }
-        tvLogIn.setOnClickListener {
-            startActivity(Intent(this, LoginActivity::class.java))
-        }
+        controller = WelcomePageController(this)
 
-        playIntroOverlay(root)
+        btnSignUp.setOnClickListener { controller.onSignUpClicked() }
+        tvLogIn.setOnClickListener { controller.onLoginClicked() }
+
+        controller.onInit()
     }
 
-    private fun playIntroOverlay(root: ConstraintLayout) {
+    override fun navigateToSignUp() {
+        startActivity(Intent(this, CreateAccountActivity::class.java))
+    }
+
+    override fun navigateToLogin() {
+        startActivity(Intent(this, LoginActivity::class.java))
+    }
+
+    override fun playIntroOverlay() {
         val overlay = FrameLayout(this).apply {
             setBackgroundColor(ContextCompat.getColor(this@WelcomePage, R.color.yellowLight))
             isClickable = true

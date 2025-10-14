@@ -7,15 +7,18 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doAfterTextChanged
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.view.platform.ComposeView
+import androidx.compose.ui.platform.ComposeView
 import com.example.unimarket.databinding.ActivityStudentCodeBinding
 
 import com.example.unimarket.view.explore.ExploreBuyerScreen
 import com.example.unimarket.view.home.CourierHomeScreen
+import com.example.unimarket.controller.auth.StudentCodeController
+import com.example.unimarket.controller.auth.StudentCodeViewPort
 
-class StudentCodeActivity : AppCompatActivity() {
+class StudentCodeActivity : AppCompatActivity(), StudentCodeViewPort {
 
     private lateinit var b: ActivityStudentCodeBinding
+    private lateinit var controller: StudentCodeController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,28 +27,34 @@ class StudentCodeActivity : AppCompatActivity() {
 
         setContentView(b.root)
 
-        b.etStudentId.doAfterTextChanged { refreshState() }
-        refreshState()
+        controller = StudentCodeController(this)
+
+         b.etStudentId.doAfterTextChanged { controller.onInputChanged(it?.toString()) }
+        controller.onInputChanged(b.etStudentId.text?.toString())
 
         b.btnGetStarted.setOnClickListener {
             if (!b.btnGetStarted.isEnabled) return@setOnClickListener
 
-            val role = b.etStudentId.text?.toString()?.trim()?.lowercase().orEmpty()
-            when (role) {
-                "buyer" -> showCompose { ExploreBuyerScreen() }
-                "deliver", "courier", "driver" -> showCompose { CourierHomeScreen() }
-                else -> Toast.makeText(
-                    this,
-                    "Escribe buyer o deliver (courier) para continuar.",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+            controller.onGetStartedClicked(b.etStudentId.text?.toString())
         }
     }
 
-    private fun refreshState() {
-        b.btnGetStarted.isEnabled = !b.etStudentId.text?.toString()?.trim().isNullOrEmpty()
+    override fun setProceedEnabled(enabled: Boolean) {
+        b.btnGetStarted.isEnabled = enabled
     }
+
+    override fun showBuyer() {
+        showCompose { ExploreBuyerScreen() }
+    }
+
+    override fun showCourier() {
+        showCompose { CourierHomeScreen() }
+    }
+
+    override fun showMessage(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
     private inline fun showCompose(crossinline content: @Composable () -> Unit) {
         val composeView = ComposeView(this).apply {
             setContent { MaterialTheme { content() } }
