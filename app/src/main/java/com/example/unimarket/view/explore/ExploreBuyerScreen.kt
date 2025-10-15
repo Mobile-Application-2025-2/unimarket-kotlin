@@ -26,12 +26,17 @@ import com.example.unimarket.controller.explore.ExploreBuyerController
 import com.example.unimarket.controller.explore.ExploreBuyerViewPort
 import com.example.unimarket.model.entity.Category
 import com.example.unimarket.model.repository.ExploreRepository
+import androidx.compose.foundation.clickable
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import com.example.unimarket.SupaConst
+import com.example.unimarket.model.api.AuthApiFactory
+import com.example.unimarket.model.api.CategoriesApi
 
 class ExploreBuyerActivity : ComponentActivity(), ExploreBuyerViewPort {
 
     private lateinit var controller: ExploreBuyerController
 
-    // Estado que muestra la vista (Compose)
     private val chipsState = mutableStateListOf<String>()
     private var selectedChip by mutableStateOf(0)
     private val itemsState = mutableStateListOf<Category>()
@@ -41,11 +46,17 @@ class ExploreBuyerActivity : ComponentActivity(), ExploreBuyerViewPort {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // INYECTAR EL REPO (definido en model.repository)
-        val repository: ExploreRepository =
-            TODO("Proveer ExploreRepository real, p.ej. ExploreRepositoryImpl(api)")
+        val repository: ExploreRepository = run {
+            val retrofitRest = AuthApiFactory.buildRestRetrofit(
+                baseUrl = SupaConst.SUPABASE_URL,
+                anonKey = SupaConst.SUPABASE_ANON_KEY,
+                userJwt = null,
+                enableLogging = true
+            )
+            val api = retrofitRest.create(CategoriesApi::class.java)
+            ExploreRepository(api)
+        }
 
-        // CREA EL CONTROLLER (definido en controller.explore)
         controller = ExploreBuyerController(this, repository)
 
         setContent {
@@ -56,7 +67,29 @@ class ExploreBuyerActivity : ComponentActivity(), ExploreBuyerViewPort {
                 loading = loading,
                 error = lastError,
                 onSelectChip = { idx -> selectedChip = idx; controller.onChipSelected(idx) },
-                onRetry = { controller.onRefresh() }
+                onRetry = { controller.onRefresh() },
+                onCategoryClick = { cat ->
+                    val idx = itemsState.indexOfFirst { it.id == cat.id }
+                    if (idx != -1) {
+                        val old = itemsState[idx]
+                        val bumped = old.copy(selectionCount = old.selectionCount + 1L)
+                        itemsState[idx] = bumped
+                        lifecycleScope.launch {
+                            repository.incrementCategorySelection(
+                                categoryId = cat.id,
+                                newCount = bumped.selectionCount
+                            )
+                                .onSuccess { updated ->
+                                    val i = itemsState.indexOfFirst { it.id == updated.id }
+                                    if (i != -1) itemsState[i] = updated
+                                }
+                                .onFailure {
+                                    val i = itemsState.indexOfFirst { it.id == old.id }
+                                    if (i != -1) itemsState[i] = old
+                                }
+                        }
+                    }
+                }
             )
         }
 
@@ -103,7 +136,8 @@ fun ExploreBuyerScreen(
     loading: Boolean,
     error: String?,
     onSelectChip: (Int) -> Unit,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onCategoryClick: (Category) -> Unit
 ) {
     val chipModels = remember(chips) { chips.map { CatChip(it, iconMap[it]) } }
 
@@ -142,7 +176,7 @@ fun ExploreBuyerScreen(
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(error)
+                        Text(error ?: "Error")
                         Spacer(Modifier.height(12.dp))
                         Button(onClick = onRetry) { Text("Reintentar") }
                     }
@@ -162,6 +196,7 @@ fun ExploreBuyerScreen(
                                     modifier = Modifier
                                         .weight(1f)
                                         .height(160.dp)
+                                        .clickable { onCategoryClick(cat) }
                                 )
                             }
                             if (row.size == 1) Spacer(Modifier.weight(1f))
@@ -275,7 +310,7 @@ private fun BuyerBottomBar(current: Int, onClick: (Int) -> Unit) {
 private fun ExploreCard(
     title: String,
     type: String,
-    selectionCount: Int,
+    selectionCount: Long,
     modifier: Modifier = Modifier
 ) {
     val Pastels = listOf(
@@ -300,7 +335,6 @@ private fun ExploreCard(
                 .fillMaxSize()
                 .padding(14.dp)
         ) {
-            // Placeholder visual (sin imágenes del modelo)
             Box(
                 Modifier
                     .size(64.dp)
@@ -308,7 +342,13 @@ private fun ExploreCard(
                     .background(Color.White.copy(alpha = 0.6f))
             )
             Spacer(Modifier.height(12.dp))
-            Text(title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(
+                title,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 15.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
             Spacer(Modifier.height(4.dp))
             Text("Popularidad: $selectionCount", fontSize = 12.sp, color = Color(0xFF5F6368))
         }
@@ -316,3 +356,17 @@ private fun ExploreCard(
 }
 
 private val Int.absoluteValue: Int get() = if (this < 0) -this else this
+
+@Composable
+fun ExploreBuyerScreen() {
+    ExploreBuyerScreen(
+        chips = emptyList(),
+        selectedIndex = 0,
+        items = emptyList(),
+        loading = false,
+        error = null,
+        onSelectChip = {},
+        onRetry = {},
+        onCategoryClick = {}
+    )
+}

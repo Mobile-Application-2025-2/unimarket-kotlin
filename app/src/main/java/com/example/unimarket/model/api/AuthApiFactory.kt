@@ -86,4 +86,33 @@ object AuthApiFactory {
             .build()
             .create(UsersApi::class.java)
     }
+
+    fun buildRestRetrofit(
+        baseUrl: String,
+        anonKey: String,
+        userJwt: String? = null,
+        enableLogging: Boolean = false
+    ): Retrofit {
+        val logging = HttpLoggingInterceptor().apply {
+            level = if (enableLogging) HttpLoggingInterceptor.Level.BODY
+            else HttpLoggingInterceptor.Level.NONE
+        }
+
+        val client = OkHttpClient.Builder()
+            .addInterceptor(SupabaseHeadersInterceptor(anonKey, userJwt))
+            .addInterceptor(logging)
+            .build()
+
+        val moshi = Moshi.Builder()
+            .add(KotlinJsonAdapterFactory())
+            .build()
+
+        val fixedBase = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
+
+        return Retrofit.Builder()
+            .baseUrl(fixedBase)
+            .client(client)
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .build()
+    }
 }

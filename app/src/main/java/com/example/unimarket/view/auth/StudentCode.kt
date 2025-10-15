@@ -29,7 +29,7 @@ class StudentCodeActivity : AppCompatActivity(), StudentCodeViewPort {
 
         controller = StudentCodeController(this)
 
-         b.etStudentId.doAfterTextChanged { controller.onInputChanged(it?.toString()) }
+        b.etStudentId.doAfterTextChanged { controller.onInputChanged(it?.toString()) }
         controller.onInputChanged(b.etStudentId.text?.toString())
 
         b.btnGetStarted.setOnClickListener {
@@ -44,7 +44,7 @@ class StudentCodeActivity : AppCompatActivity(), StudentCodeViewPort {
     }
 
     override fun showBuyer() {
-        /*showCompose { ExploreBuyerScreen() }*/
+        showCompose { ExploreBuyerScreen() }
     }
 
     override fun showCourier() {
