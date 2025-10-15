@@ -43,9 +43,9 @@ class StudentCodeActivity : AppCompatActivity(), StudentCodeViewPort {
         b.btnGetStarted.isEnabled = enabled
     }
 
-    /*override fun showBuyer() {
-        showCompose { ExploreBuyerScreen() }
-    }*/
+    override fun showBuyer() {
+        /*showCompose { ExploreBuyerScreen() }*/
+    }
 
     override fun showCourier() {
         val address = "Calle 26 # 68D-43, Bogotá"
