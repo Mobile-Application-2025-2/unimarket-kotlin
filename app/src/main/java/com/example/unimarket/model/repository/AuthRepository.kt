@@ -1,39 +1,39 @@
 package com.example.unimarket.model.repository
 
+import com.example.unimarket.model.api.LoginAuthApi
+import com.example.unimarket.model.api.SignUpAuthApi
+import com.example.unimarket.model.api.UsersApi
 import com.example.unimarket.model.entity.SignInBody
 import com.example.unimarket.model.entity.SignInResponse
 import com.example.unimarket.model.entity.SignUpBody
-import com.example.unimarket.model.api.SignUpAuthApi
-import com.example.unimarket.model.api.LoginAuthApi
-import com.example.unimarket.model.api.UsersApi
+import com.example.unimarket.model.session.SessionManager
+import retrofit2.Response
 
-class AuthRepository(private val createApi: SignUpAuthApi?, private val loginApi: LoginAuthApi?, private val usersApi: UsersApi?) {
+class AuthRepository(
+    private val signUpApi: SignUpAuthApi? = null,
+    private val loginAuthApi: LoginAuthApi? = null,
+    private val usersApi: UsersApi? = null
+) {
 
-    constructor(createApi: SignUpAuthApi) : this(createApi, null, null)
-    constructor(loginApi: LoginAuthApi, usersApi: UsersApi) : this(null, loginApi, usersApi)
-
-    suspend fun signUp(body: SignUpBody) {
-        val api: SignUpAuthApi = requireNotNull(createApi) { "SignUpAuthApi no configurado (usa el ctor de signup)" }
-        val res = api.signUp(body)
-        if (!res.isSuccessful) {
-            val msg = res.errorBody()?.string().orEmpty()
-            throw IllegalStateException(msg.ifBlank { "Sign-up falló (HTTP ${res.code()})" })
-        }
+    suspend fun signUp(body: SignUpBody): Response<Unit> {
+        val api = requireNotNull(signUpApi) { "SignUpAuthApi no configurado en AuthRepository" }
+        return api.signUp(body)
     }
 
-    suspend fun login(email: String, password: String): SignInResponse {
-        val api = requireNotNull(loginApi) { "LoginAuthApi no configurado" }
-        val res = api.signIn(SignInBody(email, password))
+    suspend fun signIn(email: String, password: String): SignInResponse {
+        val api = requireNotNull(loginAuthApi) { "LoginAuthApi no configurado en AuthRepository" }
+        val res = api.signIn(SignInBody(email = email, password = password))
         if (!res.isSuccessful) {
-            val msg = res.errorBody()?.string().orEmpty()
-            throw IllegalStateException(msg.ifBlank { "Credenciales inválidas (HTTP ${res.code()})" })
+            val msg = res.errorBody()?.string().orEmpty().ifBlank { "Login falló (HTTP ${res.code()})" }
+            throw IllegalStateException(msg)
         }
-        return res.body() ?: throw IllegalStateException("Respuesta vacía del login.")
+        return res.body() ?: throw IllegalStateException("Respuesta vacía en login")
     }
 
-    suspend fun userType(accessToken: String, email: String): String? {
-        val api: UsersApi = requireNotNull(usersApi) { "UsersApi no configurado (usa el ctor de login)" }
-        val r = usersApi.userByEmail(emailEq = "eq.$email", bearer = "Bearer $accessToken")
+    suspend fun userType(email: String): String? {
+        val api = requireNotNull(usersApi) { "UsersApi no configurado en AuthRepository" }
+        val bearer = SessionManager.bearerOrNull() ?: return null
+        val r = api.userByEmail(emailEq = "eq.$email", bearer = bearer)
         if (!r.isSuccessful) return null
         return r.body()?.firstOrNull()?.type?.trim()?.lowercase()
     }

@@ -12,6 +12,7 @@ import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
@@ -23,28 +24,30 @@ import kotlin.math.sqrt
 
 class WelcomePage : AppCompatActivity(), WelcomePageViewPort {
 
-    private lateinit var controller: WelcomePageController
     private lateinit var root: ConstraintLayout
-    private lateinit var btnSignUp: MaterialButton
-    private lateinit var tvLogIn: TextView
+    private lateinit var controller: WelcomePageController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.welcome_page)
 
         root = findViewById(R.id.root_welcome)
-        btnSignUp = findViewById(R.id.btn_sign_up)
-        tvLogIn = findViewById(R.id.tv_login_action)
+        val btnSignUp = findViewById<MaterialButton>(R.id.btn_sign_up)
+        val tvLogIn   = findViewById<TextView>(R.id.tv_login_action)
 
         controller = WelcomePageController(this)
 
-        btnSignUp.setOnClickListener { controller.onSignUpClicked() }
-        tvLogIn.setOnClickListener { controller.onLoginClicked() }
+        btnSignUp.setOnClickListener { controller.onClickSignUp() }
+        tvLogIn.setOnClickListener   { controller.onClickLogin() }
 
         controller.onInit()
     }
 
-    override fun navigateToSignUp() {
+    override fun playIntroOverlay() {
+        playIntroOverlay(root)
+    }
+
+    override fun navigateToCreateAccount() {
         startActivity(Intent(this, CreateAccountActivity::class.java))
     }
 
@@ -52,7 +55,17 @@ class WelcomePage : AppCompatActivity(), WelcomePageViewPort {
         startActivity(Intent(this, LoginActivity::class.java))
     }
 
-    override fun playIntroOverlay() {
+    override fun navigateToBuyer() {
+        startActivity(Intent(this, com.example.unimarket.view.explore.ExploreBuyerActivity::class.java))
+        finish()
+    }
+
+    override fun navigateToCourier() {
+        startActivity(Intent(this, com.example.unimarket.view.home.CourierHomeActivity::class.java))
+        finish()
+    }
+
+    private fun playIntroOverlay(root: ConstraintLayout) {
         val overlay = FrameLayout(this).apply {
             setBackgroundColor(ContextCompat.getColor(this@WelcomePage, R.color.yellowLight))
             isClickable = true

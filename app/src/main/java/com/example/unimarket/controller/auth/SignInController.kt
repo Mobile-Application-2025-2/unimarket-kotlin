@@ -1,7 +1,11 @@
 package com.example.unimarket.controller.auth
 
 import com.example.unimarket.model.repository.AuthRepository
-import com.example.unimarket.model.entity.SignInResponse
+import com.example.unimarket.model.session.SessionManager
+import com.example.unimarket.model.session.UserSession
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 interface SignInViewPort {
     fun setSubmitting(submitting: Boolean)
@@ -10,26 +14,45 @@ interface SignInViewPort {
     fun navigateToCourier()
 }
 
-class SignInController(private val view: SignInViewPort, private val repo: AuthRepository) {
-    suspend fun onSignInClicked(email: String, pass: String) {
+class SignInController(
+    private val view: SignInViewPort,
+    private val repo: AuthRepository,
+    private val uiScope: CoroutineScope = CoroutineScope(Dispatchers.Main)
+) {
+
+    fun onSignInClicked(email: String, password: String) {
         view.setSubmitting(true)
-        try {
-            val res: SignInResponse = repo.login(email, pass)
-            val token = res.access_token
-                ?: throw IllegalStateException("No se recibió token del login.")
+        uiScope.launch {
+            try {
+                val res = repo.signIn(email, password)
+                val token = res.access_token ?: throw IllegalStateException("No se recibió token del login.")
 
-            val metaRole = (res.user?.user_metadata?.get("type") as? String)?.trim()?.lowercase()
-            val role = metaRole ?: repo.userType(token, email)
+                val metaType = (res.user?.user_metadata?.get("type") as? String)?.trim()?.lowercase()
+                val role = metaType ?: repo.userType(email)
 
-            when (role) {
-                "buyer" -> view.navigateToBuyer()
-                "deliver", "delivery", "courier" -> view.navigateToCourier()
-                else -> view.showError("No se encontró el tipo de usuario.")
+                if (role.isNullOrBlank()) {
+                    view.showError("No se encontró el tipo de usuario.")
+                    return@launch
+                }
+
+                SessionManager.setSession(
+                    UserSession(
+                        email = email,
+                        type = role,
+                        accessToken = token
+                    )
+                )
+
+                when (role) {
+                    "buyer" -> view.navigateToBuyer()
+                    "deliver", "delivery", "courier" -> view.navigateToCourier()
+                    else -> view.showError("Tipo de usuario desconocido: $role")
+                }
+            } catch (t: Throwable) {
+                view.showError(t.message ?: "Error al iniciar sesión")
+            } finally {
+                view.setSubmitting(false)
             }
-        } catch (t: Throwable) {
-            view.showError(t.message ?: "Error al iniciar sesión")
-        } finally {
-            view.setSubmitting(false)
         }
     }
 }

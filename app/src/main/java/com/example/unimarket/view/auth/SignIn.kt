@@ -17,35 +17,58 @@ import com.example.unimarket.controller.auth.SignInViewPort
 import com.example.unimarket.model.api.AuthApiFactory
 import com.example.unimarket.model.repository.AuthRepository
 import com.example.unimarket.view.explore.ExploreBuyerActivity
-import com.example.unimarket.view.home.CourierHomeActivity
+//import com.example.unimarket.view.home.CourierHomeActivity
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
-import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity(), SignInViewPort {
 
-    private var passwordVisible = false
     private lateinit var controller: SignInController
+
+    private lateinit var btnBack: ImageButton
+    private lateinit var tvSignUp: TextView
+    private lateinit var btnSignIn: MaterialButton
+
+    private lateinit var tilEmail: TextInputLayout
+    private lateinit var etEmail: TextInputEditText
+    private lateinit var tilPassword: TextInputLayout
+    private lateinit var etPassword: TextInputEditText
+    private lateinit var ivToggle: ImageView
+
+    private var passwordVisible = false
+    private var originalBtnText: CharSequence? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.sign_in)
 
-        val btnBack = findViewById<ImageButton>(R.id.btnBack)
-        val tvSignUp = findViewById<TextView>(R.id.tvSignUp)
-        val btnSignIn = findViewById<MaterialButton>(R.id.btnSignIn)
+        btnBack = findViewById(R.id.btnBack)
+        tvSignUp = findViewById(R.id.tvSignUp)
+        btnSignIn = findViewById(R.id.btnSignIn)
+        tilEmail = findViewById(R.id.tilEmail)
+        etEmail = findViewById(R.id.etEmail)
+        tilPassword = findViewById(R.id.tilPassword)
+        etPassword = findViewById(R.id.etPassword)
+        ivToggle = findViewById(R.id.ivTogglePassword)
 
-        val tilEmail = findViewById<TextInputLayout>(R.id.tilEmail)
-        val etEmail = findViewById<TextInputEditText>(R.id.etEmail)
-        val tilPassword = findViewById<TextInputLayout>(R.id.tilPassword)
-        val etPassword = findViewById<TextInputEditText>(R.id.etPassword)
-        val ivToggle = findViewById<ImageView>(R.id.ivTogglePassword)
+        val loginApi = AuthApiFactory.login(
+            baseUrl = SupaConst.SUPABASE_URL,
+            anonKey = SupaConst.SUPABASE_ANON_KEY,
+            enableLogging = true
+        )
+        val usersApi = AuthApiFactory.getUsers(
+            baseUrl = SupaConst.SUPABASE_URL,
+            anonKey = SupaConst.SUPABASE_ANON_KEY,
+            enableLogging = true
+        )
 
-        val loginApi = AuthApiFactory.login(SupaConst.SUPABASE_URL, SupaConst.SUPABASE_ANON_KEY, enableLogging = true)
-        val usersApi = AuthApiFactory.getUsers(SupaConst.SUPABASE_URL, SupaConst.SUPABASE_ANON_KEY, enableLogging = true)
-        val repo = AuthRepository(loginApi, usersApi)
-        controller = SignInController(this, repo)
+        val repo = AuthRepository(
+            signUpApi = null,
+            loginAuthApi = loginApi,
+            usersApi = usersApi
+        )
+        controller = SignInController(this, repo, lifecycleScope)
 
         val closedFromIv = ivToggle.drawable
         val closedFromTil = tilPassword.endIconDrawable
@@ -81,23 +104,24 @@ class LoginActivity : AppCompatActivity(), SignInViewPort {
         btnSignIn.setOnClickListener {
             val email = etEmail.text?.toString()?.trim()?.lowercase().orEmpty()
             val pass = etPassword.text?.toString().orEmpty()
+
             var ok = true
             if (email.isEmpty()) { tilEmail.error = getString(R.string.error_email_invalid); ok = false } else tilEmail.error = null
-            if (pass.isEmpty()) { tilPassword.error = getString(R.string.error_password_min8); ok = false } else tilPassword.error = null
+            if (pass.isEmpty())  { tilPassword.error = getString(R.string.error_password_min8); ok = false } else tilPassword.error = null
             if (!ok) return@setOnClickListener
 
-            lifecycleScope.launch { controller.onSignInClicked(email, pass) }
+            controller.onSignInClicked(email, pass)
         }
     }
 
     override fun setSubmitting(submitting: Boolean) {
-        val btnSignIn = findViewById<MaterialButton>(R.id.btnSignIn)
         if (submitting) {
+            originalBtnText = btnSignIn.text
             btnSignIn.isEnabled = false
             btnSignIn.text = "Signing in..."
         } else {
             btnSignIn.isEnabled = true
-            btnSignIn.text = getString(R.string.sign_in)
+            btnSignIn.text = originalBtnText ?: getString(R.string.sign_in)
         }
     }
 
@@ -111,7 +135,7 @@ class LoginActivity : AppCompatActivity(), SignInViewPort {
     }
 
     override fun navigateToCourier() {
-        startActivity(Intent(this, CourierHomeActivity::class.java))
+        //startActivity(Intent(this, CourierHomeActivity::class.java))
         finish()
     }
 }

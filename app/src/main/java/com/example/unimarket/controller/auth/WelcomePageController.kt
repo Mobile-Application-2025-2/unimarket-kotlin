@@ -1,21 +1,31 @@
 package com.example.unimarket.controller.auth
 
+import com.example.unimarket.model.session.SessionManager
+
 interface WelcomePageViewPort {
     fun playIntroOverlay()
-    fun navigateToSignUp()
+    fun navigateToCreateAccount()
     fun navigateToLogin()
+    fun navigateToBuyer()
+    fun navigateToCourier()
 }
 
 class WelcomePageController(
     private val view: WelcomePageViewPort
 ) {
     fun onInit() {
-        view.playIntroOverlay()
+        val s = SessionManager.get()
+        if (s != null) {
+            when (s.type.lowercase()) {
+                "buyer" -> view.navigateToBuyer()
+                "deliver", "delivery", "courier" -> view.navigateToCourier()
+                else -> view.playIntroOverlay()
+            }
+        } else {
+            view.playIntroOverlay()
+        }
     }
-    fun onSignUpClicked() {
-        view.navigateToSignUp()
-    }
-    fun onLoginClicked() {
-        view.navigateToLogin()
-    }
+
+    fun onClickSignUp()  = view.navigateToCreateAccount()
+    fun onClickLogin()   = view.navigateToLogin()
 }
