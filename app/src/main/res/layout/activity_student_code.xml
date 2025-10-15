@@ -84,7 +84,12 @@
                     app:boxCornerRadiusTopStart="16dp"
                     app:boxCornerRadiusTopEnd="16dp"
                     app:boxCornerRadiusBottomStart="16dp"
-                    app:boxCornerRadiusBottomEnd="16dp">
+                    app:boxCornerRadiusBottomEnd="16dp"
+
+                    app:endIconMode="custom"
+                    app:endIconDrawable="@android:drawable/ic_menu_camera"
+                    app:endIconContentDescription="Open camera"
+                    app:endIconTint="@color/textGray">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etStudentId"
