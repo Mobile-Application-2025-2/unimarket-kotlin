@@ -1,8 +1,10 @@
 package com.example.unimarket.view.auth
 
+import android.graphics.Bitmap
 import android.os.Bundle
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doAfterTextChanged
 import androidx.compose.material3.MaterialTheme
@@ -20,6 +22,12 @@ class StudentCodeActivity : AppCompatActivity(), StudentCodeViewPort {
     private lateinit var b: ActivityStudentCodeBinding
     private lateinit var controller: StudentCodeController
 
+    private val cameraLauncher = registerForActivityResult(
+        ActivityResultContracts.TakePicturePreview()
+    ) { bitmap: Bitmap? ->
+        controller.onCameraResult(bitmap)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         b = ActivityStudentCodeBinding.inflate(layoutInflater)
@@ -29,13 +37,15 @@ class StudentCodeActivity : AppCompatActivity(), StudentCodeViewPort {
 
         controller = StudentCodeController(this)
 
-         b.etStudentId.doAfterTextChanged { controller.onInputChanged(it?.toString()) }
+        b.etStudentId.doAfterTextChanged { controller.onInputChanged(it?.toString()) }
         controller.onInputChanged(b.etStudentId.text?.toString())
 
         b.btnGetStarted.setOnClickListener {
-            if (!b.btnGetStarted.isEnabled) return@setOnClickListener
-
             controller.onGetStartedClicked(b.etStudentId.text?.toString())
+        }
+
+        b.tilStudentId.setEndIconOnClickListener {
+            controller.onCameraIconClicked()
         }
     }
 
@@ -60,5 +70,9 @@ class StudentCodeActivity : AppCompatActivity(), StudentCodeViewPort {
             setContent { MaterialTheme { content() } }
         }
         setContentView(composeView)
+    }
+
+    override fun openCamera() {
+        cameraLauncher.launch(null)
     }
 }
