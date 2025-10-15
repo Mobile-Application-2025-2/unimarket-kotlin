@@ -17,7 +17,7 @@ import com.example.unimarket.controller.auth.SignInViewPort
 import com.example.unimarket.model.api.AuthApiFactory
 import com.example.unimarket.model.repository.AuthRepository
 import com.example.unimarket.view.explore.ExploreBuyerActivity
-import com.example.unimarket.view.home.CourierHomeActivity
+//import com.example.unimarket.view.home.CourierHomeActivity
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
@@ -52,16 +52,17 @@ class LoginActivity : AppCompatActivity(), SignInViewPort {
         etPassword = findViewById(R.id.etPassword)
         ivToggle = findViewById(R.id.ivTogglePassword)
 
-        val loginApi = AuthApiFactory.createLoginAuthApi(
+        val loginApi = AuthApiFactory.login(
             baseUrl = SupaConst.SUPABASE_URL,
             anonKey = SupaConst.SUPABASE_ANON_KEY,
             enableLogging = true
         )
-        val usersApi = AuthApiFactory.createUsersApi(
+        val usersApi = AuthApiFactory.getUsers(
             baseUrl = SupaConst.SUPABASE_URL,
             anonKey = SupaConst.SUPABASE_ANON_KEY,
             enableLogging = true
         )
+
         val repo = AuthRepository(
             signUpApi = null,
             loginAuthApi = loginApi,
@@ -134,7 +135,7 @@ class LoginActivity : AppCompatActivity(), SignInViewPort {
     }
 
     override fun navigateToCourier() {
-        startActivity(Intent(this, CourierHomeActivity::class.java))
+        //startActivity(Intent(this, CourierHomeActivity::class.java))
         finish()
     }
 }

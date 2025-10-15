@@ -61,7 +61,6 @@ object AuthApiFactory {
             .create(LoginAuthApi::class.java)
     }
 
-    /** REST users table: UsersApi */
     fun getUsers(baseUrl: String, anonKey: String, enableLogging: Boolean = true): UsersApi {
         val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
 
