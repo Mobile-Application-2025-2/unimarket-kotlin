@@ -130,8 +130,9 @@ class LoginActivity : AppCompatActivity(), SignInViewPort {
     }
 
     override fun navigateToBuyer() {
-        startActivity(Intent(this, ExploreBuyerActivity::class.java))
-        finish()
+        val intent = Intent(this, com.example.unimarket.view.explore.ExploreBuyerActivity::class.java)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        startActivity(intent)
     }
 
     override fun navigateToCourier() {

@@ -13,18 +13,8 @@ interface CategoriesApi {
     @GET("rest/v1/categories")
     suspend fun list(
         @Query("select")
-        select: String = "id,name,type,image,created_at,updated_at,selection_count",
-        @Query("order")
-        order: String? = null,
-        @Header("Prefer")
-        prefer: String = "count=estimated"
-    ): Response<List<Category>>
-
-    @PATCH("rest/v1/categories")
-    suspend fun patchCategory(
-        @Query("id") idEq: String,
-        @Body body: Map<String, @JvmSuppressWildcards Any>,
-        @Header("Prefer")
-        prefer: String = "return=representation"
+        select: String = "id,name,type,image,createdAt:created_at,updatedAt:updated_at,selectionCount:selection_count",
+        @Query("order") order: String? = "name.asc",
+        @Header("Prefer") prefer: String = "count=estimated"
     ): Response<List<Category>>
 }

@@ -3,9 +3,10 @@ package com.example.unimarket.view.explore
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -19,94 +20,40 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.lifecycleScope
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.example.unimarket.R
+
+// ==== repo / sesión ====
+import com.example.unimarket.SupaConst
+import com.example.unimarket.model.api.AuthApiFactory
+import com.example.unimarket.model.repository.ExploreRepository
+import com.example.unimarket.model.session.SessionManager
+import com.example.unimarket.model.entity.Category
 import kotlinx.coroutines.launch
 
-import com.example.unimarket.R
-import com.example.unimarket.SupaConst
-import com.example.unimarket.controller.explore.ExploreBuyerController
-import com.example.unimarket.controller.explore.ExploreBuyerViewPort
-import com.example.unimarket.model.api.AuthApiFactory
-import com.example.unimarket.model.api.CategoriesApi
-import com.example.unimarket.model.entity.Category
-import com.example.unimarket.model.repository.ExploreRepository
-
-class ExploreBuyerActivity : ComponentActivity(), ExploreBuyerViewPort {
-
-    private lateinit var controller: ExploreBuyerController
-
-    private val chipsState = mutableStateListOf<String>()
-    private var selectedChip by mutableStateOf(0)
-    private val itemsState = mutableStateListOf<Category>()
-    private var loading by mutableStateOf(false)
-    private var lastError by mutableStateOf<String?>(null)
-
+class ExploreBuyerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val repository: ExploreRepository = run {
-            val retrofitRest = AuthApiFactory.buildRestRetrofit(
-                baseUrl = SupaConst.SUPABASE_URL,
-                anonKey = SupaConst.SUPABASE_ANON_KEY,
-                userJwt = null,                // si ya tienes JWT pásalo aquí
-                enableLogging = true
-            )
-            val api = retrofitRest.create(CategoriesApi::class.java)
-            ExploreRepository(api)
-        }
+        val userJwt = SessionManager.get()?.accessToken
+        val categoriesApi = AuthApiFactory.createCategoriesApi(
+            baseUrl = SupaConst.SUPABASE_URL,
+            anonKey = SupaConst.SUPABASE_ANON_KEY,
+            userJwt = userJwt,
+            enableLogging = true
+        )
+        val repo = ExploreRepository(categoriesApi)
 
-        controller = ExploreBuyerController(this, repository)
-
-        setContent {
-            ExploreBuyerScreen(
-                chips = chipsState,
-                selectedIndex = selectedChip,
-                items = itemsState,
-                loading = loading,
-                error = lastError,
-                onSelectChip = { idx -> selectedChip = idx; controller.onChipSelected(idx) },
-                onRetry = { controller.onRefresh() },
-                onCategoryClick = { cat ->
-                    val idx = itemsState.indexOfFirst { it.id == cat.id }
-                    if (idx != -1) {
-                        val old = itemsState[idx]
-                        val bumped = old.copy(selectionCount = old.selectionCount + 1L) // Long
-                        itemsState[idx] = bumped
-                        lifecycleScope.launch {
-                            repository.incrementCategorySelection(
-                                categoryId = cat.id,
-                                newCount = bumped.selectionCount
-                            )
-                                .onSuccess { updated ->
-                                    val i = itemsState.indexOfFirst { it.id == updated.id }
-                                    if (i != -1) itemsState[i] = updated
-                                }
-                                .onFailure {
-                                    val i = itemsState.indexOfFirst { it.id == old.id }
-                                    if (i != -1) itemsState[i] = old
-                                }
-                        }
-                    }
-                }
-            )
-        }
-
-        controller.onInit()
-    }
-
-    override fun showLoading(show: Boolean) { loading = show }
-    override fun showError(message: String) { lastError = message }
-    override fun renderChips(labels: List<String>) {
-        chipsState.clear(); chipsState.addAll(labels)
-        selectedChip = 0
-    }
-    override fun renderCategories(list: List<Category>) {
-        itemsState.clear(); itemsState.addAll(list)
-        lastError = null
+        setContent { ExploreBuyerScreen(repo) }
     }
 }
 
@@ -120,102 +67,57 @@ private val Pastels = listOf(
     Color(0xFFEAF5FF)
 )
 
-private data class CatChip(val label: String, val icon: ImageVector?)
-private val iconMap = mapOf(
-    "Todos" to Icons.Outlined.AllInbox,
-    "Tutorías" to Icons.Outlined.School,
-    "Comida" to Icons.Outlined.Fastfood,
-    "Emprendimiento" to Icons.Outlined.TrendingUp,
-    "Papelería" to Icons.Outlined.Edit,
-    "Otro" to Icons.Outlined.Category
-)
-
+// —— Modelo de tarjeta (mantiene tu diseño)
 private data class ExploreItem(
     val title: String,
     val type: String,
-    val imageRes: Int,
-    val selectionCount: Int,
+    val imageUrl: String?,            // desde API
+    @DrawableRes val imageRes: Int?,  // placeholder local
+    val selectionCount: Int,          // ¡se rellena desde selection_count o selectionCount!
     val bg: Color,
     val highlighted: Boolean = false
 )
 
-private val demoItems: List<ExploreItem> = listOf(
-    ExploreItem(
-        title = "Tutoría introducción a la programación",
-        type = "Tutorías",
-        imageRes = R.drawable.tutoriasiind2106,
-        selectionCount = 10,
-        bg = Pastels[0],
-        highlighted = true
-    ),
-    ExploreItem(
-        title = "Tutoría Probabilidad y Estadística",
-        type = "Tutorías",
-        imageRes = R.drawable.tutoriasisis1221,
-        selectionCount = 8,
-        bg = Pastels[1],
-        highlighted = true
-    ),
-    ExploreItem(
-        title = "Papelería",
-        type = "Papelería",
-        imageRes = R.drawable.papeleria,
-        selectionCount = 7,
-        bg = Pastels[2]
-    ),
-    ExploreItem(
-        title = "Comida mexicana",
-        type = "Comida",
-        imageRes = R.drawable.tacos,
-        selectionCount = 7,
-        bg = Pastels[5]
-    ),
-    ExploreItem(
-        title = "Brownies",
-        type = "Emprendimiento",
-        imageRes = R.drawable.brownies,
-        selectionCount = 7,
-        bg = Pastels[3]
-    ),
-    ExploreItem(
-        title = "Funkos",
-        type = "Emprendimiento",
-        imageRes = R.drawable.funko,
-        selectionCount = 5,
-        bg = Pastels[2]
-    ),
-    ExploreItem(
-        title = "Comida italiana",
-        type = "Comida",
-        imageRes = R.drawable.pasta,
-        selectionCount = 3,
-        bg = Pastels[4]
-    ),
-    ExploreItem(
-        title = "Batas laboratorio",
-        type = "Otro",
-        imageRes = R.drawable.papeleria, // placeholder
-        selectionCount = 1,
-        bg = Pastels[1]
-    )
+private data class CatChip(val label: String, val icon: ImageVector? = null)
+private val catChips = listOf(
+    CatChip("Todos", Icons.Outlined.AllInbox),
+    CatChip("Tutorías", Icons.Outlined.School),
+    CatChip("Comida", Icons.Outlined.Fastfood),
+    CatChip("Emprendimiento", Icons.Outlined.TrendingUp),
+    CatChip("Papelería", Icons.Outlined.Edit),
+    CatChip("Otro", Icons.Outlined.Category)
 )
 
+/* ===================== UI (sin demo) ===================== */
 @Composable
-fun ExploreBuyerScreen(
-    chips: List<String>,
-    selectedIndex: Int,
-    items: List<Category>,
-    loading: Boolean,
-    error: String?,
-    onSelectChip: (Int) -> Unit,
-    onRetry: () -> Unit,
-    onCategoryClick: (Category) -> Unit
-) {
-    val chipModels = remember(chips) { chips.map { CatChip(it, iconMap[it]) } }
+fun ExploreBuyerScreen(repo: ExploreRepository) {
+    var selectedChip by remember { mutableStateOf(0) }
+    var liveItems by remember { mutableStateOf<List<ExploreItem>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    // Carga inicial desde Supabase
+    LaunchedEffect(Unit) {
+        loadFromRepo(repo) { items, err ->
+            liveItems = items ?: emptyList()
+            error = err
+            isLoading = false
+        }
+    }
+
+    val filtered = remember(liveItems, selectedChip) {
+        val base = if (selectedChip == 0) liveItems
+        else {
+            val label = catChips[selectedChip].label
+            liveItems.filter { it.type.equals(label, ignoreCase = true) }
+        }
+        base.sortedByDescending { it.selectionCount }
+    }
 
     Scaffold(
         topBar = { ExploreTopBar() },
-        bottomBar = { BuyerBottomBar(current = 1, onClick = { }) },
+        bottomBar = { BuyerBottomBar(current = 1) }, // onClick es opcional
         containerColor = Color.White
     ) { inner ->
         Column(
@@ -227,87 +129,129 @@ fun ExploreBuyerScreen(
             SearchBox()
             Spacer(Modifier.height(8.dp))
 
-            if (chips.isNotEmpty()) {
-                CategoryChipsRow(
-                    chips = chipModels,
-                    selectedIndex = selectedIndex,
-                    onSelect = onSelectChip
+            CategoryChipsRow(
+                chips = catChips,
+                selectedIndex = selectedChip,
+                onSelect = { selectedChip = it }
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            if (isLoading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(12.dp))
+            }
+
+            if (!isLoading && error != null) {
+                Text(
+                    text = "Error al cargar categorías: $error",
+                    color = Color(0xFFB00020),
+                    fontSize = 12.sp
                 )
                 Spacer(Modifier.height(8.dp))
             }
 
-            when {
-                loading -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+            if (!isLoading && error == null && liveItems.isEmpty()) {
+                Text(
+                    text = "No hay categorías disponibles.",
+                    color = Color(0xFF6B7280),
+                    fontSize = 14.sp
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+
+            // Grid 2 columnas (igual que tu diseño)
+            val rows = remember(filtered) { filtered.chunked(2) }
+            rows.forEachIndexed { rowIdx, row ->
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    row.forEach { item ->
+                        ExploreCard(
+                            item = item,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(160.dp)
+                        )
                     }
+                    if (row.size == 1) Spacer(Modifier.weight(1f))
                 }
-                error != null -> {
-                    Column(
-                        Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(error ?: "Error")
-                        Spacer(Modifier.height(12.dp))
-                        Button(onClick = onRetry) { Text("Reintentar") }
-                    }
-                }
-                else -> {
-                    if (items.isEmpty()) {
-                        // ===== FALLBACK DEMO =====
-                        val rows = remember(demoItems) { demoItems.chunked(2) }
-                        rows.forEach { row ->
-                            Row(
-                                Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                row.forEach { item ->
-                                    ExploreCard(
-                                        title = item.title,
-                                        type = item.type,
-                                        selectionCount = item.selectionCount.toLong(),
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(160.dp)
-                                        // demo: sin click (no PATCH)
-                                    )
-                                }
-                                if (row.size == 1) Spacer(Modifier.weight(1f))
-                            }
-                            Spacer(Modifier.height(12.dp))
+                if (rowIdx < rows.lastIndex) Spacer(Modifier.height(12.dp))
+            }
+
+            Spacer(Modifier.height(72.dp)) // separador por bottom bar
+
+            // Recargar
+            if (!isLoading) {
+                TextButton(onClick = {
+                    isLoading = true
+                    error = null
+                    scope.launch {
+                        loadFromRepo(repo) { items, err ->
+                            liveItems = items ?: emptyList()
+                            error = err
+                            isLoading = false
                         }
-                        Spacer(Modifier.height(72.dp))
-                    } else {
-                        // ===== LISTA REAL =====
-                        val rows = remember(items) { items.chunked(2) }
-                        rows.forEach { row ->
-                            Row(
-                                Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                row.forEach { cat ->
-                                    ExploreCard(
-                                        title = cat.name,
-                                        type = cat.type,
-                                        selectionCount = cat.selectionCount,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(160.dp)
-                                            .clickable { onCategoryClick(cat) }
-                                    )
-                                }
-                                if (row.size == 1) Spacer(Modifier.weight(1f))
-                            }
-                            Spacer(Modifier.height(12.dp))
-                        }
-                        Spacer(Modifier.height(72.dp))
                     }
-                }
+                }) { Text("Recargar") }
             }
         }
     }
 }
+
+/* =========== Cargar y mapear categorías desde API =========== */
+private suspend fun loadFromRepo(
+    repo: ExploreRepository,
+    onDone: (List<ExploreItem>?, String?) -> Unit
+) {
+    repo.getCategories(order = "selection_count.desc")
+        .onSuccess { cats ->
+            val mapped = cats.mapIndexed { idx, c -> c.toExploreItem(idx) }
+            onDone(mapped, null)
+        }
+        .onFailure { e ->
+            onDone(null, e.message ?: "Error")
+        }
+}
+
+/* ====== Mapper Category -> ExploreItem (lee selection_count o selectionCount) ====== */
+private fun Category.toExploreItem(idx: Int): ExploreItem {
+    val typeHuman = when ((this.type ?: "").lowercase()) {
+        "tutoría_matemáticas", "tutoría_idiomas", "tutorías", "tutorias" -> "Tutorías"
+        "comida_rápida", "comida_casera", "comida" -> "Comida"
+        "venta_funko", "emprendimiento", "venta_varios" -> "Emprendimiento"
+        "copias", "papelería", "papeleria" -> "Papelería"
+        else -> "Otro"
+    }
+
+    val placeholder = when (typeHuman) {
+        "Tutorías" -> R.drawable.tutoriasiind2106
+        "Comida" -> R.drawable.tacos
+        "Emprendimiento" -> R.drawable.funko
+        "Papelería" -> R.drawable.papeleria
+        else -> R.drawable.papeleria
+    }
+
+    // 1) intenta 'selection_count' (snake), 2) intenta 'selectionCount' (camel)
+    val count: Int = runCatching {
+        (this::class.members.firstOrNull { it.name == "selection_count" }?.call(this) as? Number)?.toInt()
+            ?: (this::class.members.firstOrNull { it.name == "selectionCount" }?.call(this) as? Number)?.toInt()
+            ?: 0
+    }.getOrDefault(0)
+
+    return ExploreItem(
+        title = this.name,
+        type = typeHuman,
+        imageUrl = this.image,
+        imageRes = placeholder,
+        selectionCount = count,
+        bg = Pastels[idx % Pastels.size],
+        highlighted = idx < 2
+    )
+}
+
+/* ================== UI components (mismo diseño) ================== */
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -381,7 +325,66 @@ private fun CategoryChipsRow(
 }
 
 @Composable
-private fun BuyerBottomBar(current: Int, onClick: (Int) -> Unit) {
+private fun ExploreCard(item: ExploreItem, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(18.dp),
+        color = item.bg,
+        tonalElevation = 0.dp,
+        shadowElevation = 6.dp,
+        border = if (item.highlighted) BorderStroke(2.dp, Color(0xFF2F80ED)) else null
+    ) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(14.dp)
+        ) {
+            val context = LocalContext.current
+            if (!item.imageUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(item.imageUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = item.title,
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.White.copy(alpha = 0.9f)),
+                    contentScale = ContentScale.Crop,
+                    placeholder = item.imageRes?.let { painterResource(it) },
+                    error = item.imageRes?.let { painterResource(it) }
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = item.imageRes ?: R.drawable.papeleria),
+                    contentDescription = item.title,
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.White.copy(alpha = 0.9f)),
+                    contentScale = ContentScale.Fit
+                )
+            }
+
+            Spacer(Modifier.height(12.dp))
+            Text(
+                item.title,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 15.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(Modifier.height(4.dp))
+        }
+    }
+}
+
+@Composable
+private fun BuyerBottomBar(
+    current: Int,
+    onClick: (Int) -> Unit = {}  // valor por defecto para que el Preview no exija lambda
+) {
     NavigationBar(containerColor = Accent) {
         val items = listOf(
             Icons.Outlined.Storefront to "Inicio",
@@ -405,67 +408,20 @@ private fun BuyerBottomBar(current: Int, onClick: (Int) -> Unit) {
     }
 }
 
+/* Preview sin repo (solo para Android Studio). No afecta runtime. */
+@Preview(showBackground = true, showSystemUi = true, device = "id:pixel_6")
 @Composable
-private fun ExploreCard(
-    title: String,
-    type: String,
-    selectionCount: Long,
-    modifier: Modifier = Modifier
-) {
-    val Pastels = listOf(
-        Color(0xFFFFF1E0),
-        Color(0xFFEFFBF0),
-        Color(0xFFF7EDFF),
-        Color(0xFFFFEFEF),
-        Color(0xFFFFF8D9),
-        Color(0xFFEAF5FF)
-    )
-    val bg = Pastels[(title.hashCode() xor type.hashCode()).absoluteValue % Pastels.size]
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(18.dp),
-        color = bg,
-        tonalElevation = 0.dp,
-        shadowElevation = 6.dp,
-        border = BorderStroke(0.dp, Color.Transparent)
-    ) {
+private fun PreviewExploreBuyer() {
+    Scaffold(topBar = { ExploreTopBar() }, bottomBar = { BuyerBottomBar(1) }) { inner ->
         Column(
             Modifier
                 .fillMaxSize()
-                .padding(14.dp)
+                .padding(inner)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            // Placeholder visual
-            Box(
-                Modifier
-                    .size(64.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.White.copy(alpha = 0.6f))
-            )
-            Spacer(Modifier.height(12.dp))
-            Text(
-                title,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 15.sp,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(Modifier.height(4.dp))
-            Text("Popularidad: $selectionCount", fontSize = 12.sp, color = Color(0xFF5F6368))
+            SearchBox()
+            Spacer(Modifier.height(8.dp))
+            Text("Preview sin datos de API", color = Color(0xFF6B7280))
         }
     }
-}
-
-private val Int.absoluteValue: Int get() = if (this < 0) -this else this
-@Composable
-fun ExploreBuyerScreen() {
-    ExploreBuyerScreen(
-        chips = emptyList(),
-        selectedIndex = 0,
-        items = emptyList(),
-        loading = false,
-        error = null,
-        onSelectChip = {},
-        onRetry = {},
-        onCategoryClick = {}
-    )
 }

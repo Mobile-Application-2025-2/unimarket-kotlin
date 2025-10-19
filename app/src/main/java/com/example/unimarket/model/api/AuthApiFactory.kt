@@ -8,6 +8,8 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 
+import okhttp3.Response
+
 object AuthApiFactory {
 
     fun create(baseUrl: String, anonKey: String, enableLogging: Boolean = true): SignUpAuthApi {
@@ -87,7 +89,7 @@ object AuthApiFactory {
             .create(UsersApi::class.java)
     }
 
-    fun buildRestRetrofit(
+    private fun baseRetrofit(
         baseUrl: String,
         anonKey: String,
         userJwt: String? = null,
@@ -107,12 +109,34 @@ object AuthApiFactory {
             .add(KotlinJsonAdapterFactory())
             .build()
 
-        val fixedBase = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
-
         return Retrofit.Builder()
-            .baseUrl(fixedBase)
+            .baseUrl(if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/")
             .client(client)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
     }
+
+    private class SupabaseHeadersInterceptor(
+        private val anonKey: String,
+        private val userJwt: String?
+    ) : Interceptor {
+        override fun intercept(chain: Interceptor.Chain): Response {
+            val token = userJwt?.takeIf { it.isNotBlank() } ?: anonKey
+            val req = chain.request().newBuilder()
+                .addHeader("apikey", anonKey)
+                .addHeader("Authorization", "Bearer $token")
+                .addHeader("Accept", "application/json")
+                .addHeader("Content-Type", "application/json")
+                .build()
+            return chain.proceed(req)
+        }
+    }
+
+    fun createCategoriesApi(
+        baseUrl: String,
+        anonKey: String,
+        userJwt: String? = null,
+        enableLogging: Boolean = false
+    ): CategoriesApi =
+        baseRetrofit(baseUrl, anonKey, userJwt, enableLogging).create(CategoriesApi::class.java)
 }

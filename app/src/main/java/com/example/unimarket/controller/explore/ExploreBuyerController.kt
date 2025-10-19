@@ -25,7 +25,7 @@ class ExploreBuyerController(
         view.showLoading(true)
         uiScope.launch {
             try {
-                all = repo.fetchAllCategories()
+                //all = repo.fetchAllCategories()
                 val types = all.map { it.type.trim() }.filter { it.isNotEmpty() }.distinct().sorted()
                 chips = listOf("Todos") + types
                 view.renderChips(chips)

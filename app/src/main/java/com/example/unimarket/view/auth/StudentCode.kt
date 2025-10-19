@@ -54,7 +54,12 @@ class StudentCodeActivity : AppCompatActivity(), StudentCodeViewPort {
     }
 
     override fun showBuyer() {
-        showCompose { ExploreBuyerScreen() }
+        startActivity(
+            android.content.Intent(
+                this,
+                com.example.unimarket.view.explore.ExploreBuyerActivity::class.java
+            )
+        )
     }
 
     override fun showCourier() {
