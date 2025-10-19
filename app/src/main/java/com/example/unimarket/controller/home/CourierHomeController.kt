@@ -1,63 +1,97 @@
 package com.example.unimarket.controller.home
 
-import com.example.unimarket.model.geocode.GeocodingRepository
-import com.example.unimarket.model.location.LocationRepository
+import android.content.Context
+import android.util.Log
+import com.example.unimarket.model.repository.CourierHomeRepository
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import kotlinx.coroutines.*
 
+sealed class CameraCommand {
+    data class ZoomTo(val target: LatLng, val zoom: Float) : CameraCommand()
+    data class FitBounds(val bounds: LatLngBounds, val padding: Int) : CameraCommand()
+}
+
 interface CourierHomeViewPort {
     fun setLoading(show: Boolean)
     fun setCourierPosition(pos: LatLng?)
     fun setDestinationPosition(pos: LatLng?)
+    fun setDeliveryAddress(address: String)
     fun applyCamera(cmd: CameraCommand)
     fun showMessage(msg: String)
 }
 
-sealed class CameraCommand {
-    data class FitBounds(val bounds: LatLngBounds, val padding: Int = 120) : CameraCommand()
-    data class ZoomTo(val target: LatLng, val zoom: Float = 16f) : CameraCommand()
-}
-
 class CourierHomeController(
+    private val context: Context,
     private val view: CourierHomeViewPort,
-    private val geocoder: GeocodingRepository,
-    private val locationRepo: LocationRepository,
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Main)
+    private val repo: CourierHomeRepository,
+    private val fusedClient: FusedLocationProviderClient,
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 ) {
-    private var client: FusedLocationProviderClient? = null
+
     private var callback: LocationCallback? = null
 
-    fun onInit(deliveryAddress: String, fusedClient: FusedLocationProviderClient) {
+    fun onStart() {
         view.setLoading(true)
-        client = fusedClient
+        startLocation()
         scope.launch {
-            val dest = geocoder.geocodeOnce(deliveryAddress)
-            view.setDestinationPosition(dest)
+            val addressResult = repo.fetchRandomDeliveryAddress()
+            addressResult.onSuccess { addr ->
+
+
+                Log.d("Courier", "address OK: $addr")
+
+
+                view.setDeliveryAddress(addr)
+                val dest = withContext(Dispatchers.IO) { repo.geocode(addr) }
+                view.setDestinationPosition(dest)
+                centerCamera()
+            }.onFailure { e ->
+
+
+                Log.e("Courier", "address FAIL: ${e.message}", e)
+
+
+                view.showMessage(e.message ?: "Error cargando dirección")
+            }
             view.setLoading(false)
-            dest?.let { view.applyCamera(CameraCommand.ZoomTo(it, 16f)) }
         }
     }
 
-    fun onPermissionsGranted() {
-        val c = client ?: return
-        val req = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2000L)
+    private fun startLocation() {
+        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2000L)
             .setMinUpdateIntervalMillis(1500L)
             .setWaitForAccurateLocation(true)
             .build()
-        val cb = object : LocationCallback() {
+
+        callback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
-                val loc = result.lastLocation ?: return
-                val me = LatLng(loc.latitude, loc.longitude)
-                view.setCourierPosition(me)
+                val last = result.lastLocation ?: return
+                view.setCourierPosition(LatLng(last.latitude, last.longitude))
+                centerCamera()
             }
         }
-        callback = cb
-        locationRepo.start(c, req, cb)
+
+        callback?.let { repo.startLocation(fusedClient, request, it) }
     }
 
-    fun onPositionsChanged(courier: LatLng?, dest: LatLng?) {
+    private var lastCourier: LatLng? = null
+    private var lastDest: LatLng? = null
+
+    fun updateCourier(pos: LatLng?) {
+        lastCourier = pos
+        centerCamera()
+    }
+
+    fun updateDestination(pos: LatLng?) {
+        lastDest = pos
+        centerCamera()
+    }
+
+    private fun centerCamera() {
+        val courier = lastCourier
+        val dest = lastDest
         when {
             courier != null && dest != null -> {
                 val bounds = LatLngBounds.builder().include(courier).include(dest).build()
@@ -69,7 +103,12 @@ class CourierHomeController(
     }
 
     fun onStop() {
-        client?.let { c -> callback?.let { locationRepo.stop(c, it) } }
+        callback?.let { repo.stopLocation(fusedClient, it) }
         callback = null
+        scope.coroutineContext.cancelChildren()
     }
+
+    // Para que la vista le pase back las posiciones y el controller las cachee
+    fun onViewCourierChanged(pos: LatLng?) { lastCourier = pos }
+    fun onViewDestChanged(pos: LatLng?) { lastDest = pos }
 }

@@ -63,8 +63,7 @@ class StudentCodeActivity : AppCompatActivity(), StudentCodeViewPort {
     }
 
     override fun showCourier() {
-        val address = "Calle 26 # 68D-43, Bogotá"
-        showCompose { CourierHomeScreen(deliveryAddress = address) }
+        showCompose { CourierHomeScreen()}
     }
 
     override fun showMessage(message: String) {

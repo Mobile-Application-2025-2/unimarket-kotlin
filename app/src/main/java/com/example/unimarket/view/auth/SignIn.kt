@@ -17,6 +17,7 @@ import com.example.unimarket.controller.auth.SignInViewPort
 import com.example.unimarket.model.api.AuthApiFactory
 import com.example.unimarket.model.repository.AuthRepository
 import com.example.unimarket.view.explore.ExploreBuyerActivity
+import com.example.unimarket.view.home.CourierHomeActivity
 //import com.example.unimarket.view.home.CourierHomeActivity
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
@@ -136,7 +137,7 @@ class LoginActivity : AppCompatActivity(), SignInViewPort {
     }
 
     override fun navigateToCourier() {
-        //startActivity(Intent(this, CourierHomeActivity::class.java))
+        startActivity(Intent(this, CourierHomeActivity::class.java))
         finish()
     }
 }
