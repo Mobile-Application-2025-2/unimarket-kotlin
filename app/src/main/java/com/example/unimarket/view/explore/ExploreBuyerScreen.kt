@@ -31,8 +31,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.unimarket.R
-
-// ==== repo / sesión ====
+import androidx.compose.foundation.clickable
 import com.example.unimarket.SupaConst
 import com.example.unimarket.model.api.AuthApiFactory
 import com.example.unimarket.model.repository.ExploreRepository
@@ -68,6 +67,7 @@ private val Pastels = listOf(
 )
 
 private data class ExploreItem(
+    val id: String,
     val title: String,
     val type: String,
     val imageUrl: String?,
@@ -114,7 +114,7 @@ fun ExploreBuyerScreen(repo: ExploreRepository) {
 
     Scaffold(
         topBar = { ExploreTopBar() },
-        bottomBar = { BuyerBottomBar(current = 1) }, // onClick es opcional
+        bottomBar = { BuyerBottomBar(current = 1) },
         containerColor = Color.White
     ) { inner ->
         Column(
@@ -139,15 +139,6 @@ fun ExploreBuyerScreen(repo: ExploreRepository) {
                 Spacer(Modifier.height(12.dp))
             }
 
-            if (!isLoading && error != null) {
-                Text(
-                    text = "Error al cargar categorías: $error",
-                    color = Color(0xFFB00020),
-                    fontSize = 12.sp
-                )
-                Spacer(Modifier.height(8.dp))
-            }
-
             if (!isLoading && error == null && liveItems.isEmpty()) {
                 Text(
                     text = "No hay categorías disponibles.",
@@ -168,7 +159,21 @@ fun ExploreBuyerScreen(repo: ExploreRepository) {
                             item = item,
                             modifier = Modifier
                                 .weight(1f)
-                                .height(160.dp)
+                                .height(160.dp),
+                            onClick = {
+                                scope.launch {
+                                    val prev = liveItems
+                                    liveItems = liveItems.map {
+                                        if (it.id == item.id) it.copy(selectionCount = it.selectionCount + 1)
+                                        else it
+                                    }
+                                    val res = repo.incrementSelectionCount(item.id, item.selectionCount)
+                                    res.onFailure { e ->
+                                        liveItems = prev
+                                        error = e.message ?: "No se pudo actualizar la categoría."
+                                    }
+                                }
+                            }
                         )
                     }
                     if (row.size == 1) Spacer(Modifier.weight(1f))
@@ -232,6 +237,7 @@ private fun Category.toExploreItem(idx: Int): ExploreItem {
     }.getOrDefault(0)
 
     return ExploreItem(
+        id = this.id,
         title = this.name,
         type = typeHuman,
         imageUrl = this.image,
@@ -315,9 +321,10 @@ private fun CategoryChipsRow(
 }
 
 @Composable
-private fun ExploreCard(item: ExploreItem, modifier: Modifier = Modifier) {
+private fun ExploreCard(item: ExploreItem, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Surface(
-        modifier = modifier,
+        modifier = modifier
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(18.dp),
         color = item.bg,
         tonalElevation = 0.dp,

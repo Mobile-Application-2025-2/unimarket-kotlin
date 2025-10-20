@@ -17,4 +17,11 @@ interface CategoriesApi {
         @Query("order") order: String? = "name.asc",
         @Header("Prefer") prefer: String = "count=estimated"
     ): Response<List<Category>>
+
+    @PATCH("rest/v1/categories")
+    suspend fun patchSelectionCount(
+        @Query("id") idEq: String,
+        @Body body: Map<String, @JvmSuppressWildcards Any>,
+        @Header("Prefer") prefer: String = "return=representation"
+    ): Response<List<Category>>
 }

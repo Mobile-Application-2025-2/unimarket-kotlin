@@ -18,4 +18,13 @@ class ExploreRepository(
             else -> throw e
         }
     }
+
+    suspend fun incrementSelectionCount(id: String, current: Int): Result<Category> = runCatching {
+        val resp = categoriesApi.patchSelectionCount(
+            idEq = "eq.$id",
+            body = mapOf("selection_count" to (current + 1))
+        )
+        if (!resp.isSuccessful) throw HttpException(resp)
+        resp.body()?.firstOrNull() ?: error("Respuesta vacía")
+    }
 }
