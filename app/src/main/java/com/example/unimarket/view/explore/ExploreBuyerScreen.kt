@@ -213,7 +213,6 @@ private suspend fun loadFromRepo(
             onDone(null, e.message ?: "Error")
         }
 }
-
 private fun Category.toExploreItem(idx: Int): ExploreItem {
     val typeHuman = when ((this.type ?: "").lowercase()) {
         "tutoría_matemáticas", "tutoría_idiomas", "tutorías", "tutorias" -> "Tutorías"
