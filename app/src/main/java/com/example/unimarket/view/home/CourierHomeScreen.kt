@@ -40,7 +40,6 @@ fun CourierHomeScreen() {
     val context = LocalContext.current
     val fusedClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
-    // ---- Estados de la vista (NO llama a repos, sólo implementa el ViewPort) ----
     var isLoading by remember { mutableStateOf(false) }
     var courier by remember { mutableStateOf<LatLng?>(null) }
     var dest by remember { mutableStateOf<LatLng?>(null) }
@@ -49,7 +48,6 @@ fun CourierHomeScreen() {
 
     val cameraState = rememberCameraPositionState()
 
-    // Permisos ubicación
     var locationGranted by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
@@ -63,7 +61,6 @@ fun CourierHomeScreen() {
                 (result[Manifest.permission.ACCESS_COARSE_LOCATION] == true)
     }
 
-    // Controller + Repo unificado
     val repo: CourierHomeRepository = remember {
         DefaultCourierHomeRepository(context = context, locationRepo = object : LocationRepository {
             override fun start(client: com.google.android.gms.location.FusedLocationProviderClient, request: com.google.android.gms.location.LocationRequest, callback: com.google.android.gms.location.LocationCallback) {
@@ -96,13 +93,11 @@ fun CourierHomeScreen() {
         )
     }
 
-    // Ciclo de vida de la pantalla
     LaunchedEffect(locationGranted) {
         if (locationGranted) controller.onStart()
     }
     DisposableEffect(Unit) { onDispose { controller.onStop() } }
 
-    // ======= UI =======
     Box(Modifier.fillMaxSize()) {
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
@@ -151,7 +146,6 @@ fun CourierHomeScreen() {
         }
     }
 
-    // Snackbar simple
     snack?.let {
         LaunchedEffect(it) { kotlinx.coroutines.delay(2500); snack = null }
     }
@@ -171,7 +165,6 @@ fun PermissionBanner(text: String, onGrant: () -> Unit, modifier: Modifier = Mod
     }
 }
 
-// --- Componentes UI (mismos que la versión anterior) ---
 @Composable
 private fun VerifyOrderPill(modifier: Modifier = Modifier) {
     Surface(

@@ -2,6 +2,8 @@ package com.example.unimarket.controller.auth
 
 import com.example.unimarket.model.entity.SignUpBody
 import com.example.unimarket.model.repository.AuthRepository
+import com.example.unimarket.model.session.SessionManager
+import com.example.unimarket.model.session.UserSession
 
 interface CreateAccountViewPort {
     fun setSubmitting(submitting: Boolean)
@@ -32,7 +34,20 @@ class CreateAccountController(
                     "id_number" to ""
                 )
             )
-            repo.signUp(body)
+            val res = repo.signUp(body)
+
+            val token = res.access_token ?: throw IllegalStateException("No se recibió token en el registro.")
+            val metaType = (res.user?.user_metadata?.get("type") as? String)?.trim()?.lowercase()
+            val role = metaType ?: DEFAULT_USER_TYPE
+
+            SessionManager.setSession(
+                UserSession(
+                    email = email,
+                    type = role,
+                    accessToken = token
+                )
+            )
+
             view.toast("Cuenta creada")
             view.navigateToStudentCode()
         } catch (t: Throwable) {

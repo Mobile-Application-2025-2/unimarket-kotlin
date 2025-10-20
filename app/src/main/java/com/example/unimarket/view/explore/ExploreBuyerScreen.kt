@@ -67,13 +67,12 @@ private val Pastels = listOf(
     Color(0xFFEAF5FF)
 )
 
-// —— Modelo de tarjeta (mantiene tu diseño)
 private data class ExploreItem(
     val title: String,
     val type: String,
-    val imageUrl: String?,            // desde API
-    @DrawableRes val imageRes: Int?,  // placeholder local
-    val selectionCount: Int,          // ¡se rellena desde selection_count o selectionCount!
+    val imageUrl: String?,
+    @DrawableRes val imageRes: Int?,
+    val selectionCount: Int,
     val bg: Color,
     val highlighted: Boolean = false
 )
@@ -88,7 +87,6 @@ private val catChips = listOf(
     CatChip("Otro", Icons.Outlined.Category)
 )
 
-/* ===================== UI (sin demo) ===================== */
 @Composable
 fun ExploreBuyerScreen(repo: ExploreRepository) {
     var selectedChip by remember { mutableStateOf(0) }
@@ -97,7 +95,6 @@ fun ExploreBuyerScreen(repo: ExploreRepository) {
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
-    // Carga inicial desde Supabase
     LaunchedEffect(Unit) {
         loadFromRepo(repo) { items, err ->
             liveItems = items ?: emptyList()
@@ -160,7 +157,6 @@ fun ExploreBuyerScreen(repo: ExploreRepository) {
                 Spacer(Modifier.height(8.dp))
             }
 
-            // Grid 2 columnas (igual que tu diseño)
             val rows = remember(filtered) { filtered.chunked(2) }
             rows.forEachIndexed { rowIdx, row ->
                 Row(
@@ -180,9 +176,8 @@ fun ExploreBuyerScreen(repo: ExploreRepository) {
                 if (rowIdx < rows.lastIndex) Spacer(Modifier.height(12.dp))
             }
 
-            Spacer(Modifier.height(72.dp)) // separador por bottom bar
+            Spacer(Modifier.height(72.dp))
 
-            // Recargar
             if (!isLoading) {
                 TextButton(onClick = {
                     isLoading = true
@@ -200,7 +195,6 @@ fun ExploreBuyerScreen(repo: ExploreRepository) {
     }
 }
 
-/* =========== Cargar y mapear categorías desde API =========== */
 private suspend fun loadFromRepo(
     repo: ExploreRepository,
     onDone: (List<ExploreItem>?, String?) -> Unit
@@ -215,7 +209,6 @@ private suspend fun loadFromRepo(
         }
 }
 
-/* ====== Mapper Category -> ExploreItem (lee selection_count o selectionCount) ====== */
 private fun Category.toExploreItem(idx: Int): ExploreItem {
     val typeHuman = when ((this.type ?: "").lowercase()) {
         "tutoría_matemáticas", "tutoría_idiomas", "tutorías", "tutorias" -> "Tutorías"
@@ -232,8 +225,6 @@ private fun Category.toExploreItem(idx: Int): ExploreItem {
         "Papelería" -> R.drawable.papeleria
         else -> R.drawable.papeleria
     }
-
-    // 1) intenta 'selection_count' (snake), 2) intenta 'selectionCount' (camel)
     val count: Int = runCatching {
         (this::class.members.firstOrNull { it.name == "selection_count" }?.call(this) as? Number)?.toInt()
             ?: (this::class.members.firstOrNull { it.name == "selectionCount" }?.call(this) as? Number)?.toInt()
@@ -251,7 +242,6 @@ private fun Category.toExploreItem(idx: Int): ExploreItem {
     )
 }
 
-/* ================== UI components (mismo diseño) ================== */
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -383,7 +373,7 @@ private fun ExploreCard(item: ExploreItem, modifier: Modifier = Modifier) {
 @Composable
 private fun BuyerBottomBar(
     current: Int,
-    onClick: (Int) -> Unit = {}  // valor por defecto para que el Preview no exija lambda
+    onClick: (Int) -> Unit = {}
 ) {
     NavigationBar(containerColor = Accent) {
         val items = listOf(
@@ -408,7 +398,6 @@ private fun BuyerBottomBar(
     }
 }
 
-/* Preview sin repo (solo para Android Studio). No afecta runtime. */
 @Preview(showBackground = true, showSystemUi = true, device = "id:pixel_6")
 @Composable
 private fun PreviewExploreBuyer() {

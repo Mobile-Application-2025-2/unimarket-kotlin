@@ -38,21 +38,13 @@ class CourierHomeController(
         scope.launch {
             val addressResult = repo.fetchRandomDeliveryAddress()
             addressResult.onSuccess { addr ->
-
-
                 Log.d("Courier", "address OK: $addr")
-
-
                 view.setDeliveryAddress(addr)
                 val dest = withContext(Dispatchers.IO) { repo.geocode(addr) }
                 view.setDestinationPosition(dest)
                 centerCamera()
             }.onFailure { e ->
-
-
                 Log.e("Courier", "address FAIL: ${e.message}", e)
-
-
                 view.showMessage(e.message ?: "Error cargando dirección")
             }
             view.setLoading(false)
@@ -108,7 +100,6 @@ class CourierHomeController(
         scope.coroutineContext.cancelChildren()
     }
 
-    // Para que la vista le pase back las posiciones y el controller las cachee
     fun onViewCourierChanged(pos: LatLng?) { lastCourier = pos }
     fun onViewDestChanged(pos: LatLng?) { lastDest = pos }
 }
