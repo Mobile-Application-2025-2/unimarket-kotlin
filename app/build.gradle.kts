@@ -37,8 +37,12 @@ android {
 
 dependencies {
     implementation(platform("androidx.compose:compose-bom:2024.06.00"))
-    implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
+    implementation(platform("com.google.firebase:firebase-bom:34.4.0"))
     implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+
     implementation("com.google.android.gms:play-services-location:21.3.0")
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.maps.android:maps-compose:6.1.0")
