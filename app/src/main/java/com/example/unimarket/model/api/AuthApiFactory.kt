@@ -139,4 +139,11 @@ object AuthApiFactory {
         enableLogging: Boolean = false
     ): CategoriesApi =
         baseRetrofit(baseUrl, anonKey, userJwt, enableLogging).create(CategoriesApi::class.java)
+    fun createDeliveriesApi(
+        baseUrl: String,
+        anonKey: String,
+        userJwt: String? = null,
+        enableLogging: Boolean = false
+    ): DeliveriesApi =
+        baseRetrofit(baseUrl, anonKey, userJwt, enableLogging).create(DeliveriesApi::class.java)
 }

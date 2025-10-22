@@ -15,9 +15,14 @@ class AuthRepository(
     private val usersApi: UsersApi? = null
 ) {
 
-    suspend fun signUp(body: SignUpBody): Response<Unit> {
+    suspend fun signUp(body: SignUpBody): SignInResponse {
         val api = requireNotNull(signUpApi) { "SignUpAuthApi no configurado en AuthRepository" }
-        return api.signUp(body)
+        val res = api.signUp(body)
+        if (!res.isSuccessful) {
+            val msg = res.errorBody()?.string().orEmpty().ifBlank { "Sign up falló (HTTP ${res.code()})" }
+            throw IllegalStateException(msg)
+        }
+        return res.body() ?: throw IllegalStateException("Respuesta vacía en sign up")
     }
 
     suspend fun signIn(email: String, password: String): SignInResponse {
