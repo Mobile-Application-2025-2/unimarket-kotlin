@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "1064769007840",
-    "project_id": "unimarket-isis3510-20252",
-    "storage_bucket": "unimarket-isis3510-20252.firebasestorage.app"
+    "project_number": "647263272175",
+    "project_id": "unimarket-cf287",
+    "storage_bucket": "unimarket-cf287.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1064769007840:android:9c74757ed813dddb572085",
+        "mobilesdk_app_id": "1:647263272175:android:801d7177a7abbb8c822f1a",
         "android_client_info": {
           "package_name": "com.example.unimarket"
         }
@@ -15,26 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDom55MFeG-GQVjycZ1L0m9E6SuOqGn1Kg"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:1064769007840:android:f7414d86ab1a3fc8572085",
-        "android_client_info": {
-          "package_name": "com.group43.unimarket"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDom55MFeG-GQVjycZ1L0m9E6SuOqGn1Kg"
+          "current_key": "AIzaSyAWPOx-pBZDije9kaUPeLDvEP8HAFfpLJ4"
         }
       ],
       "services": {

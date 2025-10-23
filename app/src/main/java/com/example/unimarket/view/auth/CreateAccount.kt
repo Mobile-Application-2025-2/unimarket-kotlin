@@ -7,14 +7,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doAfterTextChanged
 import androidx.core.widget.NestedScrollView
 import androidx.lifecycle.lifecycleScope
-import com.example.unimarket.SupaConst
 import com.example.unimarket.R
-import com.example.unimarket.databinding.ActivityCreateAccountBinding
-import com.google.android.material.textfield.TextInputLayout
 import com.example.unimarket.controller.auth.CreateAccountController
 import com.example.unimarket.controller.auth.CreateAccountViewPort
-import com.example.unimarket.model.api.AuthApiFactory
-import com.example.unimarket.model.repository.AuthRepository
+import com.example.unimarket.databinding.ActivityCreateAccountBinding
+import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.launch
 
 class CreateAccountActivity : AppCompatActivity(), CreateAccountViewPort {
@@ -26,16 +23,15 @@ class CreateAccountActivity : AppCompatActivity(), CreateAccountViewPort {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_create_account)
+
         val root = findViewById<NestedScrollView>(R.id.createAccountRoot)
         b = ActivityCreateAccountBinding.bind(root)
 
-        val createApi = AuthApiFactory.create(SupaConst.SUPABASE_URL, SupaConst.SUPABASE_ANON_KEY, enableLogging = true)
-        val repo = AuthRepository(createApi)
-        controller = CreateAccountController(this, repo)
+        controller = CreateAccountController(this)
 
         b.btnBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
-        b.btnOutlook.setOnClickListener { /* TODO */ }
-        b.btnGoogle.setOnClickListener  { /* TODO  */ }
+        b.btnOutlook.setOnClickListener { /* TODO: federated sign-in */ }
+        b.btnGoogle.setOnClickListener  { /* TODO: Google Sign-In */ }
 
         b.etName.doAfterTextChanged     { refreshState() }
         b.etEmail.doAfterTextChanged    { refreshState() }
@@ -50,13 +46,19 @@ class CreateAccountActivity : AppCompatActivity(), CreateAccountViewPort {
                 Toast.makeText(this, getString(R.string.complete_the_fields), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            val name  = b.etName.text?.toString()?.trim().orEmpty()
-            val email = b.etEmail.text?.toString()?.trim().orEmpty()
-            val pass  = b.etPassword.text?.toString().orEmpty()
+            val name     = b.etName.text?.toString()?.trim().orEmpty()
+            val email    = b.etEmail.text?.toString()?.trim().orEmpty()
+            val pass     = b.etPassword.text?.toString().orEmpty()
             val accepted = b.cbAccept.isChecked
 
             lifecycleScope.launch {
-                controller.onSignUpClicked(name, email, pass, accepted)
+                // Firma simple (por defecto type="buyer").
+                controller.onSignUpClicked(
+                    name = name,
+                    email = email,
+                    pass = pass,
+                    accepted = accepted
+                )
             }
         }
     }
@@ -116,7 +118,7 @@ class CreateAccountActivity : AppCompatActivity(), CreateAccountViewPort {
     override fun setSubmitting(submitting: Boolean) {
         if (submitting) {
             b.btnSignIn.isEnabled = false
-            b.btnSignIn.text = getString(R.string.creating_account)
+            b.btnSignIn.text = getString(R.string.creating_account_loading)
         } else {
             b.btnSignIn.isEnabled = true
             b.btnSignIn.text = getString(R.string.creating_account)

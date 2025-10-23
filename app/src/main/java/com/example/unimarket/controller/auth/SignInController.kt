@@ -1,8 +1,7 @@
 package com.example.unimarket.controller.auth
 
-import com.example.unimarket.model.repository.AuthRepository
+import com.example.unimarket.model.domain.service.AuthService
 import com.example.unimarket.model.session.SessionManager
-import com.example.unimarket.model.session.UserSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -16,37 +15,25 @@ interface SignInViewPort {
 
 class SignInController(
     private val view: SignInViewPort,
-    private val repo: AuthRepository,
+    private val auth: AuthService = AuthService(),
     private val uiScope: CoroutineScope = CoroutineScope(Dispatchers.Main)
 ) {
-
     fun onSignInClicked(email: String, password: String) {
         view.setSubmitting(true)
         uiScope.launch {
             try {
-                val res = repo.signIn(email, password)
-                val token = res.access_token ?: throw IllegalStateException("No se recibió token del login.")
+                val res = auth.signIn(email, password)
+                res.onSuccess { user ->
+                    val session = SessionManager.get()
+                    val role = (session?.type ?: user.type).trim().lowercase()
 
-                val metaType = (res.user?.user_metadata?.get("type") as? String)?.trim()?.lowercase()
-                val role = metaType ?: repo.userType(email)
-
-                if (role.isNullOrBlank()) {
-                    view.showError("No se encontró el tipo de usuario.")
-                    return@launch
-                }
-
-                SessionManager.setSession(
-                    UserSession(
-                        email = email,
-                        type = role,
-                        accessToken = token
-                    )
-                )
-
-                when (role) {
-                    "buyer" -> view.navigateToBuyer()
-                    "deliver", "delivery", "courier" -> view.navigateToCourier()
-                    else -> view.showError("Tipo de usuario desconocido: $role")
+                    when (role) {
+                        "buyer" -> view.navigateToBuyer()
+                        "deliver", "delivery", "courier", "business" -> view.navigateToCourier()
+                        else -> view.showError("Tipo de usuario desconocido: $role")
+                    }
+                }.onFailure { e ->
+                    view.showError(e.message ?: "Error al iniciar sesión")
                 }
             } catch (t: Throwable) {
                 view.showError(t.message ?: "Error al iniciar sesión")

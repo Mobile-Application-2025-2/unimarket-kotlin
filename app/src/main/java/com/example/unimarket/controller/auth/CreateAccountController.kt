@@ -1,9 +1,9 @@
 package com.example.unimarket.controller.auth
 
-import com.example.unimarket.model.entity.SignUpBody
-import com.example.unimarket.model.repository.AuthRepository
+import com.example.unimarket.model.domain.entity.Address
+import com.example.unimarket.model.domain.entity.User
+import com.example.unimarket.model.domain.service.AuthService
 import com.example.unimarket.model.session.SessionManager
-import com.example.unimarket.model.session.UserSession
 
 interface CreateAccountViewPort {
     fun setSubmitting(submitting: Boolean)
@@ -13,43 +13,63 @@ interface CreateAccountViewPort {
 
 class CreateAccountController(
     private val view: CreateAccountViewPort,
-    private val repo: AuthRepository
+    private val auth: AuthService = AuthService()
 ) {
-    private val DEFAULT_USER_TYPE = "buyer"
+    private val DEFAULT_USER_TYPE = "buyer" // buyer | business
 
-    suspend fun onSignUpClicked(name: String, email: String, pass: String, accepted: Boolean) {
+    /**
+     * - Si type == "business": businessName es obligatorio (logo / address opcionales).
+     * - Si type == "buyer": buyerAddresses es opcional (puedes pasar vacío).
+     */
+    suspend fun onSignUpClicked(
+        name: String,
+        email: String,
+        pass: String,
+        accepted: Boolean,
+        // Campos user:
+        idType: String = "id",
+        idNumber: String = "",
+        type: String = DEFAULT_USER_TYPE,
+        // Business (opcionales):
+        businessName: String? = null,
+        businessLogo: String? = null,
+        businessAddress: Address? = null,
+        // Buyer (opcional):
+        buyerAddresses: List<Address>? = null
+    ) {
         if (!accepted) {
             view.toast("Debes aceptar la política de privacidad")
             return
         }
+
         view.setSubmitting(true)
         try {
-            val body = SignUpBody(
+            val user = User(
                 email = email,
+                name = name,
+                idType = idType,
+                idNumber = idNumber,
+                type = type.lowercase().trim()
+            )
+
+            val result = auth.signUp(
+                user = user,
                 password = pass,
-                data = mapOf(
-                    "name" to name,
-                    "type" to DEFAULT_USER_TYPE,
-                    "id_type" to "id",
-                    "id_number" to ""
-                )
-            )
-            val res = repo.signUp(body)
-
-            val token = res.access_token ?: throw IllegalStateException("No se recibió token en el registro.")
-            val metaType = (res.user?.user_metadata?.get("type") as? String)?.trim()?.lowercase()
-            val role = metaType ?: DEFAULT_USER_TYPE
-
-            SessionManager.setSession(
-                UserSession(
-                    email = email,
-                    type = role,
-                    accessToken = token
-                )
+                businessName = businessName,
+                businessLogo = businessLogo,
+                businessAddress = businessAddress,
+                buyerAddresses = buyerAddresses
             )
 
-            view.toast("Cuenta creada")
-            view.navigateToStudentCode()
+            result.onSuccess { created ->
+                // En este punto el AuthService ya hizo login y actualizó el SessionManager.
+                val session = SessionManager.get()
+                val role = session?.type ?: created.type
+                view.toast("Cuenta creada (${role})")
+                view.navigateToStudentCode()
+            }.onFailure { e ->
+                view.toast("Error: ${e.message}")
+            }
         } catch (t: Throwable) {
             view.toast("Error: ${t.message}")
         } finally {
