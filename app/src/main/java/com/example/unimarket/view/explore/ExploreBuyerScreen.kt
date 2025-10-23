@@ -7,6 +7,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -31,39 +32,24 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.unimarket.R
-import androidx.compose.foundation.clickable
-import com.example.unimarket.SupaConst
-import com.example.unimarket.model.api.AuthApiFactory
-import com.example.unimarket.model.repository.ExploreRepository
-import com.example.unimarket.model.session.SessionManager
-import com.example.unimarket.model.entity.Category
+import com.example.unimarket.controller.explore.CategoriesController
+import com.example.unimarket.controller.explore.CategoriesViewPort
+import com.example.unimarket.domain.entity.Category
 import kotlinx.coroutines.launch
 
 class ExploreBuyerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val userJwt = SessionManager.get()?.accessToken
-        val categoriesApi = AuthApiFactory.createCategoriesApi(
-            baseUrl = SupaConst.SUPABASE_URL,
-            anonKey = SupaConst.SUPABASE_ANON_KEY,
-            userJwt = userJwt,
-            enableLogging = true
-        )
-        val repo = ExploreRepository(categoriesApi)
-
-        setContent { ExploreBuyerScreen(repo) }
+        // ⬇️ MVC: la vista crea el Controller (que usa Services internamente)
+        val controller = CategoriesController()
+        setContent { ExploreBuyerScreen(controller) }
     }
 }
 
 private val Accent = Color(0xFFF7B500)
 private val Pastels = listOf(
-    Color(0xFFFFF1E0),
-    Color(0xFFEFFBF0),
-    Color(0xFFF7EDFF),
-    Color(0xFFFFEFEF),
-    Color(0xFFFFF8D9),
-    Color(0xFFEAF5FF)
+    Color(0xFFFFF1E0), Color(0xFFEFFBF0), Color(0xFFF7EDFF),
+    Color(0xFFFFEFEF), Color(0xFFFFF8D9), Color(0xFFEAF5FF)
 )
 
 private data class ExploreItem(
@@ -88,24 +74,37 @@ private val catChips = listOf(
 )
 
 @Composable
-fun ExploreBuyerScreen(repo: ExploreRepository) {
+fun ExploreBuyerScreen(controller: CategoriesController) {
+    // --- State de la vista
     var selectedChip by remember { mutableStateOf(0) }
     var liveItems by remember { mutableStateOf<List<ExploreItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
-        loadFromRepo(repo) { items, err ->
-            liveItems = items ?: emptyList()
-            error = err
-            isLoading = false
+    // --- ViewPort (la vista) que el controller va a “pintar”
+    val viewPort = remember {
+        object : CategoriesViewPort {
+            override fun setLoading(loading: Boolean) { isLoading = loading }
+            override fun showCategories(items: List<Category>) {
+                error = null
+                liveItems = items.mapIndexed { idx, c -> c.toExploreItem(idx) }
+            }
+            override fun showError(message: String) { error = message }
         }
     }
 
+    // --- Ciclo de vida MVC: attach/detach del ViewPort al Controller
+    DisposableEffect(controller) {
+        controller.attach(viewPort)
+        onDispose { controller.detach() }
+    }
+
+    // --- Cargar categorías al entrar
+    LaunchedEffect(Unit) { controller.loadAll() }
+
     val filtered = remember(liveItems, selectedChip) {
-        val base = if (selectedChip == 0) liveItems
-        else {
+        val base = if (selectedChip == 0) liveItems else {
             val label = catChips[selectedChip].label
             liveItems.filter { it.type.equals(label, ignoreCase = true) }
         }
@@ -135,43 +134,26 @@ fun ExploreBuyerScreen(repo: ExploreRepository) {
             Spacer(Modifier.height(8.dp))
 
             if (isLoading) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                LinearProgressIndicator(Modifier.fillMaxWidth())
                 Spacer(Modifier.height(12.dp))
             }
 
             if (!isLoading && error == null && liveItems.isEmpty()) {
-                Text(
-                    text = "No hay categorías disponibles.",
-                    color = Color(0xFF6B7280),
-                    fontSize = 14.sp
-                )
+                Text("No hay categorías disponibles.", color = Color(0xFF6B7280), fontSize = 14.sp)
                 Spacer(Modifier.height(8.dp))
             }
 
             val rows = remember(filtered) { filtered.chunked(2) }
             rows.forEachIndexed { rowIdx, row ->
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     row.forEach { item ->
                         ExploreCard(
                             item = item,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(160.dp),
+                            modifier = Modifier.weight(1f).height(160.dp),
                             onClick = {
-                                scope.launch {
-                                    val prev = liveItems
-                                    liveItems = liveItems.map {
-                                        if (it.id == item.id) it.copy(selectionCount = it.selectionCount + 1)
-                                        else it
-                                    }
-                                    val res = repo.incrementSelectionCount(item.id, item.selectionCount)
-                                    res.onFailure { e ->
-                                        liveItems = prev
-                                        error = e.message ?: "No se pudo actualizar la categoría."
-                                    }
+                                // Solo efecto local (buyer no escribe categorías)
+                                liveItems = liveItems.map {
+                                    if (it.id == item.id) it.copy(selectionCount = it.selectionCount + 1) else it
                                 }
                             }
                         )
@@ -184,37 +166,20 @@ fun ExploreBuyerScreen(repo: ExploreRepository) {
             Spacer(Modifier.height(72.dp))
 
             if (!isLoading) {
-                TextButton(onClick = {
-                    isLoading = true
-                    error = null
-                    scope.launch {
-                        loadFromRepo(repo) { items, err ->
-                            liveItems = items ?: emptyList()
-                            error = err
-                            isLoading = false
-                        }
-                    }
-                }) { Text("Recargar") }
+                TextButton(onClick = { scope.launch { controller.loadAll() } }) { Text("Recargar") }
+            }
+
+            if (error != null) {
+                Spacer(Modifier.height(8.dp))
+                Text(error!!, color = Color(0xFFD32F2F), fontSize = 13.sp)
             }
         }
     }
 }
 
-private suspend fun loadFromRepo(
-    repo: ExploreRepository,
-    onDone: (List<ExploreItem>?, String?) -> Unit
-) {
-    repo.getCategories(order = "selection_count.desc")
-        .onSuccess { cats ->
-            val mapped = cats.mapIndexed { idx, c -> c.toExploreItem(idx) }
-            onDone(mapped, null)
-        }
-        .onFailure { e ->
-            onDone(null, e.message ?: "Error")
-        }
-}
+// ---- Mapeo Domain -> UI (sin cambiar tu look&feel)
 private fun Category.toExploreItem(idx: Int): ExploreItem {
-    val typeHuman = when ((this.type ?: "").lowercase()) {
+    val typeHuman = when (this.type.lowercase()) {
         "tutoría_matemáticas", "tutoría_idiomas", "tutorías", "tutorias" -> "Tutorías"
         "comida_rápida", "comida_casera", "comida" -> "Comida"
         "venta_funko", "emprendimiento", "venta_varios" -> "Emprendimiento"
@@ -229,11 +194,8 @@ private fun Category.toExploreItem(idx: Int): ExploreItem {
         "Papelería" -> R.drawable.papeleria
         else -> R.drawable.papeleria
     }
-    val count: Int = runCatching {
-        (this::class.members.firstOrNull { it.name == "selection_count" }?.call(this) as? Number)?.toInt()
-            ?: (this::class.members.firstOrNull { it.name == "selectionCount" }?.call(this) as? Number)?.toInt()
-            ?: 0
-    }.getOrDefault(0)
+
+    val countSafe = try { this.count.toInt() } catch (_: Throwable) { 0 }
 
     return ExploreItem(
         id = this.id,
@@ -241,16 +203,14 @@ private fun Category.toExploreItem(idx: Int): ExploreItem {
         type = typeHuman,
         imageUrl = this.image,
         imageRes = placeholder,
-        selectionCount = count,
+        selectionCount = countSafe,
         bg = Pastels[idx % Pastels.size],
         highlighted = idx < 2
     )
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ExploreTopBar() {
+@Composable private fun ExploreTopBar() {
     TopAppBar(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -265,16 +225,13 @@ private fun ExploreTopBar() {
     )
 }
 
-@Composable
-private fun SearchBox() {
+@Composable private fun SearchBox() {
     TextField(
         value = "",
         onValueChange = {},
         placeholder = { Text("Buscar en UniMarket") },
         leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp),
+        modifier = Modifier.fillMaxWidth().height(52.dp),
         readOnly = true,
         shape = RoundedCornerShape(26.dp),
         colors = TextFieldDefaults.colors(
@@ -303,9 +260,7 @@ private fun CategoryChipsRow(
                 selected = i == selectedIndex,
                 onClick = { onSelect(i) },
                 label = { Text(c.label, fontWeight = FontWeight.SemiBold) },
-                leadingIcon = c.icon?.let {
-                    { Icon(it, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                },
+                leadingIcon = c.icon?.let { { Icon(it, null, Modifier.size(18.dp)) } },
                 shape = RoundedCornerShape(18.dp),
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = Accent,
@@ -322,8 +277,7 @@ private fun CategoryChipsRow(
 @Composable
 private fun ExploreCard(item: ExploreItem, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Surface(
-        modifier = modifier
-            .clickable(onClick = onClick),
+        modifier = modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(18.dp),
         color = item.bg,
         tonalElevation = 0.dp,
@@ -331,22 +285,14 @@ private fun ExploreCard(item: ExploreItem, modifier: Modifier = Modifier, onClic
         border = if (item.highlighted) BorderStroke(2.dp, Color(0xFF2F80ED)) else null
     ) {
         Column(
-            Modifier
-                .fillMaxSize()
-                .padding(14.dp)
+            Modifier.fillMaxSize().padding(14.dp)
         ) {
             val context = LocalContext.current
             if (!item.imageUrl.isNullOrBlank()) {
                 AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(item.imageUrl)
-                        .crossfade(true)
-                        .build(),
+                    model = ImageRequest.Builder(context).data(item.imageUrl).crossfade(true).build(),
                     contentDescription = item.title,
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.White.copy(alpha = 0.9f)),
+                    modifier = Modifier.size(64.dp).clip(RoundedCornerShape(12.dp)).background(Color.White.copy(alpha = 0.9f)),
                     contentScale = ContentScale.Crop,
                     placeholder = item.imageRes?.let { painterResource(it) },
                     error = item.imageRes?.let { painterResource(it) }
@@ -355,10 +301,7 @@ private fun ExploreCard(item: ExploreItem, modifier: Modifier = Modifier, onClic
                 Image(
                     painter = painterResource(id = item.imageRes ?: R.drawable.papeleria),
                     contentDescription = item.title,
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.White.copy(alpha = 0.9f)),
+                    modifier = Modifier.size(64.dp).clip(RoundedCornerShape(12.dp)).background(Color.White.copy(alpha = 0.9f)),
                     contentScale = ContentScale.Fit
                 )
             }
@@ -377,10 +320,7 @@ private fun ExploreCard(item: ExploreItem, modifier: Modifier = Modifier, onClic
 }
 
 @Composable
-private fun BuyerBottomBar(
-    current: Int,
-    onClick: (Int) -> Unit = {}
-) {
+private fun BuyerBottomBar(current: Int, onClick: (Int) -> Unit = {}) {
     NavigationBar(containerColor = Accent) {
         val items = listOf(
             Icons.Outlined.Storefront to "Inicio",
@@ -392,7 +332,7 @@ private fun BuyerBottomBar(
             NavigationBarItem(
                 selected = idx == current,
                 onClick = { onClick(idx) },
-                icon = { Icon(icon, contentDescription = null) },
+                icon = { Icon(icon, null) },
                 label = null,
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = Color.White,
@@ -409,14 +349,11 @@ private fun BuyerBottomBar(
 private fun PreviewExploreBuyer() {
     Scaffold(topBar = { ExploreTopBar() }, bottomBar = { BuyerBottomBar(1) }) { inner ->
         Column(
-            Modifier
-                .fillMaxSize()
-                .padding(inner)
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+            Modifier.fillMaxSize().padding(inner).padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             SearchBox()
             Spacer(Modifier.height(8.dp))
-            Text("Preview sin datos de API", color = Color(0xFF6B7280))
+            Text("Preview sin datos", color = Color(0xFF6B7280))
         }
     }
 }
