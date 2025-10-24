@@ -15,7 +15,7 @@ class CartService(
         requireNotBlank(productId, "productId")
         val uid = FirebaseAuthProvider.auth.currentUser?.uid ?: error("Not authenticated")
         val product = productsDao.getById(productId) ?: error("Product not found")
-        val price = parsePriceToDouble(product.price)
+        val price: Double = product.price
         buyersDao.addToCart(uid, productId, price)
     }
 
@@ -24,7 +24,7 @@ class CartService(
         requireNotBlank(productId, "productId")
         val uid = FirebaseAuthProvider.auth.currentUser?.uid ?: error("Not authenticated")
         val product = productsDao.getById(productId) ?: error("Product not found")
-        val price = parsePriceToDouble(product.price)
+        val price: Double = product.price
         buyersDao.removeFromCart(uid, productId, price)
     }
 

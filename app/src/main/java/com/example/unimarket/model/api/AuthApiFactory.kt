@@ -1,5 +1,5 @@
 package com.example.unimarket.model.api
-
+/*
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -146,4 +146,4 @@ object AuthApiFactory {
         enableLogging: Boolean = false
     ): DeliveriesApi =
         baseRetrofit(baseUrl, anonKey, userJwt, enableLogging).create(DeliveriesApi::class.java)
-}
+}*/

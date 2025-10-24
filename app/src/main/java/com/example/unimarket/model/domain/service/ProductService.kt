@@ -19,7 +19,7 @@ class ProductService(
     suspend fun createProduct(p: Product): Result<String> = runCatching {
         requireNotBlank(p.name, "name")
         requireNotBlank(p.category, "category")
-        requireNotBlank(p.price, "price")
+        require(p.price >= 0.0) { "price must be >= 0" }
 
         val uid = FirebaseAuthProvider.auth.currentUser?.uid ?: error("Not authenticated")
         val businessUid = p.business.ifBlank { uid }

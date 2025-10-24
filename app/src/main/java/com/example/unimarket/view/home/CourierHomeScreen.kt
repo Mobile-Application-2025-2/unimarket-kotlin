@@ -1,5 +1,5 @@
 package com.example.unimarket.view.home
-
+/*
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Looper
@@ -268,4 +268,4 @@ private fun DeliveryInfoCard(address: String, eta: String, modifier: Modifier = 
         }
     }
 
-}
+}*/

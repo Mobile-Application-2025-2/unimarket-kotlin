@@ -105,7 +105,7 @@ class LoginActivity : AppCompatActivity(), SignInViewPort {
         if (submitting) {
             originalBtnText = btnSignIn.text
             btnSignIn.isEnabled = false
-            btnSignIn.text = getString(R.string.signing_in_loading)
+            btnSignIn.text = getString(R.string.signing_in)
         } else {
             btnSignIn.isEnabled = true
             btnSignIn.text = originalBtnText ?: getString(R.string.sign_in)

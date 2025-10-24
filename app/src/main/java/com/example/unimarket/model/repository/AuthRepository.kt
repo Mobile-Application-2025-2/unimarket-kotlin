@@ -1,5 +1,5 @@
 package com.example.unimarket.model.repository
-
+/*
 import com.example.unimarket.model.api.LoginAuthApi
 import com.example.unimarket.model.api.SignUpAuthApi
 import com.example.unimarket.model.api.UsersApi
@@ -42,4 +42,4 @@ class AuthRepository(
         if (!r.isSuccessful) return null
         return r.body()?.firstOrNull()?.type?.trim()?.lowercase()
     }
-}
+}*/

@@ -14,7 +14,7 @@ class CourierHomeActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 Surface {
-                    CourierHomeScreen()
+                    //CourierHomeScreen()
                 }
             }
         }

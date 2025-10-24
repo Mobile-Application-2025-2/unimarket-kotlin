@@ -118,7 +118,7 @@ class CreateAccountActivity : AppCompatActivity(), CreateAccountViewPort {
     override fun setSubmitting(submitting: Boolean) {
         if (submitting) {
             b.btnSignIn.isEnabled = false
-            b.btnSignIn.text = getString(R.string.creating_account_loading)
+            b.btnSignIn.text = getString(R.string.creating_account)
         } else {
             b.btnSignIn.isEnabled = true
             b.btnSignIn.text = getString(R.string.creating_account)

@@ -13,8 +13,14 @@ class AuthDao {
     suspend fun signUp(user: User, password: String): Result<User> = runCatching {
         val res: AuthResult = auth.createUserWithEmailAndPassword(user.email, password).await()
         val uid = res.user?.uid ?: error("No UID from FirebaseAuth")
-        val toSave = user.copy().also { it.id = "" } // evitamos escribir id
-        usersCol.document(uid).set(toSave).await()
+        val data = mapOf(
+            "email" to user.email,
+            "name" to user.name,
+            "idType" to user.idType,
+            "idNumber" to user.idNumber,
+            "type" to user.type.lowercase()
+        )
+        usersCol.document(uid).set(data).await()
         user.copy(id = uid)
     }
 

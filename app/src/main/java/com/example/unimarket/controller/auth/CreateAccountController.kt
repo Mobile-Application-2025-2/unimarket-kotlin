@@ -16,6 +16,8 @@ class CreateAccountController(
     private val auth: AuthService = AuthService()
 ) {
     private val DEFAULT_USER_TYPE = "buyer" // buyer | business
+    private val DEFAULT_ID_TYPE = "id"
+    private val DEFAULT_ID_NUMBER = "N/A"
 
     /**
      * - Si type == "business": businessName es obligatorio (logo / address opcionales).
@@ -27,8 +29,8 @@ class CreateAccountController(
         pass: String,
         accepted: Boolean,
         // Campos user:
-        idType: String = "id",
-        idNumber: String = "",
+        idType: String = DEFAULT_ID_TYPE,
+        idNumber: String = DEFAULT_ID_NUMBER,
         type: String = DEFAULT_USER_TYPE,
         // Business (opcionales):
         businessName: String? = null,

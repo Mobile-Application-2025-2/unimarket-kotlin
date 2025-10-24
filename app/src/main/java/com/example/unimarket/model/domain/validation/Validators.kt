@@ -9,10 +9,13 @@ object Validators {
         require(email.contains("@") && email.contains(".")) { "invalid email" }
     }
 
-    fun parsePriceToDouble(raw: String): Double {
-        val cleaned = raw.replace("[^0-9.,]".toRegex(), "")
-            .replace(".", "")      // quita separadores de miles
-            .replace(",", ".")     // usa punto decimal
-        return cleaned.toDoubleOrNull() ?: error("Invalid price format: $raw")
+    fun parsePriceToDouble(raw: Any): Double = when (raw) {
+        is Number -> raw.toDouble()
+        is String -> raw
+            .replace("[^\\d.,]".toRegex(), "")
+            .replace(".", "")
+            .replace(",", ".")
+            .toDoubleOrNull() ?: error("Invalid price: $raw")
+        else -> error("Unsupported price type")
     }
 }

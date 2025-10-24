@@ -13,7 +13,7 @@ import androidx.compose.ui.platform.ComposeView
 import com.example.unimarket.databinding.ActivityStudentCodeBinding
 
 import com.example.unimarket.view.explore.ExploreBuyerScreen
-import com.example.unimarket.view.home.CourierHomeScreen
+//import com.example.unimarket.view.home.CourierHomeScreen
 import com.example.unimarket.controller.auth.StudentCodeController
 import com.example.unimarket.controller.auth.StudentCodeViewPort
 
@@ -63,7 +63,7 @@ class StudentCodeActivity : AppCompatActivity(), StudentCodeViewPort {
     }
 
     override fun showCourier() {
-        showCompose { CourierHomeScreen()}
+        //showCompose { CourierHomeScreen()}
     }
 
     override fun showMessage(message: String) {

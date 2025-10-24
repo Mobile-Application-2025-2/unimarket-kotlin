@@ -1,5 +1,5 @@
 package com.example.unimarket.controller.home
-
+/*
 import android.content.Context
 import android.util.Log
 import com.example.unimarket.model.repository.CourierHomeRepository
@@ -102,4 +102,4 @@ class CourierHomeController(
 
     fun onViewCourierChanged(pos: LatLng?) { lastCourier = pos }
     fun onViewDestChanged(pos: LatLng?) { lastDest = pos }
-}
+}*/

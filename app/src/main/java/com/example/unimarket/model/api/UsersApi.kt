@@ -1,5 +1,5 @@
 package com.example.unimarket.model.api
-
+/*
 import com.example.unimarket.model.entity.UserRow
 import retrofit2.Response
 import retrofit2.http.GET
@@ -15,3 +15,4 @@ interface UsersApi {
         @Header("Range") range: String = "0-0"
     ): Response<List<UserRow>>
 }
+*/

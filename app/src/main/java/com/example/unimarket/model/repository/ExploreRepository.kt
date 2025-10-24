@@ -1,5 +1,5 @@
 package com.example.unimarket.model.repository
-
+/*
 import android.util.Log
 import com.example.unimarket.model.api.CategoriesApi
 import com.example.unimarket.model.entity.Category
@@ -139,4 +139,4 @@ class ExploreRepository(
 
         return null
     }
-}
+}*/

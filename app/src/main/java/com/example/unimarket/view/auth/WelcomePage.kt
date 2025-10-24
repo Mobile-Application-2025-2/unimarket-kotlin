@@ -22,6 +22,10 @@ import com.example.unimarket.controller.auth.WelcomePageViewPort
 import com.google.android.material.button.MaterialButton
 import kotlin.math.sqrt
 
+import android.util.Log
+import com.google.firebase.FirebaseApp
+import com.google.firebase.firestore.FirebaseFirestore
+
 class WelcomePage : AppCompatActivity(), WelcomePageViewPort {
 
     private lateinit var root: ConstraintLayout
@@ -29,6 +33,17 @@ class WelcomePage : AppCompatActivity(), WelcomePageViewPort {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        FirebaseFirestore.setLoggingEnabled(true)
+
+        val app = FirebaseApp.getInstance()
+        val opts = app.options
+        Log.e("FIREBASE_APP", "projectId=${opts.projectId}, applicationId=${opts.applicationId}, storageBucket=${opts.storageBucket}")
+
+        val db = FirebaseFirestore.getInstance()
+        val settings = db.firestoreSettings
+        Log.e("FIRESTORE", "host=${settings.host}, persistence=${settings.isPersistenceEnabled}")
+
         setContentView(R.layout.welcome_page)
 
         root = findViewById(R.id.root_welcome)

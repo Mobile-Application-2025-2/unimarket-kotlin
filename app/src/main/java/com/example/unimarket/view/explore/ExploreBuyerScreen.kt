@@ -34,17 +34,18 @@ import coil.request.ImageRequest
 import com.example.unimarket.R
 import com.example.unimarket.controller.explore.CategoriesController
 import com.example.unimarket.controller.explore.CategoriesViewPort
-import com.example.unimarket.domain.entity.Category
+import com.example.unimarket.model.domain.entity.Category
 import kotlinx.coroutines.launch
 
 class ExploreBuyerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // ⬇️ MVC: la vista crea el Controller (que usa Services internamente)
-        val controller = CategoriesController()
-        setContent { ExploreBuyerScreen(controller) }
+        // La vista crea su controller dentro del Composable vía ViewPort (MVC)
+        setContent { ExploreBuyerScreen() }
     }
 }
+
+/* ---------- UI constants ---------- */
 
 private val Accent = Color(0xFFF7B500)
 private val Pastels = listOf(
@@ -55,8 +56,8 @@ private val Pastels = listOf(
 private data class ExploreItem(
     val id: String,
     val title: String,
-    val type: String,
-    val imageUrl: String?,
+    val type: String,            // Etiqueta visual (“Comida”, “Tutorías”, etc.)
+    val imageUrl: String?,       // Siempre null por ahora (no hay image en Category)
     @DrawableRes val imageRes: Int?,
     val selectionCount: Int,
     val bg: Color,
@@ -73,16 +74,18 @@ private val catChips = listOf(
     CatChip("Otro", Icons.Outlined.Category)
 )
 
+/* ---------- Screen ---------- */
+
 @Composable
-fun ExploreBuyerScreen(controller: CategoriesController) {
-    // --- State de la vista
+fun ExploreBuyerScreen() {
+    // Estado de UI
     var selectedChip by remember { mutableStateOf(0) }
     var liveItems by remember { mutableStateOf<List<ExploreItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
-    // --- ViewPort (la vista) que el controller va a “pintar”
+    // ViewPort que el Controller usará para “pintar” la pantalla
     val viewPort = remember {
         object : CategoriesViewPort {
             override fun setLoading(loading: Boolean) { isLoading = loading }
@@ -94,13 +97,10 @@ fun ExploreBuyerScreen(controller: CategoriesController) {
         }
     }
 
-    // --- Ciclo de vida MVC: attach/detach del ViewPort al Controller
-    DisposableEffect(controller) {
-        controller.attach(viewPort)
-        onDispose { controller.detach() }
-    }
+    // Controller (recibe el view por constructor)
+    val controller = remember { CategoriesController(viewPort) }
 
-    // --- Cargar categorías al entrar
+    // Carga inicial
     LaunchedEffect(Unit) { controller.loadAll() }
 
     val filtered = remember(liveItems, selectedChip) {
@@ -145,15 +145,21 @@ fun ExploreBuyerScreen(controller: CategoriesController) {
 
             val rows = remember(filtered) { filtered.chunked(2) }
             rows.forEachIndexed { rowIdx, row ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     row.forEach { item ->
                         ExploreCard(
                             item = item,
-                            modifier = Modifier.weight(1f).height(160.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(160.dp),
                             onClick = {
-                                // Solo efecto local (buyer no escribe categorías)
+                                // Efecto local de UI (buyer no actualiza categorías en Firestore)
                                 liveItems = liveItems.map {
-                                    if (it.id == item.id) it.copy(selectionCount = it.selectionCount + 1) else it
+                                    if (it.id == item.id) it.copy(selectionCount = it.selectionCount + 1)
+                                    else it
                                 }
                             }
                         )
@@ -166,7 +172,9 @@ fun ExploreBuyerScreen(controller: CategoriesController) {
             Spacer(Modifier.height(72.dp))
 
             if (!isLoading) {
-                TextButton(onClick = { scope.launch { controller.loadAll() } }) { Text("Recargar") }
+                TextButton(onClick = { scope.launch { controller.loadAll() } }) {
+                    Text("Recargar")
+                }
             }
 
             if (error != null) {
@@ -177,40 +185,57 @@ fun ExploreBuyerScreen(controller: CategoriesController) {
     }
 }
 
-// ---- Mapeo Domain -> UI (sin cambiar tu look&feel)
+/* ---------- Mapeo: Domain → UI ---------- */
+
+// Tus reglas dicen que Category = { id, name, count }.
+// No hay 'type' ni 'image', así que:
+// - type lo inventamos para UI (tipo humano) según nombre.
+// - image usa un placeholder basado en ese tipo.
+
 private fun Category.toExploreItem(idx: Int): ExploreItem {
-    val typeHuman = when (this.type.lowercase()) {
-        "tutoría_matemáticas", "tutoría_idiomas", "tutorías", "tutorias" -> "Tutorías"
-        "comida_rápida", "comida_casera", "comida" -> "Comida"
-        "venta_funko", "emprendimiento", "venta_varios" -> "Emprendimiento"
-        "copias", "papelería", "papeleria" -> "Papelería"
-        else -> "Otro"
-    }
+    val typeHuman = guessTypeFromName(this.name)
 
     val placeholder = when (typeHuman) {
-        "Tutorías" -> R.drawable.tutoriasiind2106
-        "Comida" -> R.drawable.tacos
+        "Tutorías"       -> R.drawable.tutoriasiind2106
+        "Comida"         -> R.drawable.tacos
         "Emprendimiento" -> R.drawable.funko
-        "Papelería" -> R.drawable.papeleria
-        else -> R.drawable.papeleria
+        "Papelería"      -> R.drawable.papeleria
+        else             -> R.drawable.papeleria
     }
-
-    val countSafe = try { this.count.toInt() } catch (_: Throwable) { 0 }
 
     return ExploreItem(
         id = this.id,
         title = this.name,
         type = typeHuman,
-        imageUrl = this.image,
+        imageUrl = null,
         imageRes = placeholder,
-        selectionCount = countSafe,
+        selectionCount = this.count.toInt(),
         bg = Pastels[idx % Pastels.size],
         highlighted = idx < 2
     )
 }
 
+/**
+ * “Tipo humano” = etiqueta visual para agrupar/filtrar la UI.
+ * La deducimos por palabras clave del nombre de la categoría.
+ * Si no matchea nada, devolvemos "Otro".
+ */
+private fun guessTypeFromName(name: String): String {
+    val n = name.lowercase()
+    return when {
+        listOf("tutor", "tutoría", "tutoria", "clase", "idioma", "matem").any { it in n } -> "Tutorías"
+        listOf("comida", "food", "taco", "pizza", "hamburg", "almuerzo", "resto").any { it in n } -> "Comida"
+        listOf("emprend", "venta", "funko", "merch", "accesorio", "tienda").any { it in n } -> "Emprendimiento"
+        listOf("papeler", "copia", "impres", "cuaderno").any { it in n } -> "Papelería"
+        else -> "Otro"
+    }
+}
+
+/* ---------- UI bits (sin cambios visuales importantes) ---------- */
+
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable private fun ExploreTopBar() {
+@Composable
+private fun ExploreTopBar() {
     TopAppBar(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -225,13 +250,16 @@ private fun Category.toExploreItem(idx: Int): ExploreItem {
     )
 }
 
-@Composable private fun SearchBox() {
+@Composable
+private fun SearchBox() {
     TextField(
         value = "",
         onValueChange = {},
         placeholder = { Text("Buscar en UniMarket") },
         leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-        modifier = Modifier.fillMaxWidth().height(52.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp),
         readOnly = true,
         shape = RoundedCornerShape(26.dp),
         colors = TextFieldDefaults.colors(
@@ -260,7 +288,9 @@ private fun CategoryChipsRow(
                 selected = i == selectedIndex,
                 onClick = { onSelect(i) },
                 label = { Text(c.label, fontWeight = FontWeight.SemiBold) },
-                leadingIcon = c.icon?.let { { Icon(it, null, Modifier.size(18.dp)) } },
+                leadingIcon = c.icon?.let {
+                    { Icon(it, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                },
                 shape = RoundedCornerShape(18.dp),
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = Accent,
@@ -285,14 +315,19 @@ private fun ExploreCard(item: ExploreItem, modifier: Modifier = Modifier, onClic
         border = if (item.highlighted) BorderStroke(2.dp, Color(0xFF2F80ED)) else null
     ) {
         Column(
-            Modifier.fillMaxSize().padding(14.dp)
+            Modifier
+                .fillMaxSize()
+                .padding(14.dp)
         ) {
             val context = LocalContext.current
             if (!item.imageUrl.isNullOrBlank()) {
                 AsyncImage(
                     model = ImageRequest.Builder(context).data(item.imageUrl).crossfade(true).build(),
                     contentDescription = item.title,
-                    modifier = Modifier.size(64.dp).clip(RoundedCornerShape(12.dp)).background(Color.White.copy(alpha = 0.9f)),
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.White.copy(alpha = 0.9f)),
                     contentScale = ContentScale.Crop,
                     placeholder = item.imageRes?.let { painterResource(it) },
                     error = item.imageRes?.let { painterResource(it) }
@@ -301,7 +336,10 @@ private fun ExploreCard(item: ExploreItem, modifier: Modifier = Modifier, onClic
                 Image(
                     painter = painterResource(id = item.imageRes ?: R.drawable.papeleria),
                     contentDescription = item.title,
-                    modifier = Modifier.size(64.dp).clip(RoundedCornerShape(12.dp)).background(Color.White.copy(alpha = 0.9f)),
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.White.copy(alpha = 0.9f)),
                     contentScale = ContentScale.Fit
                 )
             }
@@ -332,7 +370,7 @@ private fun BuyerBottomBar(current: Int, onClick: (Int) -> Unit = {}) {
             NavigationBarItem(
                 selected = idx == current,
                 onClick = { onClick(idx) },
-                icon = { Icon(icon, null) },
+                icon = { Icon(icon, contentDescription = null) },
                 label = null,
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = Color.White,
@@ -349,7 +387,10 @@ private fun BuyerBottomBar(current: Int, onClick: (Int) -> Unit = {}) {
 private fun PreviewExploreBuyer() {
     Scaffold(topBar = { ExploreTopBar() }, bottomBar = { BuyerBottomBar(1) }) { inner ->
         Column(
-            Modifier.fillMaxSize().padding(inner).padding(horizontal = 16.dp, vertical = 8.dp)
+            Modifier
+                .fillMaxSize()
+                .padding(inner)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             SearchBox()
             Spacer(Modifier.height(8.dp))

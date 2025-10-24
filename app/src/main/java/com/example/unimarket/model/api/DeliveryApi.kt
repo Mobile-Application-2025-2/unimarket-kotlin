@@ -1,5 +1,6 @@
 package com.example.unimarket.model.api
-import com.example.unimarket.model.entity.Delivery
+/*
+//import com.example.unimarket.model.entity.Delivery
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Header
@@ -15,5 +16,5 @@ interface DeliveriesApi {
         @Query("order") order: String? = null,
         @Query("limit") limit: Int? = 50,
         @Header("Prefer") prefer: String = "count=estimated"
-    ): Response<List<Delivery>>
-}
+    ): Response<List<String>>
+}*/

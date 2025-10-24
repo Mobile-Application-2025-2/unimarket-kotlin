@@ -1,5 +1,5 @@
 package com.example.unimarket.model.repository
-
+/*
 import android.content.Context
 import android.util.Log
 import com.example.unimarket.SupaConst
@@ -68,4 +68,4 @@ class DefaultCourierHomeRepository(
         client: FusedLocationProviderClient,
         callback: LocationCallback
     ) = locationRepo.stop(client, callback)
-}
+}*/

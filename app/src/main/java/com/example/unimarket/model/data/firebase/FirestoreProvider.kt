@@ -2,11 +2,9 @@ package com.example.unimarket.model.data.firebase
 
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
 
 object FirestoreProvider {
-    val db: FirebaseFirestore by lazy { Firebase.firestore }
+    val db: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
 
     const val COL_USERS = "users"
     const val COL_BUYERS = "buyers"

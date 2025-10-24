@@ -1,5 +1,5 @@
 package com.example.unimarket.model.api
-
+/*
 import okhttp3.Interceptor
 import okhttp3.Response
 
@@ -20,4 +20,4 @@ class SupabaseHeadersInterceptor(
 
         return chain.proceed(req)
     }
-}
+}*/

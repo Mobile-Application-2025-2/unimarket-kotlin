@@ -1,8 +1,8 @@
 package com.example.unimarket.controller.auth
 
 import android.graphics.Bitmap
-import com.example.unimarket.model.entity.CameraModel
-import com.example.unimarket.model.entity.CameraResult
+//import com.example.unimarket.model.entity.CameraModel
+//import com.example.unimarket.model.entity.CameraResult
 interface StudentCodeViewPort {
     fun setProceedEnabled(enabled: Boolean)
     fun showBuyer()
@@ -33,9 +33,9 @@ class StudentCodeController(
     }
 
     fun onCameraResult(bitmap: Bitmap?) {
-        when (CameraModel.parseResult(bitmap)) {
-            CameraResult.Captured -> { /* no-op */ }
-            CameraResult.Cancelled -> { /* no-op */ }
-        }
+        //when (CameraModel.parseResult(bitmap)) {
+        //    CameraResult.Captured -> { /* no-op */ }
+        //    CameraResult.Cancelled -> { /* no-op */ }
+        //}
     }
 }

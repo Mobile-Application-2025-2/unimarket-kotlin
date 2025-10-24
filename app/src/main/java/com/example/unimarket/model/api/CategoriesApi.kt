@@ -1,5 +1,5 @@
 package com.example.unimarket.model.api
-
+/*
 import com.example.unimarket.model.domain.entity.Category
 import retrofit2.Response
 import retrofit2.http.*
@@ -61,4 +61,4 @@ interface CategoriesApi {
         @Header("Prefer") prefer: String = "return=representation",
         @Body body: Map<String, @JvmSuppressWildcards Any>
     ): Response<List<Category>>
-}
+}*/

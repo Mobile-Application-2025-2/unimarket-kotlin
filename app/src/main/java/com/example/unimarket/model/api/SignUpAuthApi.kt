@@ -1,5 +1,5 @@
 package com.example.unimarket.model.api
-
+/*
 import com.example.unimarket.model.entity.SignInResponse
 import com.example.unimarket.model.entity.SignUpBody
 import retrofit2.Response
@@ -12,3 +12,4 @@ interface SignUpAuthApi {
     @POST("auth/v1/signup")
     suspend fun signUp(@Body body: SignUpBody): Response<SignInResponse>
 }
+*/
