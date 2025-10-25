@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,15 +33,14 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.unimarket.R
-import com.example.unimarket.controller.explore.CategoriesController
-import com.example.unimarket.controller.explore.CategoriesViewPort
 import com.example.unimarket.model.domain.entity.Category
-import kotlinx.coroutines.launch
+import com.example.unimarket.viewmodel.categories.CategoriesViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 class ExploreBuyerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // La vista crea su controller dentro del Composable vía ViewPort (MVC)
+        // ahora la vista habla con el ViewModel (MVVM) en lugar del controller (MVC)
         setContent { ExploreBuyerScreen() }
     }
 }
@@ -78,30 +78,21 @@ private val catChips = listOf(
 
 @Composable
 fun ExploreBuyerScreen() {
-    // Estado de UI
+    // === NUEVO: ViewModel (reemplaza al Controller) ===
+    val vm: CategoriesViewModel = viewModel()
+    val ui by vm.ui.observeAsState(CategoriesViewModel.UiState()) // LiveData -> Compose State
+
+    // Estado de UI local (igual que antes)
     var selectedChip by remember { mutableStateOf(0) }
     var liveItems by remember { mutableStateOf<List<ExploreItem>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
 
-    // ViewPort que el Controller usará para “pintar” la pantalla
-    val viewPort = remember {
-        object : CategoriesViewPort {
-            override fun setLoading(loading: Boolean) { isLoading = loading }
-            override fun showCategories(items: List<Category>) {
-                error = null
-                liveItems = items.mapIndexed { idx, c -> c.toExploreItem(idx) }
-            }
-            override fun showError(message: String) { error = message }
-        }
+    // Sincroniza la lista local cuando llegan datos del VM
+    LaunchedEffect(ui.items) {
+        liveItems = ui.items.mapIndexed { idx, c -> c.toExploreItem(idx) }
     }
 
-    // Controller (recibe el view por constructor)
-    val controller = remember { CategoriesController(viewPort) }
-
-    // Carga inicial
-    LaunchedEffect(Unit) { controller.loadAll() }
+    // Carga inicial (antes: controller.loadAll())
+    LaunchedEffect(Unit) { vm.loadAll() }
 
     val filtered = remember(liveItems, selectedChip) {
         val base = if (selectedChip == 0) liveItems else {
@@ -133,12 +124,12 @@ fun ExploreBuyerScreen() {
 
             Spacer(Modifier.height(8.dp))
 
-            if (isLoading) {
+            if (ui.loading) {
                 LinearProgressIndicator(Modifier.fillMaxWidth())
                 Spacer(Modifier.height(12.dp))
             }
 
-            if (!isLoading && error == null && liveItems.isEmpty()) {
+            if (!ui.loading && ui.error == null && liveItems.isEmpty()) {
                 Text("No hay categorías disponibles.", color = Color(0xFF6B7280), fontSize = 14.sp)
                 Spacer(Modifier.height(8.dp))
             }
@@ -156,7 +147,7 @@ fun ExploreBuyerScreen() {
                                 .weight(1f)
                                 .height(160.dp),
                             onClick = {
-                                // Efecto local de UI (buyer no actualiza categorías en Firestore)
+                                // Efecto local de UI (se mantiene igual que antes)
                                 liveItems = liveItems.map {
                                     if (it.id == item.id) it.copy(selectionCount = it.selectionCount + 1)
                                     else it
@@ -171,15 +162,15 @@ fun ExploreBuyerScreen() {
 
             Spacer(Modifier.height(72.dp))
 
-            if (!isLoading) {
-                TextButton(onClick = { scope.launch { controller.loadAll() } }) {
+            if (!ui.loading) {
+                TextButton(onClick = { vm.loadAll() }) {
                     Text("Recargar")
                 }
             }
 
-            if (error != null) {
+            if (ui.error != null) {
                 Spacer(Modifier.height(8.dp))
-                Text(error!!, color = Color(0xFFD32F2F), fontSize = 13.sp)
+                Text(ui.error!!, color = Color(0xFFD32F2F), fontSize = 13.sp)
             }
         }
     }

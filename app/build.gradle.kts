@@ -74,5 +74,9 @@ dependencies {
     // Guardar el JWT
     implementation( "androidx.datastore:datastore-preferences:1.1.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
+
+    // MVVM
+    implementation("androidx.compose.runtime:runtime-livedata:1.6.8")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6")
 }
 
