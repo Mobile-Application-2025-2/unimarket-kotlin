@@ -61,6 +61,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.compose.ui:ui-text-google-fonts")
     implementation("com.google.android.material:material")
+    implementation("androidx.fragment:fragment-ktx:1.8.3")
 
     // HTTP
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
