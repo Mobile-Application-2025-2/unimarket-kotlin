@@ -57,6 +57,7 @@ class AuthService(
                 val name = businessName ?: error("businessName is required for business sign up")
                 val logo = businessLogo ?: ""
                 val addr = businessAddress ?: Address()
+
                 val biz = Business(
                     name = name,
                     address = addr,

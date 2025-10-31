@@ -36,5 +36,5 @@
     <string name="escribe_email">Email address</string>
     <string name="escribe_password">Password</string>
 
-
+    <string name="account_type">Buyer</string>
 </resources>

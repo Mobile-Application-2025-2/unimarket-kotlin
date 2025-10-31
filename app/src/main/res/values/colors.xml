@@ -14,4 +14,6 @@
     <color name="text_primary">#3F414E</color>
     <color name="textGray">#A1A4B2</color>
     <color name="yellowLight">#FFC436</color>
+    <color name="yellowStroke">#FFD27C</color>
+    <color name="divider">#E8EBE6</color>
 </resources>
