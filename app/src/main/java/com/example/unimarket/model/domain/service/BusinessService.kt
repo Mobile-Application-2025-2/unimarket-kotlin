@@ -1,9 +1,12 @@
 package com.example.unimarket.model.domain.service
 
+import android.util.Log
+import com.example.unimarket.model.domain.entity.Address
 import com.example.unimarket.model.domain.entity.Business
 import com.example.unimarket.model.domain.entity.Category
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.DocumentSnapshot
 import kotlinx.coroutines.tasks.await
 
 class BusinessService(
@@ -17,7 +20,17 @@ class BusinessService(
     suspend fun getBusiness(businessId: String): Result<Business> = runCatching {
         val snap = businesses.document(req(businessId, "businessId")).get().await()
         if (!snap.exists()) error("Business not found")
-        snap.toObject(Business::class.java)!!.copy(id = snap.id)
+        snap.toBusinessSafe() ?: error("Malformed business document: ${snap.id}")
+    }
+
+    suspend fun getAllBusinesses(): Result<List<Business>> = runCatching {
+        val snaps = businesses.get().await()
+        snaps.documents.mapNotNull { d ->
+            try { d.toBusinessSafe() } catch (t: Throwable) {
+                Log.e("BusinessService", "toBusinessSafe failed for ${d.id}", t)
+                null
+            }
+        }
     }
 
     suspend fun updateBusiness(
@@ -31,31 +44,27 @@ class BusinessService(
             "updatedAt" to Timestamp.now()
         )
         if (name != null)     updates["name"] = name.trim()
-        if (logoUrl != null)  updates["logoUrl"] = logoUrl
+        if (logoUrl != null)  updates["logoUrl"] = logoUrl   // en tu BD actual usas "logo"; si quieres, cámbialo a "logo"
         if (address != null)  updates["address"] = address
-        if (categories != null) updates["categories"] = categories
+        if (categories != null) updates["categories"] = categories  // guardará objetos Category
 
-        // Si no hay nada para actualizar, no llames a Firestore
         val hasRealUpdates = updates.any { it.key != "updatedAt" }
         if (!hasRealUpdates) return@runCatching
 
-        businesses.document(req(businessId, "businessId")).update(updates as Map<String, Any>).await()
+        businesses.document(req(businessId, "businessId"))
+            .update(updates as Map<String, Any>)
+            .await()
     }
 
     /* ============ Categorías (lista de Category) ============ */
 
-    /**
-     * Agrega una Category completa si NO existe ya por id.
-     * Estrategia robusta: leer -> modificar en memoria -> set/update.
-     */
     suspend fun addCategoryToBusiness(businessId: String, category: Category): Result<Unit> = runCatching {
         val ref = businesses.document(req(businessId, "businessId"))
         val snap = ref.get().await()
         if (!snap.exists()) error("Business not found")
 
-        val current = snap.toObject(Business::class.java)!!.copy(id = snap.id)
-        if (current.categories.any { it.id == category.id }) {
-            // ya está, solo toca updatedAt
+        val current = snap.toBusinessSafe()!!.copy(id = snap.id)
+        if (current.categories.any { it.id == category.id && it.name == category.name }) {
             ref.update("updatedAt", Timestamp.now()).await()
             return@runCatching
         }
@@ -66,9 +75,6 @@ class BusinessService(
         ref.set(updated).await()
     }
 
-    /**
-     * Lee /categories/{categoryId} y agrega esa Category al business.
-     */
     suspend fun addCategoryById(businessId: String, categoryId: String): Result<Unit> = runCatching {
         val catDoc = categoriesCol.document(req(categoryId, "categoryId")).get().await()
         if (!catDoc.exists()) error("Category not found")
@@ -76,18 +82,14 @@ class BusinessService(
         addCategoryToBusiness(businessId, cat).getOrThrow()
     }
 
-    /**
-     * Elimina Category por id (independiente de igualdad exacta del objeto).
-     */
     suspend fun removeCategoryFromBusiness(businessId: String, categoryId: String): Result<Unit> = runCatching {
         val ref = businesses.document(req(businessId, "businessId"))
         val snap = ref.get().await()
         if (!snap.exists()) error("Business not found")
 
-        val current = snap.toObject(Business::class.java)!!.copy(id = snap.id)
+        val current = snap.toBusinessSafe()!!.copy(id = snap.id)
         val newList = current.categories.filterNot { it.id == req(categoryId, "categoryId") }
 
-        // si no cambió, solo actualiza updatedAt
         if (newList.size == current.categories.size) {
             ref.update("updatedAt", Timestamp.now()).await()
             return@runCatching
@@ -107,4 +109,67 @@ class BusinessService(
         require(x.isNotEmpty()) { "$label is empty" }
         return x
     }
+}
+
+/* ================== Mapeos seguros desde Firestore ================== */
+
+// address = { direccion: "..." }
+private fun Any?.asAddress(): Address {
+    val m = this as? Map<*, *> ?: return Address()
+    val direccion = (m["direccion"] as? String)?.trim().orEmpty()
+    return Address(direccion = direccion)
+}
+
+// categories puede venir como List<String> o List<Map<*, *>>
+private fun Any?.asCategoryListFlexible(): List<Category> {
+    val raw = this as? List<*> ?: return emptyList()
+    return raw.mapNotNull { item ->
+        when (item) {
+            is String -> {
+                val name = item.trim()
+                if (name.isEmpty()) null else Category(name = name)
+            }
+            is Map<*, *> -> {
+                val id   = (item["id"] as? String)?.trim().orEmpty()
+                val name = (item["name"] as? String)?.trim().orEmpty()
+                if (id.isEmpty() && name.isEmpty()) null else Category(id = id, name = name)
+            }
+            else -> null
+        }
+    }
+}
+
+private fun Any?.asStringList(): List<String> =
+    (this as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
+
+private fun Any?.asDouble(): Double = when (val v = this) {
+    is Number -> v.toDouble()
+    is String -> v.toDoubleOrNull() ?: 0.0
+    else -> 0.0
+}
+
+private fun DocumentSnapshot.toBusinessSafe(): Business? {
+    val data = data ?: return null
+
+    val name     = (data["name"] as? String)?.trim().orEmpty()
+    val rating   = data["rating"].asDouble()
+    val products = data["products"].asStringList()
+    val logo     = (data["logo"] as? String)?.trim()
+        ?: (data["logoUrl"] as? String)?.trim().orEmpty()
+
+    val addressAny    = data["address"]
+    val categoriesAny = data["categories"]
+
+    val address    = addressAny.asAddress()
+    val categories = categoriesAny.asCategoryListFlexible()
+
+    return Business(
+        id         = id,
+        name       = name,
+        address    = address,
+        rating     = rating,
+        products   = products,
+        logo       = logo,
+        categories = categories
+    )
 }

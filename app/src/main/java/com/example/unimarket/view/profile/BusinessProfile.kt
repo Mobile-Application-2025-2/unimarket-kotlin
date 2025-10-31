@@ -1,25 +1,24 @@
-package com.example.unimarket.ui.business
+package com.example.unimarket.view.profile
 
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.example.unimarket.databinding.ActivityBusinessAccountBinding
+import com.example.unimarket.databinding.BusinessProfileBinding
 
 class BusinessAccountActivity : AppCompatActivity() {
 
-    private lateinit var b: ActivityBusinessAccountBinding
+    private lateinit var b: BusinessProfileBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        b = ActivityBusinessAccountBinding.inflate(layoutInflater)
+        b = BusinessProfileBinding.inflate(layoutInflater)
         setContentView(b.root)
 
-        // --- Demo: podrías traer estos datos por intent o ViewModel
-        val userName = intent.getStringExtra(EXTRA_USER_NAME) ?: "User Name Business"
-        b.tvUserName.text = userName
-        // Si luego usas Glide/Coil para el avatar, aquí iría la carga.
+        // Demo: nombre por Intent (usa EXTRA_USER_NAME) o deja el del XML
+        intent.getStringExtra(EXTRA_USER_NAME)?.let { name ->
+            if (name.isNotBlank()) b.tvUserName.text = name
+        }
 
-        // ---------- Clicks sin navegación (solo feedback visual) ----------
         fun ping(msg: String) =
             Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
 
@@ -41,7 +40,7 @@ class BusinessAccountActivity : AppCompatActivity() {
         b.rowReviews.setOnClickListener  { ping("User Reviews") }
         b.rowLogout.setOnClickListener   { ping("Log Out") }
 
-        // Footer (bottom pill)
+        // Footer
         b.navHome.setOnClickListener    { ping("Home") }
         b.navBag.setOnClickListener     { ping("Bag") }
         b.navProfile.setOnClickListener { ping("Profile") }

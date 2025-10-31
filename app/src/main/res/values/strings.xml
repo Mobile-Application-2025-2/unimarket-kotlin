@@ -36,5 +36,16 @@
     <string name="escribe_email">Email address</string>
     <string name="escribe_password">Password</string>
 
-    <string name="account_type">Buyer</string>
+    <string name="account_type">Type</string>
+    <string name="business_reviews_count">(%1$d+)</string>
+    <string name="menu_item_added">%1$s agregado al carrito</string>
+    <string name="business_menu_missing_id">No encontramos el negocio que quieres ver.</string>
+    <string name="business_menu_placeholder_name">Tu restaurante favorito</string>
+    <string name="business_menu_placeholder_subtitle">Explora el menú disponible</string>
+    <string name="business_menu_product_placeholder">Producto</string>
+    <string name="business_menu_deals_title">Descuentos</string>
+    <string name="business_menu_popular_title">Populares</string>
+    <string name="business_menu_category_deals_title">Menú %1$s</string>
+    <string name="business_menu_category_popular_title">Favoritos %1$s</string>
+    <string name="business_menu_empty_products">Este negocio aún no tiene productos disponibles.</string>
 </resources>

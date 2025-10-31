@@ -126,5 +126,18 @@
         <item name="cornerSizeBottomRight">0dp</item>
     </style>
 
+    <!-- Esquinas superiores redondeadas a 22dp; inferiores en 0 -->
+    <style name="ShapeAppearance.Uni.TopRounded22" parent="ShapeAppearance.MaterialComponents.SmallComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">22dp</item>
+        <item name="cornerSizeTopRight">22dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+
+
+
+
+
 </resources>
 

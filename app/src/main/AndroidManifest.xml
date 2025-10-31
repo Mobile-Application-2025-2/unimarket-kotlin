@@ -17,6 +17,8 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
+
+        <!-- Launcher -->
         <activity
             android:name=".view.auth.WelcomePage"
             android:exported="true">
@@ -25,21 +27,20 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <activity
-            android:name=".view.auth.CreateAccountActivity"
-            android:exported="true" />
-        <activity
-            android:name=".view.auth.LoginActivity"
-            android:exported="false" />
-        <activity
-            android:name=".view.auth.StudentCodeActivity"
-            android:exported="false" />
-        <activity
-            android:name=".view.explore.ExploreBuyerActivity"
-            android:exported="false" />
-        <activity
-            android:name=".view.home.CourierHomeActivity"
-            android:exported="false" />
-    </application>
 
+        <!-- Auth -->
+        <activity android:name=".view.auth.CreateAccountActivity" android:exported="true" />
+        <activity android:name=".view.auth.LoginActivity" android:exported="false" />
+        <activity android:name=".view.auth.StudentCodeActivity" android:exported="false" />
+
+        <!-- Homes -->
+        <activity android:name=".view.home.HomeBuyerActivity" android:exported="false" />
+        <activity android:name=".view.home.CourierHomeActivity" android:exported="false" />
+        <activity android:name=".view.home.BusinessMenuActivity" android:exported="false" />
+
+        <!-- Perfiles -->
+        <activity android:name=".view.profile.BuyerAccountActivity" android:exported="false" />
+        <activity android:name=".view.profile.BusinessAccountActivity" android:exported="false" />
+
+    </application>
 </manifest>
