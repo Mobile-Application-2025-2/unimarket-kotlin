@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/rootBusinessAccount"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/white">
 
+    <!-- APP BAR -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appbar"
         android:layout_width="match_parent"
@@ -17,13 +19,14 @@
             android:id="@+id/brandBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
             android:paddingStart="16dp"
             android:paddingTop="12dp"
-            android:paddingEnd="16dp"
-            android:paddingBottom="8dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:paddingEnd="12dp"
+            android:paddingBottom="8dp">
 
+            <!-- Logo + marca -->
             <ImageView
                 android:id="@+id/imgBrand"
                 android:layout_width="50dp"
@@ -33,13 +36,39 @@
 
             <TextView
                 android:id="@+id/tvBrand"
-                android:layout_width="wrap_content"
+                style="@style/TextAppearance.App.Title"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
+                android:layout_weight="1"
                 android:text="@string/app_name"
                 android:textStyle="bold"
-                android:textColor="@color/text_primary"
-                style="@style/TextAppearance.App.Title" />
+                android:textColor="@color/text_primary" />
+
+            <!-- Botón favoritos (corazón) -->
+            <ImageButton
+                android:id="@+id/btnFavorites"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="6dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="favoritos"
+                android:padding="4dp"
+                android:scaleType="fitCenter"
+                app:tint="@color/text_primary"
+                android:src="@drawable/heart" />
+
+            <!-- Botón pedidos / entregas (camión) -->
+            <ImageButton
+                android:id="@+id/btnOrdersTop"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="carrito"
+                android:padding="4dp"
+                android:scaleType="fitCenter"
+                app:tint="@color/text_primary"
+                android:src="@drawable/carrito" />
         </LinearLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -670,8 +699,8 @@
                 android:paddingBottom="8dp"
                 android:scaleType="fitCenter"
                 android:adjustViewBounds="true"
-                android:src="@drawable/baseline_person_outline_24" />
+                android:src="@drawable/baseline_person_outline_24"
+                app:tint="@color/white"/>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

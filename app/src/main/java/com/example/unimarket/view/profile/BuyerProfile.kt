@@ -1,46 +1,86 @@
-package com.example.unimarket.ui.buyer
+package com.example.unimarket.view.profile
 
 import android.os.Bundle
-import android.widget.Toast
+import android.widget.ImageButton
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import com.example.unimarket.databinding.ActivityBuyerAccountBinding
+import com.example.unimarket.R
+import com.example.unimarket.model.session.SessionManager
 
 class BuyerAccountActivity : AppCompatActivity() {
 
-    private lateinit var b: ActivityBuyerAccountBinding
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        b = ActivityBuyerAccountBinding.inflate(layoutInflater)
-        setContentView(b.root)
+        // Usa el nombre REAL de tu layout de perfil de comprador
+        setContentView(R.layout.buyer_profile)
 
-        val userName = intent.getStringExtra(EXTRA_USER_NAME) ?: "User Name Buyer"
-        b.tvUserName.text = userName
+        // --------- Header / Brand bar ----------
+        val btnFavorites: ImageButton = findViewById(R.id.btnFavorites)
+        val btnOrdersTop: ImageButton = findViewById(R.id.btnOrdersTop)
 
-        fun ping(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+        // --------- Header user ----------
+        val tvUserName: TextView = findViewById(R.id.tvUserName)
 
-        b.brandBar.setOnClickListener { ping("Brand bar") }
+        // --------- Card Business Info ----------
+        val rowBusinessInfo: LinearLayout = findViewById(R.id.rowBusinessInfo)
+        val rowAddresses: LinearLayout = findViewById(R.id.rowAddresses)
 
-        b.rowBusinessInfo.setOnClickListener { ping("Business Info") }
-        b.rowAddresses.setOnClickListener   { ping("Addresses") }
+        // --------- Card Orders ----------
+        val rowOrdersHeader: LinearLayout = findViewById(R.id.rowOrdersHeader)
+        val rowOrder1: LinearLayout = findViewById(R.id.rowOrder1)
+        val rowOrder2: LinearLayout = findViewById(R.id.rowOrder2)
+        val tvSeeAll: TextView = findViewById(R.id.tvSeeAll)
 
-        b.rowOrdersHeader.setOnClickListener { ping("Historial - header") }
-        b.rowOrder1.setOnClickListener       { ping("Orden 1") }
-        b.rowOrder2.setOnClickListener       { ping("Orden 2") }
-        b.tvSeeAll.setOnClickListener        { ping("Ver todos") }
+        // --------- Card Actions ----------
+        val rowProducts: LinearLayout = findViewById(R.id.rowProducts)
+        val rowFavoritos: LinearLayout = findViewById(R.id.rowFavoritos)
+        val rowReviews: LinearLayout = findViewById(R.id.rowReviews)
+        val rowLogout: LinearLayout = findViewById(R.id.rowLogout)
 
-        b.rowProducts.setOnClickListener  { ping("Productos") }
-        b.rowFavoritos.setOnClickListener { ping("Favoritos") }
-        b.rowReviews.setOnClickListener   { ping("User Reviews") }
-        b.rowLogout.setOnClickListener    { ping("Log Out") }
+        // --------- Bottom Nav ----------
+        val navHome: ImageButton = findViewById(R.id.nav_home)
+        val navSearch: ImageButton = findViewById(R.id.nav_search)
+        val navMap: ImageButton = findViewById(R.id.nav_map)
+        val navProfile: ImageButton = findViewById(R.id.nav_profile)
 
-        b.navHome.setOnClickListener    { ping("Home") }
-        b.navSearch.setOnClickListener  { ping("Search") }
-        b.navMap.setOnClickListener     { ping("Map") }
-        b.navProfile.setOnClickListener { ping("Profile") }
-    }
+        // ---------- Nombre visible (sin asumir 'name' en SessionManager) ----------
+        val session = SessionManager.get()
+        // TODO: cuando tengamos BuyerViewModel + BuyerService, reemplazar por el nombre real.
+        // Por ahora, usa alias por email si existe, o placeholder:
+        val displayName = try {
+            // intenta leer 'email' si existe en tu SessionManager; si no, usa placeholder
+            val emailField = session?.javaClass?.getDeclaredField("email")?.apply { isAccessible = true }
+            val email = emailField?.get(session) as? String
+            email?.substringBefore('@')?.ifBlank { null } ?: "User Name Buyer"
+        } catch (_: Exception) {
+            "User Name Buyer"
+        }
+        tvUserName.text = displayName
 
-    companion object {
-        const val EXTRA_USER_NAME = "extra.USER_NAME"
+        // ---------- Clicks básicos (placeholder) ----------
+        btnFavorites.setOnClickListener { /* TODO: ir a favoritos */ }
+        btnOrdersTop.setOnClickListener { /* TODO: ir a pedidos */ }
+
+        rowBusinessInfo.setOnClickListener { /* TODO: editar info de usuario */ }
+        rowAddresses.setOnClickListener { /* TODO: administrar direcciones */ }
+
+        rowOrdersHeader.setOnClickListener { /* TODO: historial de pedidos */ }
+        rowOrder1.setOnClickListener { /* TODO: detalle pedido */ }
+        rowOrder2.setOnClickListener { /* TODO: detalle pedido */ }
+        tvSeeAll.setOnClickListener { /* TODO: ver todos los pedidos */ }
+
+        rowProducts.setOnClickListener { /* TODO: productos comprados */ }
+        rowFavoritos.setOnClickListener { /* TODO: favoritos */ }
+        rowReviews.setOnClickListener { /* TODO: reseñas */ }
+
+        rowLogout.setOnClickListener {
+            // TODO: logout real (AuthService.signOut + limpiar SessionManager) y volver al WelcomePage
+        }
+
+        navHome.setOnClickListener { finish() } // volver al Home
+        navSearch.setOnClickListener { /* TODO: ir a búsqueda */ }
+        navMap.setOnClickListener { /* TODO: ir a mapa */ }
+        navProfile.setOnClickListener { /* ya estás aquí */ }
     }
 }

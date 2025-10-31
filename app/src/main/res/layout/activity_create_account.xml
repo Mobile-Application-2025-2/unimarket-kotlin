@@ -23,12 +23,11 @@
             android:id="@+id/bgShapes"
             android:layout_width="0dp"
             android:layout_height="220dp"
-            android:alpha="0.65"
-            android:scaleType="centerCrop"
-            android:src="@drawable/formas"
-            app:layout_constraintTop_toTopOf="parent"
+            android:src="@drawable/cuatroformas"
+            android:scaleType="fitXY"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"/>
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <!-- Back button -->
         <com.google.android.material.card.MaterialCardView
