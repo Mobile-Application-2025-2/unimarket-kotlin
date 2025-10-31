@@ -60,6 +60,7 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.compose.ui:ui-text-google-fonts")
+    implementation("com.google.android.material:material")
 
     // HTTP
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
@@ -78,5 +79,6 @@ dependencies {
     // MVVM
     implementation("androidx.compose.runtime:runtime-livedata:1.6.8")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6")
+    implementation("io.coil-kt:coil:2.7.0")
 }
 

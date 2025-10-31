@@ -13,25 +13,28 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.unimarket.databinding.ActivityStudentCodeBinding
-import com.example.unimarket.view.explore.ExploreBuyerActivity
 import com.example.unimarket.view.home.CourierHomeActivity
+import com.example.unimarket.view.home.HomeBuyerActivity
 import com.example.unimarket.viewmodel.AuthNavDestination
 import com.example.unimarket.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
 
-// Nota: ya no implementa StudentCodeViewPort ni usa StudentCodeController.
+/**
+ * Ahora este screen actúa como “puente” tras el registro:
+ * - Al abrirse, consulta el rol desde la sesión (via welcome_onInit()) y navega automáticamente.
+ * - Mantengo la lógica de cámara (por si la usas luego), pero ya NO requiere escribir "buyer/deliver".
+ */
 class StudentCodeActivity : AppCompatActivity() {
 
     private lateinit var b: ActivityStudentCodeBinding
-
     private val viewModel: AuthViewModel by viewModels()
 
-    // launcher de cámara, que ahora notifica al VM
+    // Cámara (se mantiene por si la necesitas después)
     private val cameraLauncher = registerForActivityResult(
         ActivityResultContracts.TakePicturePreview()
     ) { bitmap: Bitmap? ->
         viewModel.student_onCameraResult(bitmap)
-        // si quieres futura lógica adicional con la foto (preview, upload), irá acá.
+        // (futuro: preview / upload)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,91 +44,88 @@ class StudentCodeActivity : AppCompatActivity() {
         (b.root.parent as? ViewGroup)?.removeView(b.root)
         setContentView(b.root)
 
-        // ==========================
-        // INPUT LISTENER → VM
-        // ==========================
+        // Ya NO obligamos a escribir nada: oculto el botón si quieres, o lo dejo habilitado.
+        // Aquí lo dejo visible y usable por si decides hacer otra cosa con este screen.
         b.etStudentId.doAfterTextChanged { text ->
+            // Normaliza, aunque no lo usamos para navegar ya.
             viewModel.student_onInputChanged(text?.toString() ?: "")
         }
-
-        // inicializar el estado de proceed según el texto actual (puede venir vacío)
         viewModel.student_onInputChanged(b.etStudentId.text?.toString() ?: "")
 
-        // ==========================
-        // BOTÓN "GET STARTED"
-        // ==========================
         b.btnGetStarted.setOnClickListener {
-            // Antes: controller.onGetStartedClicked(raw)
-            // Ahora: el VM decide el destino y lo expone en student.nav
+            // Si lo presionan, puedes seguir soportando la navegación manual:
             viewModel.student_onGetStartedClicked()
         }
 
-        // ==========================
-        // ICONO DE CÁMARA EN EL TEXTINPUT
-        // ==========================
+        // Icono de cámara
         b.tilStudentId.setEndIconOnClickListener {
-            // Antes: controller.onCameraIconClicked() → view.openCamera()
-            // Ahora: le avisamos al VM que el user pidió cámara.
             viewModel.student_onCameraIconClicked()
         }
 
-        // ==========================
-        // OBSERVAR EL STATEFLOW DEL VM
-        // ==========================
-        observeStudentState()
+        // 1) Observa el flujo "welcome" para navegación automática por rol real
+        observeWelcomeForAutoNavigation()
+
+        // 2) Observa el flujo "student" para cámara / errores (opcional)
+        observeStudentUi()
+
+        // Dispara la verificación de sesión+rol en el VM
+        viewModel.welcome_onInit()
     }
 
-    private fun observeStudentState() {
+    private fun observeWelcomeForAutoNavigation() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.welcome.collect { ui ->
+                    when (ui.nav) {
+                        AuthNavDestination.ToBuyerHome -> {
+                            startActivity(Intent(this@StudentCodeActivity, HomeBuyerActivity::class.java))
+                            finish()
+                            // No limpiamos welcome.nav aquí, este screen muere
+                        }
+                        AuthNavDestination.ToCourierHome -> {
+                            startActivity(Intent(this@StudentCodeActivity, CourierHomeActivity::class.java))
+                            finish()
+                        }
+                        else -> {
+                            // None: aún sin decisión (p. ej., animación/intro o sesión nula).
+                            // Si acabas de crear cuenta, normalmente debería resolver a uno de los anteriores.
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun observeStudentUi() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.student.collect { ui ->
-
-                    // 1. Habilitar botón según canProceed
+                    // Habilita/Deshabilita botón (aunque ya no sea necesario)
                     b.btnGetStarted.isEnabled = ui.canProceed
 
-                    // 2. Mensaje de error puntual (equivalente a showMessage(message))
                     ui.errorMessage?.let { msg ->
                         Toast.makeText(this@StudentCodeActivity, msg, Toast.LENGTH_SHORT).show()
-                        // limpiamos error y nav después de usarlo
                         viewModel.student_clearNavAndErrors()
                     }
 
-                    // 3. ¿El VM está pidiendo que abramos la cámara?
                     if (ui.requestOpenCamera) {
-                        // Lanzamos la cámara
                         cameraLauncher.launch(null)
-                        // Avisamos al VM que ya lo hicimos para bajar el flag
                         viewModel.student_onCameraHandled()
                     }
 
-                    // 4. Navegación según lo que interpretó el VM
+                    // Si alguien usa el botón y el VM decide navegar manualmente:
                     when (ui.nav) {
                         AuthNavDestination.ToBuyerHome -> {
-                            startActivity(
-                                Intent(
-                                    this@StudentCodeActivity,
-                                    ExploreBuyerActivity::class.java
-                                )
-                            )
-                            // limpiamos estado para no repetir
-                            viewModel.student_clearNavAndErrors()
-                        }
-
-                        AuthNavDestination.ToCourierHome -> {
-                            startActivity(
-                                Intent(
-                                    this@StudentCodeActivity,
-                                    CourierHomeActivity::class.java
-                                )
-                            )
-                            // si quieres cerrar esta Activity:
+                            startActivity(Intent(this@StudentCodeActivity, HomeBuyerActivity::class.java))
                             finish()
                             viewModel.student_clearNavAndErrors()
                         }
-
-                        else -> {
-                            // AuthNavDestination.None -> nada
+                        AuthNavDestination.ToCourierHome -> {
+                            startActivity(Intent(this@StudentCodeActivity, CourierHomeActivity::class.java))
+                            finish()
+                            viewModel.student_clearNavAndErrors()
                         }
+                        else -> Unit
                     }
                 }
             }
