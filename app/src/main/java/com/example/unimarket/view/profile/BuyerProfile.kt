@@ -1,14 +1,25 @@
 package com.example.unimarket.view.profile
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.unimarket.R
-import com.example.unimarket.model.session.SessionManager
+import com.example.unimarket.view.auth.WelcomePage
+import com.example.unimarket.viewmodel.BuyerNavDestination
+import com.example.unimarket.viewmodel.BuyerViewModel
+import kotlinx.coroutines.launch
 
 class BuyerAccountActivity : AppCompatActivity() {
+
+    private val vm: BuyerViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,20 +55,6 @@ class BuyerAccountActivity : AppCompatActivity() {
         val navMap: ImageButton = findViewById(R.id.nav_map)
         val navProfile: ImageButton = findViewById(R.id.nav_profile)
 
-        // ---------- Nombre visible (sin asumir 'name' en SessionManager) ----------
-        val session = SessionManager.get()
-        // TODO: cuando tengamos BuyerViewModel + BuyerService, reemplazar por el nombre real.
-        // Por ahora, usa alias por email si existe, o placeholder:
-        val displayName = try {
-            // intenta leer 'email' si existe en tu SessionManager; si no, usa placeholder
-            val emailField = session?.javaClass?.getDeclaredField("email")?.apply { isAccessible = true }
-            val email = emailField?.get(session) as? String
-            email?.substringBefore('@')?.ifBlank { null } ?: "User Name Buyer"
-        } catch (_: Exception) {
-            "User Name Buyer"
-        }
-        tvUserName.text = displayName
-
         // ---------- Clicks básicos (placeholder) ----------
         btnFavorites.setOnClickListener { /* TODO: ir a favoritos */ }
         btnOrdersTop.setOnClickListener { /* TODO: ir a pedidos */ }
@@ -74,13 +71,39 @@ class BuyerAccountActivity : AppCompatActivity() {
         rowFavoritos.setOnClickListener { /* TODO: favoritos */ }
         rowReviews.setOnClickListener { /* TODO: reseñas */ }
 
-        rowLogout.setOnClickListener {
-            // TODO: logout real (AuthService.signOut + limpiar SessionManager) y volver al WelcomePage
-        }
+        // ---------- Logout por MVVM ----------
+        rowLogout.setOnClickListener { vm.logout() }
 
+        // ---------- Bottom nav ----------
         navHome.setOnClickListener { finish() } // volver al Home
         navSearch.setOnClickListener { /* TODO: ir a búsqueda */ }
         navMap.setOnClickListener { /* TODO: ir a mapa */ }
         navProfile.setOnClickListener { /* ya estás aquí */ }
+
+        // ---------- Observa estado del VM ----------
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                vm.ui.collect { ui ->
+                    // Nombre visible
+                    tvUserName.text = ui.displayName
+
+                    // Errores (si los hay)
+                    ui.error?.let {
+                        Toast.makeText(this@BuyerAccountActivity, it, Toast.LENGTH_LONG).show()
+                        vm.clearNavAndError()
+                    }
+
+                    // Navegación one-shot tras logout
+                    if (ui.nav == BuyerNavDestination.ToWelcome) {
+                        val intent = Intent(this@BuyerAccountActivity, WelcomePage::class.java)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                        startActivity(intent)
+                        // no vuelvas a esta actividad
+                        finish()
+                        vm.clearNavAndError()
+                    }
+                }
+            }
+        }
     }
 }

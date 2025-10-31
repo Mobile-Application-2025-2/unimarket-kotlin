@@ -20,8 +20,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.unimarket.R
-import com.example.unimarket.view.home.HomeBuyerActivity
 import com.example.unimarket.view.home.CourierHomeActivity
+import com.example.unimarket.view.home.HomeBuyerActivity
+import com.example.unimarket.view.profile.BusinessAccountActivity
 import com.example.unimarket.viewmodel.AuthNavDestination
 import com.example.unimarket.viewmodel.AuthViewModel
 import com.google.android.material.button.MaterialButton
@@ -32,27 +33,20 @@ class WelcomePage : AppCompatActivity() {
 
     private lateinit var root: ConstraintLayout
     private val viewModel: AuthViewModel by viewModels()
-
-    // Para no repetir la animación cada vez que se re-emite el mismo estado
     private var introAlreadyPlayed = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContentView(R.layout.welcome_page)
 
         root = findViewById(R.id.root_welcome)
         val btnSignUp = findViewById<MaterialButton>(R.id.btn_sign_up)
         val tvLogIn = findViewById<TextView>(R.id.tv_login_action)
 
-        // Clicks: ahora golpean al ViewModel
         btnSignUp.setOnClickListener { viewModel.welcome_onClickSignUp() }
         tvLogIn.setOnClickListener { viewModel.welcome_onClickLogin() }
 
-        // Observa estado
         observeWelcomeState()
-
-        // Lógica inicial (antes era controller.onInit())
         viewModel.welcome_onInit()
     }
 
@@ -60,14 +54,11 @@ class WelcomePage : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.welcome.collect { ui ->
-
-                    // 1) Animación de intro (solo 1 vez)
                     if (ui.shouldPlayIntro && !introAlreadyPlayed) {
                         introAlreadyPlayed = true
                         playIntroOverlay(root)
                     }
 
-                    // 2) Navegación
                     when (ui.nav) {
                         AuthNavDestination.ToCreateAccount -> {
                             startActivity(Intent(this@WelcomePage, CreateAccountActivity::class.java))
@@ -87,8 +78,13 @@ class WelcomePage : AppCompatActivity() {
                             finish()
                             viewModel.welcome_clearNav()
                         }
+                        AuthNavDestination.ToBusinessProfile -> {
+                            startActivity(Intent(this@WelcomePage, BusinessAccountActivity::class.java))
+                            finish()
+                            viewModel.welcome_clearNav()
+                        }
                         AuthNavDestination.ToStudentCode -> {
-                            // Si alguna vez quieres enviar a StudentCode, manejar aquí.
+                            // Si algún flujo te lleva a StudentCode, manéjalo aquí si lo necesitas.
                             viewModel.welcome_clearNav()
                         }
                         AuthNavDestination.None -> Unit
@@ -98,7 +94,6 @@ class WelcomePage : AppCompatActivity() {
         }
     }
 
-    /** Animación de expansión circular + fade, como tenías antes */
     private fun playIntroOverlay(root: ConstraintLayout) {
         val overlay = FrameLayout(this).apply {
             setBackgroundColor(ContextCompat.getColor(this@WelcomePage, R.color.yellowLight))

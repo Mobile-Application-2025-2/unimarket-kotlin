@@ -16,8 +16,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.unimarket.R
-import com.example.unimarket.view.home.HomeBuyerActivity
 import com.example.unimarket.view.home.CourierHomeActivity
+import com.example.unimarket.view.home.HomeBuyerActivity
+import com.example.unimarket.view.profile.BusinessAccountActivity
 import com.example.unimarket.viewmodel.AuthNavDestination
 import com.example.unimarket.viewmodel.AuthViewModel
 import com.google.android.material.button.MaterialButton
@@ -55,15 +56,13 @@ class LoginActivity : AppCompatActivity() {
         etPassword = findViewById(R.id.etPassword)
         ivToggle = findViewById(R.id.ivTogglePassword)
 
-        // =============== Toggle password visibility ===============
+        // Toggle password
         val closedFromIv = ivToggle.drawable
         val closedFromTil = tilPassword.endIconDrawable
-
         fun renderPasswordUi() {
             etPassword.transformationMethod =
                 if (passwordVisible) null else PasswordTransformationMethod.getInstance()
             etPassword.setSelection(etPassword.text?.length ?: 0)
-
             if (ivToggle != null) {
                 ivToggle.setImageDrawable(
                     if (passwordVisible)
@@ -82,44 +81,28 @@ class LoginActivity : AppCompatActivity() {
                         closedFromTil ?: ContextCompat.getDrawable(this, R.drawable.closed)
             }
         }
-
-        ivToggle.setOnClickListener {
-            passwordVisible = !passwordVisible
-            renderPasswordUi()
-        }
-        tilPassword.setEndIconOnClickListener {
-            passwordVisible = !passwordVisible
-            renderPasswordUi()
-        }
+        ivToggle.setOnClickListener { passwordVisible = !passwordVisible; renderPasswordUi() }
+        tilPassword.setEndIconOnClickListener { passwordVisible = !passwordVisible; renderPasswordUi() }
         renderPasswordUi()
 
-        // ================= Inputs -> ViewModel =================
-        etEmail.doAfterTextChangedCompat { text ->
-            viewModel.signIn_onEmailChanged(text)
-        }
-        etPassword.doAfterTextChangedCompat { text ->
-            viewModel.signIn_onPasswordChanged(text)
-        }
+        // Inputs -> VM
+        etEmail.doAfterTextChangedCompat { viewModel.signIn_onEmailChanged(it) }
+        etPassword.doAfterTextChangedCompat { viewModel.signIn_onPasswordChanged(it) }
 
-        // =================== Botones ===========================
+        // Botones
         btnBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
-        tvSignUp.setOnClickListener {
-            startActivity(Intent(this, CreateAccountActivity::class.java))
-        }
-        btnSignIn.setOnClickListener {
-            viewModel.signIn_submit()
-        }
+        tvSignUp.setOnClickListener { startActivity(Intent(this, CreateAccountActivity::class.java)) }
+        btnSignIn.setOnClickListener { viewModel.signIn_submit() }
 
-        // ============== Observer del estado de SignIn ==========
+        // Observer
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.signIn.collect { ui ->
-
-                    // 1) errores de campo
+                    // Errores de campo
                     tilEmail.error = ui.emailError
                     tilPassword.error = ui.passwordError
 
-                    // 2) loading / botón
+                    // Loading
                     if (ui.isSubmitting) {
                         if (originalBtnText == null) originalBtnText = btnSignIn.text
                         btnSignIn.isEnabled = false
@@ -129,46 +112,48 @@ class LoginActivity : AppCompatActivity() {
                         btnSignIn.text = originalBtnText ?: getString(R.string.sign_in)
                     }
 
-                    // 3) error global
-                    if (ui.errorMessage != null) {
-                        Toast.makeText(this@LoginActivity, ui.errorMessage, Toast.LENGTH_LONG).show()
+                    // Error global
+                    ui.errorMessage?.let {
+                        Toast.makeText(this@LoginActivity, it, Toast.LENGTH_LONG).show()
                         viewModel.signIn_clearNavAndErrors()
                     }
 
-                    // 4) navegación
+                    // Navegación (usa this@LoginActivity)
                     when (ui.nav) {
                         AuthNavDestination.ToBuyerHome -> {
                             val intent = Intent(this@LoginActivity, HomeBuyerActivity::class.java)
                                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                             startActivity(intent)
-                            // si quieres cerrar este screen:
-                            // finish()
+                            finish()
                             viewModel.signIn_clearNavAndErrors()
                         }
-                        AuthNavDestination.ToCourierHome -> {
-                            // Si tu VM mapea "deliver/courier" aquí, navega:
-                            val intent = Intent(this@LoginActivity, CourierHomeActivity::class.java)
+                        AuthNavDestination.ToBusinessProfile -> {
+                            val intent = Intent(this@LoginActivity, BusinessAccountActivity::class.java)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                             startActivity(intent)
                             finish()
                             viewModel.signIn_clearNavAndErrors()
                         }
-                        else -> {
-                            // None: no navegamos (si luego quieres distinguir "business", ajustamos el VM)
+                        AuthNavDestination.ToCourierHome -> {
+                            val intent = Intent(this@LoginActivity, CourierHomeActivity::class.java)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                            startActivity(intent)
+                            finish()
+                            viewModel.signIn_clearNavAndErrors()
                         }
+                        else -> Unit
                     }
                 }
             }
         }
     }
 
-    /** Extensión local para afterTextChanged segura */
+    /** afterTextChanged segura */
     private fun TextInputEditText.doAfterTextChangedCompat(block: (String) -> Unit) {
         this.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                block(s?.toString() ?: "")
-            }
+            override fun afterTextChanged(s: Editable?) { block(s?.toString() ?: "") }
         })
     }
 }

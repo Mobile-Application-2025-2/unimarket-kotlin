@@ -634,7 +634,8 @@
                 android:paddingBottom="8dp"
                 android:scaleType="fitCenter"
                 android:adjustViewBounds="true"
-                android:src="@drawable/baseline_person_outline_24" />
+                android:src="@drawable/baseline_person_outline_24"
+                app:tint="@color/white"/>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 

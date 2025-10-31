@@ -1,8 +1,8 @@
 package com.example.unimarket.view.home
 
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.os.Bundle
-import android.view.View
 import android.widget.ImageButton
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -14,60 +14,118 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.unimarket.R
 import com.example.unimarket.model.domain.entity.Business
-import com.example.unimarket.view.profile.BuyerAccountActivity
-import com.example.unimarket.viewmodel.HomeBuyerViewModel
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.launch
 
 class HomeBuyerActivity : AppCompatActivity() {
 
-    private val vm: HomeBuyerViewModel by viewModels()
+    private val viewModel: HomeBuyerViewModel by viewModels()
 
-    private lateinit var recycler: RecyclerView
-    private lateinit var adapter: BusinessAdapter
+    private lateinit var chipGroup: ChipGroup
+    private lateinit var rvBusinesses: RecyclerView
+    private lateinit var businessAdapter: BusinessAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.homepage) // tu layout
 
-        // Tu XML se llama "homepage.xml"
-        setContentView(R.layout.homepage)
+        chipGroup = findViewById(R.id.chipGroupFilters)
+        rvBusinesses = findViewById(R.id.rvBusinesses)
 
-        recycler = findViewById(R.id.rvBusinesses)
-
-        adapter = BusinessAdapter(
+        // Adapter de negocios
+        businessAdapter = BusinessAdapter(
             items = emptyList(),
             onClick = { business: Business ->
-                Toast.makeText(this, "Click: ${business.name}", Toast.LENGTH_SHORT).show()
-                // TODO: navegar al detalle/lista de productos con business.id
+                Toast.makeText(this, business.name.ifBlank { "Negocio" }, Toast.LENGTH_SHORT).show()
             }
         )
-
-        recycler.layoutManager = LinearLayoutManager(this)
-        recycler.adapter = adapter
-
-        // Bottom nav -> Perfil
-        findViewById<ImageButton>(R.id.nav_profile).setOnClickListener {
-            startActivity(Intent(this, BuyerAccountActivity::class.java))
+        rvBusinesses.apply {
+            layoutManager = LinearLayoutManager(this@HomeBuyerActivity)
+            adapter = businessAdapter
+            setHasFixedSize(true)
         }
 
-        // Observa el estado del VM
+        // Colores checked/unchecked del fondo de los chips (solo fondo, como pediste)
+        val chipBg = ColorStateList(
+            arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+            intArrayOf(getColor(R.color.yellowLight), getColor(android.R.color.white))
+        )
+        for (i in 0 until chipGroup.childCount) {
+            (chipGroup.getChildAt(i) as? Chip)?.chipBackgroundColor = chipBg
+        }
+
+        // Listener de filtros del ChipGroup -> VM
+        setupFilterChips()
+
+        // Footer: navega al perfil de comprador vía VM (MVVM-friendly)
+        findViewById<ImageButton>(R.id.nav_profile).setOnClickListener {
+            viewModel.onClickProfile()
+        }
+
+        // Observa estado de UI (lista + errores)
+        observeUi()
+
+        // Observa navegación
+        observeNav()
+    }
+
+    private fun setupFilterChips() {
+        // Mapa ID de chip -> Filter
+        val filterMap = mapOf(
+            R.id.chip_all to Filter.ALL,
+            R.id.chip_food to Filter.FOOD,
+            R.id.chip_stationery to Filter.STATIONERY,
+            R.id.chip_tutoring to Filter.TUTORING,
+            R.id.chip_accessories to Filter.ACCESSORIES
+        )
+
+        chipGroup.setOnCheckedStateChangeListener { _, checkedIds ->
+            val selectedId = checkedIds.firstOrNull()
+            val filter = filterMap[selectedId] ?: Filter.ALL
+            viewModel.onFilterSelected(filter)
+        }
+
+        // Asegurar que "Todos" esté seleccionado por defecto si nada lo está
+        if (chipGroup.checkedChipId == -1) {
+            chipGroup.findViewById<Chip>(R.id.chip_all)?.let { chipGroup.check(it.id) }
+        }
+    }
+
+    private fun observeUi() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                vm.ui.collect { ui ->
-                    render(ui.items)
+                viewModel.ui.collect { ui ->
+                    // pinta negocios filtrados
+                    businessAdapter.submit(ui.businessesFiltered)
+
+                    // muestra error si existe
                     ui.error?.let { msg ->
                         Toast.makeText(this@HomeBuyerActivity, msg, Toast.LENGTH_LONG).show()
                     }
                 }
             }
         }
-
-        // Cargar negocios
-        vm.loadBusinesses()
     }
 
-    private fun render(items: List<Business>) {
-        adapter.submit(items)
-        // Si algún día agregas empty view al layout, puedes controlar su visibilidad aquí.
-        // findViewById<View>(R.id.emptyView)?.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
+    private fun observeNav() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.nav.collect { nav ->
+                    when (nav) {
+                        is HomeNav.ToBuyerProfile -> {
+                            startActivity(
+                                Intent(
+                                    this@HomeBuyerActivity,
+                                    com.example.unimarket.view.profile.BuyerAccountActivity::class.java
+                                )
+                            )
+                            viewModel.navHandled()
+                        }
+                        else -> Unit
+                    }
+                }
+            }
+        }
     }
 }
