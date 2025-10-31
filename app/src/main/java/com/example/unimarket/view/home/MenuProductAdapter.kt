@@ -63,12 +63,12 @@ class MenuProductAdapter(
             rating.text = formatRating(item.rating)
 
             if (item.image.isBlank()) {
-                image.setImageResource(R.drawable.personajesingup)
+                image.setImageResource(R.drawable.tacos)
             } else {
                 image.load(item.image) {
                     crossfade(true)
-                    placeholder(R.drawable.personajesingup)
-                    error(R.drawable.personajesingup)
+                    placeholder(R.drawable.tacos)
+                    error(R.drawable.tacos)
                 }
             }
 

@@ -42,6 +42,7 @@ class BusinessMenuActivity : AppCompatActivity() {
     private lateinit var businessSubtitle: TextView
     private lateinit var rating: TextView
     private lateinit var reviews: TextView
+    private lateinit var deliveryEstimate: TextView
     private lateinit var chipGroup: ChipGroup
     private lateinit var scrollView: NestedScrollView
     private lateinit var sectionsContainer: LinearLayout
@@ -78,6 +79,7 @@ class BusinessMenuActivity : AppCompatActivity() {
         businessSubtitle = findViewById(R.id.tvBusinessDescription)
         rating = findViewById(R.id.tvRating)
         reviews = findViewById(R.id.tvReviews)
+        deliveryEstimate = findViewById(R.id.tvDelivery)
         chipGroup = findViewById(R.id.chipGroupCategories)
         scrollView = findViewById(R.id.scrollContent)
         sectionsContainer = findViewById(R.id.containerSections)
@@ -132,20 +134,21 @@ class BusinessMenuActivity : AppCompatActivity() {
         rating.text = String.format(Locale.US, "%.1f", intent.getDoubleExtra(EXTRA_BUSINESS_RATING, 4.0))
         val reviewsFallback = intent.getIntExtra(EXTRA_BUSINESS_REVIEWS, 200)
         reviews.text = getString(R.string.business_reviews_count, reviewsFallback)
+        deliveryEstimate.text = getString(R.string.business_menu_delivery_placeholder)
 
         if (fallbackLogo.isBlank()) {
-            logoImage.setImageResource(R.drawable.personajesingup)
-            coverImage.setImageResource(R.drawable.personajesingup)
+            logoImage.setImageResource(R.drawable.tacos)
+            coverImage.setImageResource(R.drawable.tacos)
         } else {
             logoImage.load(fallbackLogo) {
                 crossfade(true)
-                placeholder(R.drawable.personajesingup)
-                error(R.drawable.personajesingup)
+                placeholder(R.drawable.tacos)
+                error(R.drawable.tacos)
             }
             coverImage.load(fallbackLogo) {
                 crossfade(true)
-                placeholder(R.drawable.personajesingup)
-                error(R.drawable.personajesingup)
+                placeholder(R.drawable.tacos)
+                error(R.drawable.tacos)
             }
         }
     }
@@ -159,20 +162,25 @@ class BusinessMenuActivity : AppCompatActivity() {
                 .joinToString(" · ")
                 .ifBlank { fallbackSubtitle }
 
+            val deliveryText = business.address.direccion
+                .takeIf { it.isNotBlank() }
+                ?: getString(R.string.business_menu_delivery_placeholder)
+            deliveryEstimate.text = deliveryText
+
             val logo = business.logo.ifBlank { fallbackLogo }
             if (logo.isBlank()) {
-                logoImage.setImageResource(R.drawable.personajesingup)
-                coverImage.setImageResource(R.drawable.personajesingup)
+                logoImage.setImageResource(R.drawable.tacos)
+                coverImage.setImageResource(R.drawable.tacos)
             } else {
                 logoImage.load(logo) {
                     crossfade(true)
-                    placeholder(R.drawable.personajesingup)
-                    error(R.drawable.personajesingup)
+                    placeholder(R.drawable.tacos)
+                    error(R.drawable.tacos)
                 }
                 coverImage.load(logo) {
                     crossfade(true)
-                    placeholder(R.drawable.personajesingup)
-                    error(R.drawable.personajesingup)
+                    placeholder(R.drawable.tacos)
+                    error(R.drawable.tacos)
                 }
             }
 
@@ -299,6 +307,8 @@ class BusinessMenuActivity : AppCompatActivity() {
         val recycler = view.findViewById<RecyclerView>(R.id.rvSectionProducts)
         val adapter = MenuProductAdapter(emptyList(), ::handleAddProduct)
         recycler.layoutManager = GridLayoutManager(this, 2)
+        val spacing = resources.getDimensionPixelSize(R.dimen.grid_spacing_12)
+        recycler.addItemDecoration(MenuGridSpacingDecoration(spacing))
         recycler.adapter = adapter
         return SectionHolder(key, view, title, recycler, adapter)
     }

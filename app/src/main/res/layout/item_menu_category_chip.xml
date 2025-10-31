@@ -7,8 +7,13 @@
     android:checkable="true"
     android:text="Descuentos"
     android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
-    android:textColor="@color/text_primary"
+    android:textColor="@color/menu_chip_text"
     app:checkedIconVisible="false"
+    app:chipBackgroundColor="@color/menu_chip_background"
     app:chipCornerRadius="24dp"
     app:chipMinHeight="40dp"
-    app:rippleColor="@color/yellowLight" />
+    app:chipStrokeColor="@color/menu_chip_stroke"
+    app:chipStrokeWidth="1dp"
+    app:rippleColor="@color/yellowLight"
+    app:textEndPadding="16dp"
+    app:textStartPadding="16dp" />

@@ -48,4 +48,5 @@
     <string name="business_menu_category_deals_title">Menú %1$s</string>
     <string name="business_menu_category_popular_title">Favoritos %1$s</string>
     <string name="business_menu_empty_products">Este negocio aún no tiene productos disponibles.</string>
+    <string name="business_menu_delivery_placeholder">15 - 25 min</string>
 </resources>
