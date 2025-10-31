@@ -2,11 +2,13 @@ package com.example.unimarket.view.auth
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.method.PasswordTransformationMethod
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.widget.doAfterTextChanged
 import androidx.core.widget.NestedScrollView
+import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -14,19 +16,27 @@ import com.example.unimarket.R
 import com.example.unimarket.databinding.ActivityCreateAccountBinding
 import com.example.unimarket.viewmodel.AuthNavDestination
 import com.example.unimarket.viewmodel.AuthViewModel
-import kotlinx.coroutines.launch
 import com.google.android.material.textfield.TextInputLayout
+import com.google.android.material.textfield.MaterialAutoCompleteTextView
+import kotlinx.coroutines.launch
 
 class CreateAccountActivity : AppCompatActivity() {
 
     private lateinit var b: ActivityCreateAccountBinding
-
-    // ViewModel compartido que ya tiene la lógica de signup
     private val viewModel: AuthViewModel by viewModels()
 
-    // Lo usamos solo para habilitar/deshabilitar el botón y los iconos inline
-    // sin esperar a que el usuario presione "Sign In".
     private var canProceed: Boolean = false
+
+    // Estado del ojo
+    private var isPasswordVisible = false
+
+    // ---- Dropdown: tipos de cuenta ----
+    private data class AccountType(val id: String, val label: String)
+    private val accountTypes = listOf(
+        AccountType(id = "buyer",    label = "Buyer"),
+        AccountType(id = "business", label = "Business")
+    )
+    private var selectedTypeId: String = "buyer" // default
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,215 +45,194 @@ class CreateAccountActivity : AppCompatActivity() {
         val root = findViewById<NestedScrollView>(R.id.createAccountRoot)
         b = ActivityCreateAccountBinding.bind(root)
 
-        // Botón back
+        // Restaurar selección si hay estado previo
+        selectedTypeId = (savedInstanceState?.getString(STATE_TYPE_ID) ?: "buyer").lowercase()
+
+        // Back
         b.btnBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
 
-        // Botones federados (aún TODO)
+        // Botones federados (TODO)
         b.btnOutlook.setOnClickListener { /* TODO: federated sign-in */ }
         b.btnGoogle.setOnClickListener  { /* TODO: Google Sign-In */ }
 
-        // =====================================
-        // INPUT LISTENERS -> ViewModel
-        // =====================================
-
-        b.etName.doAfterTextChanged { text ->
-            viewModel.create_onNameChanged(text.toString())
+        // Inputs -> VM (normalizados)
+        b.etName.doAfterTextChanged {
+            val nameNorm = normalize(it?.toString())
+            viewModel.create_onNameChanged(nameNorm)
+            refreshLocalValidation()
+        }
+        b.etEmail.doAfterTextChanged {
+            val emailNorm = normalize(it?.toString())
+            viewModel.create_onEmailChanged(emailNorm)
+            refreshLocalValidation()
+        }
+        b.etPassword.doAfterTextChanged {
+            // la contraseña NO se normaliza
+            viewModel.create_onPasswordChanged(it?.toString().orEmpty())
+            refreshLocalValidation()
+        }
+        b.cbAccept.setOnCheckedChangeListener { _, checked ->
+            viewModel.create_onPolicyToggled(checked)
             refreshLocalValidation()
         }
 
-        b.etEmail.doAfterTextChanged { text ->
-            viewModel.create_onEmailChanged(text.toString())
-            refreshLocalValidation()
-        }
+        // Ojo de contraseña
+        setupPasswordToggle()
 
-        b.etPassword.doAfterTextChanged { text ->
-            viewModel.create_onPasswordChanged(text.toString())
-            refreshLocalValidation()
-        }
+        // Dropdown de tipo de cuenta (id ya viene en minúsculas)
+        setupAccountTypeDropdown()
 
-        b.cbAccept.setOnCheckedChangeListener { _, isChecked ->
-            viewModel.create_onPolicyToggled(isChecked)
-            refreshLocalValidation()
-        }
-
-        // Estado inicial de los controles
+        // Estado inicial de controles
         refreshLocalValidation()
 
-        // =====================================
-        // CLICK "Sign In" (aquí realmente es crear cuenta)
-        // =====================================
-
+        // Crear cuenta (envía el type normalizado)
         b.btnSignIn.setOnClickListener {
             if (!canProceed) {
-                // Mostrar errores inline locales (como en tu versión original)
                 showInlineErrors()
-                Toast.makeText(
-                    this,
-                    getString(R.string.complete_the_fields),
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast.makeText(this, getString(R.string.complete_the_fields), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-
-            // Llamamos al ViewModel para que ejecute el signUp real.
-            // create_submit ya ejecuta coroutine interna y actualiza el estado.
-            viewModel.create_submit(
-                // ahora mismo asumimos usuario "buyer" por defecto,
-                // igual que tu controlador hacía.
-                type = "buyer"
-            )
+            viewModel.create_submit(type = selectedTypeId.lowercase())
         }
 
-        // =====================================
-        // OBSERVAR EL STATEFLOW DEL VIEWMODEL
-        // =====================================
-
+        // Observa estado del VM
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.create.collect { ui ->
-
-                    // 1. Errores de validación desde el ViewModel
-                    //    (cuando el usuario ya intentó enviar y falló reglas)
+                    // Errores de validación del VM
                     b.tilName.error = ui.nameError
                     b.tilEmail.error = ui.emailError
                     b.tilPassword.error = ui.passwordError
-                    // policyError no es un TextInputLayout, lo manejamos con Toast
-                    ui.acceptedPolicyError?.let { policyMsg ->
-                        Toast.makeText(this@CreateAccountActivity, policyMsg, Toast.LENGTH_SHORT)
-                            .show()
+                    ui.acceptedPolicyError?.let {
+                        Toast.makeText(this@CreateAccountActivity, it, Toast.LENGTH_SHORT).show()
                     }
 
-                    // 2. Loading / botón estado de envío
+                    // Loading / botón
                     if (ui.isSubmitting) {
                         b.btnSignIn.isEnabled = false
                         b.btnSignIn.text = getString(R.string.creating_account)
                         b.btnSignIn.alpha = 0.6f
                     } else {
-                        // volvemos a usar nuestra validación local para habilitar/deshabilitar
                         refreshLocalValidation()
                         b.btnSignIn.text = getString(R.string.action_sign_up)
                     }
 
-                    // 3. Mensaje tipo toastMessage (éxito o error del signup)
+                    // Toast one-shot
                     ui.toastMessage?.let { msg ->
                         Toast.makeText(this@CreateAccountActivity, msg, Toast.LENGTH_LONG).show()
-                        // Limpiamos el mensaje en el VM para que no se repita
                         viewModel.create_clearNavAndToast()
                     }
 
-                    // 4. Navegación posterior al signup
+                    // Navegación
                     when (ui.nav) {
                         AuthNavDestination.ToStudentCode -> {
-                            startActivity(
-                                Intent(
-                                    this@CreateAccountActivity,
-                                    StudentCodeActivity::class.java
-                                )
-                            )
+                            startActivity(Intent(this@CreateAccountActivity, StudentCodeActivity::class.java))
                             finish()
                             viewModel.create_clearNavAndToast()
                         }
-
-                        else -> {
-                            // nada
-                        }
+                        else -> Unit
                     }
                 }
             }
         }
     }
 
-    /**
-     * Esta función hace la validación rápida que tú hacías en refreshState():
-     * - nombre >= 3
-     * - email válido por regex
-     * - pass >= 8
-     * - cbAccept checkeado
-     *
-     * Actualiza:
-     *   - iconos de check en Name/Email
-     *   - alpha del botón
-     *   - canProceed (bandera local)
-     *
-     * Nota: esto es puramente visual / UX rápida mientras escribe.
-     * La validación definitiva igual se hace en el ViewModel al llamar create_submit().
-     */
-    private fun refreshLocalValidation() {
-        val name  = b.etName.text?.toString()?.trim().orEmpty()
-        val email = b.etEmail.text?.toString()?.trim().orEmpty()
-        val pass  = b.etPassword.text?.toString().orEmpty()
-        val accepted = b.cbAccept.isChecked
+    // --- Ojo de contraseña con imágenes closed/open ---
+    private fun setupPasswordToggle() {
+        b.etPassword.transformationMethod = PasswordTransformationMethod.getInstance()
+        b.etPassword.setSelection(b.etPassword.text?.length ?: 0)
 
-        val validName  = name.length >= 3
-        val validEmail = EMAIL_REGEX.matches(email)
+        b.ivTogglePassword.setImageResource(R.drawable.closed)
+
+        b.ivTogglePassword.setOnClickListener {
+            val start = b.etPassword.selectionStart
+            val end = b.etPassword.selectionEnd
+
+            isPasswordVisible = !isPasswordVisible
+            if (isPasswordVisible) {
+                b.etPassword.transformationMethod = null
+                val openId = resources.getIdentifier("open", "drawable", packageName)
+                if (openId != 0) b.ivTogglePassword.setImageResource(openId)
+                else b.ivTogglePassword.setImageResource(R.drawable.closed)
+            } else {
+                b.etPassword.transformationMethod = PasswordTransformationMethod.getInstance()
+                b.ivTogglePassword.setImageResource(R.drawable.closed)
+            }
+            b.etPassword.setSelection(start, end)
+        }
+    }
+
+    // --- Dropdown account type ---
+    private fun setupAccountTypeDropdown() {
+        val labels = accountTypes.map { it.label }
+        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, labels)
+        (b.actAccountType as MaterialAutoCompleteTextView).setAdapter(adapter)
+
+        // Setear texto inicial según selectedTypeId
+        val initial = accountTypes.firstOrNull { it.id == selectedTypeId } ?: accountTypes.first()
+        b.actAccountType.setText(initial.label, false)
+
+        // Cambios de selección
+        b.actAccountType.setOnItemClickListener { _, _, position, _ ->
+            val chosen = accountTypes[position]
+            selectedTypeId = chosen.id.lowercase()
+            // Si quisieras avisar al VM inmediatamente:
+            // viewModel.create_onAccountTypeChanged(selectedTypeId)
+        }
+
+        // Abrir menú al tocar el contenedor también
+        b.tilAccountType.setOnClickListener {
+            (b.actAccountType as MaterialAutoCompleteTextView).showDropDown()
+        }
+    }
+
+    private fun refreshLocalValidation() {
+        val nameNorm  = normalize(b.etName.text?.toString())
+        val emailNorm = normalize(b.etEmail.text?.toString())
+        val pass      = b.etPassword.text?.toString().orEmpty()
+        val accepted  = b.cbAccept.isChecked
+
+        val validName  = nameNorm.length >= 3
+        val validEmail = EMAIL_REGEX.matches(emailNorm)
         val validPass  = pass.length >= 8
 
         canProceed = validName && validEmail && validPass && accepted
 
-        // Muestra el ícono verde de check (si falla el try, lo ignora)
         b.tilName.setEndIconVisibleCompat(validName)
         b.tilEmail.setEndIconVisibleCompat(validEmail)
 
-        // Alpha visual del botón (pero no lo deshabilitamos del todo;
-        // eso lo hace el VM cuando está isSubmitting)
         b.btnSignIn.isEnabled = true
         b.btnSignIn.alpha = if (canProceed) 1f else 0.6f
 
-        // Limpieza de errores inline mientras el usuario arregla cosas
         if (validName)  b.tilName.error = null
         if (validEmail) b.tilEmail.error = null
         if (validPass)  b.tilPassword.error = null
     }
 
-    /**
-     * Esto replica showInlineErrors() original:
-     * si el usuario intenta enviar pero no cumple las reglas,
-     * se marcan errores y se hace focus en el primero que falle.
-     */
     private fun showInlineErrors() {
-        val name  = b.etName.text?.toString()?.trim().orEmpty()
-        val email = b.etEmail.text?.toString()?.trim().orEmpty()
-        val pass  = b.etPassword.text?.toString().orEmpty()
+        val nameNorm  = normalize(b.etName.text?.toString())
+        val emailNorm = normalize(b.etEmail.text?.toString())
+        val pass      = b.etPassword.text?.toString().orEmpty()
 
-        if (name.length < 3) {
-            b.tilName.error = getString(R.string.error_name_min3)
-            b.etName.requestFocus()
-        } else {
-            b.tilName.error = null
-        }
-
-        if (!EMAIL_REGEX.matches(email)) {
-            b.tilEmail.error = getString(R.string.error_email_invalid)
-            if (b.tilName.error == null) b.etEmail.requestFocus()
-        } else {
-            b.tilEmail.error = null
-        }
-
-        if (pass.length < 8) {
-            b.tilPassword.error = getString(R.string.error_password_min8)
-            if (b.tilName.error == null && b.tilEmail.error == null) {
-                b.etPassword.requestFocus()
-            }
-        } else {
-            b.tilPassword.error = null
-        }
-
-        if (!b.cbAccept.isChecked) {
-            Toast.makeText(this, getString(R.string.accept_privacy), Toast.LENGTH_SHORT).show()
-        }
+        if (nameNorm.length < 3) { b.tilName.error = getString(R.string.error_name_min3); b.etName.requestFocus() } else b.tilName.error = null
+        if (!EMAIL_REGEX.matches(emailNorm)) { b.tilEmail.error = getString(R.string.error_email_invalid); if (b.tilName.error == null) b.etEmail.requestFocus() } else b.tilEmail.error = null
+        if (pass.length < 8) { b.tilPassword.error = getString(R.string.error_password_min8); if (b.tilName.error == null && b.tilEmail.error == null) b.etPassword.requestFocus() } else b.tilPassword.error = null
+        if (!b.cbAccept.isChecked) Toast.makeText(this, getString(R.string.accept_privacy), Toast.LENGTH_SHORT).show()
     }
 
     private fun TextInputLayout.setEndIconVisibleCompat(visible: Boolean) {
-        try {
-            isEndIconVisible = visible
-        } catch (_: Throwable) {
-            // Algunos dispositivos viejos rompen esto, así que lo protegiste con try/catch. Lo dejo igual.
-        }
+        try { isEndIconVisible = visible } catch (_: Throwable) { /* no-op */ }
+    }
+
+    private fun normalize(raw: String?): String = raw?.trim()?.lowercase().orEmpty()
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(STATE_TYPE_ID, selectedTypeId.lowercase())
     }
 
     companion object {
-        // Igual que tu versión original
-        private val EMAIL_REGEX =
-            Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+        private val EMAIL_REGEX = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+        private const val STATE_TYPE_ID = "state_type_id"
     }
 }

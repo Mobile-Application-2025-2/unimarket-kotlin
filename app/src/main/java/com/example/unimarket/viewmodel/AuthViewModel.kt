@@ -73,96 +73,56 @@ class AuthViewModel(
     private val _student = MutableStateFlow(StudentCodeUiState())
     val student: StateFlow<StudentCodeUiState> = _student
 
-    // --------------------------------
-    // WELCOME
-    // --------------------------------
+    /* -----------------------------
+       WELCOME
+    ------------------------------ */
     fun welcome_onInit() {
         viewModelScope.launch {
-            // Intento refrescar token/claims para tener el "type" actualizado.
-            SessionManager.ensureFreshIdToken(forceRefresh = false)  // suspend
+            SessionManager.ensureFreshIdToken(forceRefresh = false)
             val session = SessionManager.get()
 
             if (session != null) {
                 val role = session.type.trim().lowercase()
                 when (role) {
-                    "buyer" -> {
-                        _welcome.update {
-                            it.copy(
-                                shouldPlayIntro = false,
-                                nav = AuthNavDestination.ToBuyerHome
-                            )
-                        }
-                    }
-                    "deliver", "delivery", "courier", "business" -> {
-                        _welcome.update {
-                            it.copy(
-                                shouldPlayIntro = false,
-                                nav = AuthNavDestination.ToCourierHome
-                            )
-                        }
-                    }
-                    else -> {
-                        // rol raro -> dejamos intro overlay y no navegamos
-                        _welcome.update {
-                            it.copy(
-                                shouldPlayIntro = true,
-                                nav = AuthNavDestination.None
-                            )
-                        }
-                    }
+                    "buyer" -> _welcome.update { it.copy(shouldPlayIntro = false, nav = AuthNavDestination.ToBuyerHome) }
+                    "deliver", "delivery", "courier", "business" ->
+                        _welcome.update { it.copy(shouldPlayIntro = false, nav = AuthNavDestination.ToCourierHome) }
+                    else -> _welcome.update { it.copy(shouldPlayIntro = true, nav = AuthNavDestination.None) }
                 }
             } else {
-                // sin sesión -> mostrar intro
-                _welcome.update {
-                    it.copy(
-                        shouldPlayIntro = true,
-                        nav = AuthNavDestination.None
-                    )
-                }
+                _welcome.update { it.copy(shouldPlayIntro = true, nav = AuthNavDestination.None) }
             }
         }
     }
 
-    fun welcome_onClickSignUp() {
-        _welcome.update { it.copy(nav = AuthNavDestination.ToCreateAccount) }
-    }
+    fun welcome_onClickSignUp() { _welcome.update { it.copy(nav = AuthNavDestination.ToCreateAccount) } }
+    fun welcome_onClickLogin()  { _welcome.update { it.copy(nav = AuthNavDestination.ToLogin) } }
+    fun welcome_clearNav()      { _welcome.update { it.copy(nav = AuthNavDestination.None) } }
 
-    fun welcome_onClickLogin() {
-        _welcome.update { it.copy(nav = AuthNavDestination.ToLogin) }
-    }
-
-    fun welcome_clearNav() {
-        _welcome.update { it.copy(nav = AuthNavDestination.None) }
-    }
-
-    // --------------------------------
-    // SIGN IN
-    // --------------------------------
+    /* -----------------------------
+       SIGN IN
+    ------------------------------ */
     fun signIn_onEmailChanged(newEmail: String) {
-        _signIn.update { it.copy(email = newEmail, emailError = null) }
+        // Normaliza email a minúsculas
+        _signIn.update { it.copy(email = newEmail.trim().lowercase(), emailError = null) }
     }
 
     fun signIn_onPasswordChanged(newPass: String) {
-        _signIn.update { it.copy(password = newPass, passwordError = null) }
+        _signIn.update { it.copy(password = newPass, passwordError = null) } // no normalizar password
     }
 
     fun signIn_submit() {
-        val email = _signIn.value.email.trim()
-        val pass = _signIn.value.password
+        val email = _signIn.value.email.trim().lowercase()
+        val pass  = _signIn.value.password
 
         var emailErr: String? = null
         var passErr: String? = null
 
-        if (!email.contains('@')) emailErr = "Invalid email"
+        if (!EMAIL_REGEX.matches(email)) emailErr = "Invalid email"
         if (pass.length < 8) passErr = "Password must be at least 8 characters"
 
         if (emailErr != null || passErr != null) {
-            _signIn.update {
-                it.copy(
-                    emailError = emailErr,
-                    passwordError = passErr
-                )
-            }
+            _signIn.update { it.copy(emailError = emailErr, passwordError = passErr) }
             return
         }
 
@@ -172,38 +132,24 @@ class AuthViewModel(
             try {
                 val result = authService.signIn(email, pass)
                 result.onSuccess { user ->
-                    // Refresca claims/tipo para estar seguro antes de decidir navegación.
-                    SessionManager.ensureFreshIdToken(forceRefresh = false)  // suspend
+                    SessionManager.ensureFreshIdToken(forceRefresh = false)
                     val session = SessionManager.get()
-
                     val role = (session?.type ?: user.type).trim().lowercase()
+
                     val dest = when (role) {
                         "buyer" -> AuthNavDestination.ToBuyerHome
                         "deliver", "delivery", "courier", "business" -> AuthNavDestination.ToCourierHome
                         else -> {
-                            _signIn.update {
-                                it.copy(
-                                    errorMessage = "Tipo de usuario desconocido: $role"
-                                )
-                            }
+                            _signIn.update { it.copy(errorMessage = "Tipo de usuario desconocido: $role") }
                             AuthNavDestination.None
                         }
                     }
-
                     _signIn.update { it.copy(nav = dest) }
                 }.onFailure { e ->
-                    _signIn.update {
-                        it.copy(
-                            errorMessage = e.message ?: "Error al iniciar sesión"
-                        )
-                    }
+                    _signIn.update { it.copy(errorMessage = e.message ?: "Error al iniciar sesión") }
                 }
             } catch (t: Throwable) {
-                _signIn.update {
-                    it.copy(
-                        errorMessage = t.message ?: "Error al iniciar sesión"
-                    )
-                }
+                _signIn.update { it.copy(errorMessage = t.message ?: "Error al iniciar sesión") }
             } finally {
                 _signIn.update { it.copy(isSubmitting = false) }
             }
@@ -211,55 +157,57 @@ class AuthViewModel(
     }
 
     fun signIn_clearNavAndErrors() {
-        _signIn.update {
-            it.copy(
-                nav = AuthNavDestination.None,
-                errorMessage = null
-            )
-        }
+        _signIn.update { it.copy(nav = AuthNavDestination.None, errorMessage = null) }
     }
 
-    // --------------------------------
-    // CREATE ACCOUNT
-    // --------------------------------
+    /* -----------------------------
+       CREATE ACCOUNT (Sign Up)
+    ------------------------------ */
     fun create_onNameChanged(newName: String) {
-        _create.update { it.copy(name = newName, nameError = null) }
+        // Normaliza nombre a minúsculas
+        _create.update { it.copy(name = newName.trim().lowercase(), nameError = null) }
     }
 
     fun create_onEmailChanged(newEmail: String) {
-        _create.update { it.copy(email = newEmail, emailError = null) }
+        // Normaliza email a minúsculas
+        _create.update { it.copy(email = newEmail.trim().lowercase(), emailError = null) }
     }
 
     fun create_onPasswordChanged(newPass: String) {
-        _create.update { it.copy(password = newPass, passwordError = null) }
+        _create.update { it.copy(password = newPass, passwordError = null) } // no normalizar password
     }
 
     fun create_onPolicyToggled(accepted: Boolean) {
         _create.update { it.copy(acceptedPolicy = accepted, acceptedPolicyError = null) }
     }
 
+    /**
+     * @param type El tipo llega desde la vista (buyer/business/etc.) y se normaliza aquí.
+     */
     fun create_submit(
         idType: String = "id",
         idNumber: String = "N/A",
-        type: String = "buyer",
+        type: String,
         businessName: String? = null,
         businessLogo: String? = null
     ) {
-        val cur = _create.value
-        val name = cur.name.trim()
-        val email = cur.email.trim()
-        val pass = cur.password
+        val cur   = _create.value
+        val name  = cur.name.trim().lowercase()
+        val email = cur.email.trim().lowercase()
+        val pass  = cur.password
         val policyOk = cur.acceptedPolicy
+
+        val typeNorm = type.trim().lowercase()  // <- usamos exactamente lo que llegó del input
 
         var nameErr: String? = null
         var emailErr: String? = null
         var passErr: String? = null
         var policyErr: String? = null
 
-        if (name.length < 3) nameErr = "Name too short"
-        if (!email.contains('@')) emailErr = "Invalid email"
-        if (pass.length < 8) passErr = "Password must be at least 8 characters"
-        if (!policyOk) policyErr = "Debes aceptar la política"
+        if (name.length < 3)             nameErr = "Name too short"
+        if (!EMAIL_REGEX.matches(email)) emailErr = "Invalid email"
+        if (pass.length < 8)             passErr = "Password must be at least 8 characters"
+        if (!policyOk)                   policyErr = "Debes aceptar la política"
 
         if (nameErr != null || emailErr != null || passErr != null || policyErr != null) {
             _create.update {
@@ -278,13 +226,12 @@ class AuthViewModel(
         viewModelScope.launch {
             try {
                 val user = User(
-                    email = email,
-                    name = name,
-                    idType = idType,
-                    idNumber = idNumber,
-                    type = type.lowercase().trim()
+                    email     = email,
+                    name      = name,
+                    idType    = idType,
+                    idNumber  = idNumber,
+                    type      = typeNorm
                 )
-
                 val result = authService.signUp(
                     user = user,
                     password = pass,
@@ -293,13 +240,10 @@ class AuthViewModel(
                     businessAddress = null,
                     buyerAddresses = null
                 )
-
                 result.onSuccess { createdUser ->
-                    // Refrescar claims/tipo tras crear cuenta
-                    SessionManager.ensureFreshIdToken(forceRefresh = false) // suspend
+                    SessionManager.ensureFreshIdToken(forceRefresh = false)
                     val session = SessionManager.get()
-
-                    val role = session?.type ?: createdUser.type
+                    val role = (session?.type ?: createdUser.type).trim().lowercase()
                     _create.update {
                         it.copy(
                             toastMessage = "Cuenta creada ($role)",
@@ -307,18 +251,10 @@ class AuthViewModel(
                         )
                     }
                 }.onFailure { e ->
-                    _create.update {
-                        it.copy(
-                            toastMessage = "Error: ${e.message}"
-                        )
-                    }
+                    _create.update { it.copy(toastMessage = "Error: ${e.message}") }
                 }
             } catch (t: Throwable) {
-                _create.update {
-                    it.copy(
-                        toastMessage = "Error: ${t.message}"
-                    )
-                }
+                _create.update { it.copy(toastMessage = "Error: ${t.message}") }
             } finally {
                 _create.update { it.copy(isSubmitting = false) }
             }
@@ -326,22 +262,18 @@ class AuthViewModel(
     }
 
     fun create_clearNavAndToast() {
-        _create.update {
-            it.copy(
-                nav = AuthNavDestination.None,
-                toastMessage = null
-            )
-        }
+        _create.update { it.copy(nav = AuthNavDestination.None, toastMessage = null) }
     }
 
-    // --------------------------------
-    // STUDENT CODE
-    // --------------------------------
+    /* -----------------------------
+       STUDENT CODE
+    ------------------------------ */
     fun student_onInputChanged(newCode: String) {
+        val norm = newCode.trim().lowercase()
         _student.update {
             it.copy(
-                studentId = newCode,
-                canProceed = newCode.trim().isNotEmpty(),
+                studentId = norm,
+                canProceed = norm.isNotEmpty(),
                 errorMessage = null
             )
         }
@@ -349,7 +281,6 @@ class AuthViewModel(
 
     fun student_onGetStartedClicked() {
         val role = _student.value.studentId.trim().lowercase()
-
         val dest = when (role) {
             "buyer" -> AuthNavDestination.ToBuyerHome
             "deliver", "courier", "driver", "delivery" -> AuthNavDestination.ToCourierHome
@@ -357,34 +288,24 @@ class AuthViewModel(
         }
 
         if (dest == AuthNavDestination.None) {
-            _student.update {
-                it.copy(
-                    errorMessage = "Escribe buyer o deliver (courier) para continuar."
-                )
-            }
+            _student.update { it.copy(errorMessage = "Escribe buyer o deliver (courier) para continuar.") }
         } else {
             _student.update { it.copy(nav = dest) }
         }
     }
 
-    fun student_onCameraIconClicked() {
-        _student.update { it.copy(requestOpenCamera = true) }
-    }
-
-    fun student_onCameraHandled() {
-        _student.update { it.copy(requestOpenCamera = false) }
-    }
-
-    fun student_onCameraResult(bitmap: Bitmap?) {
-        // placeholder: aún no haces nada con la foto en tu controlador original.
-    }
+    fun student_onCameraIconClicked() { _student.update { it.copy(requestOpenCamera = true) } }
+    fun student_onCameraHandled()     { _student.update { it.copy(requestOpenCamera = false) } }
+    fun student_onCameraResult(@Suppress("UNUSED_PARAMETER") bitmap: Bitmap?) { /* future use */ }
 
     fun student_clearNavAndErrors() {
-        _student.update {
-            it.copy(
-                nav = AuthNavDestination.None,
-                errorMessage = null
-            )
-        }
+        _student.update { it.copy(nav = AuthNavDestination.None, errorMessage = null) }
+    }
+
+    /* -----------------------------
+       Utils
+    ------------------------------ */
+    private companion object {
+        val EMAIL_REGEX = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
     }
 }
