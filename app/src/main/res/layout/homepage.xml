@@ -117,7 +117,7 @@
                     app:chipIconVisible="true"
                     app:checkedIconVisible="false"
                     app:rippleColor="@color/yellowStroke"
-                    app:chipBackgroundColor="@color/white"
+                    app:chipBackgroundColor="@color/yellowStroke"
                     app:chipStrokeColor="@color/yellowStroke"
                     app:chipStrokeWidth="1dp"/>
 
@@ -136,7 +136,7 @@
                     app:chipIconVisible="true"
                     app:checkedIconVisible="false"
                     app:rippleColor="@color/yellowStroke"
-                    app:chipBackgroundColor="@color/yellowStroke"
+                    app:chipBackgroundColor="@color/white"
                     app:chipStrokeColor="@color/yellowStroke"
                     app:chipStrokeWidth="1dp"/>
 

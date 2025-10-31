@@ -18,6 +18,7 @@ sealed class AuthNavDestination {
     object ToStudentCode : AuthNavDestination()
     object ToBuyerHome : AuthNavDestination()
     object ToCourierHome : AuthNavDestination()
+    object ToBusinessProfile : AuthNavDestination() // <- NUEVO
 }
 
 data class WelcomeUiState(
@@ -85,7 +86,8 @@ class AuthViewModel(
                 val role = session.type.trim().lowercase()
                 when (role) {
                     "buyer" -> _welcome.update { it.copy(shouldPlayIntro = false, nav = AuthNavDestination.ToBuyerHome) }
-                    "deliver", "delivery", "courier", "business" ->
+                    "business" -> _welcome.update { it.copy(shouldPlayIntro = false, nav = AuthNavDestination.ToBusinessProfile) } // <- CAMBIO
+                    "deliver", "delivery", "courier" ->
                         _welcome.update { it.copy(shouldPlayIntro = false, nav = AuthNavDestination.ToCourierHome) }
                     else -> _welcome.update { it.copy(shouldPlayIntro = true, nav = AuthNavDestination.None) }
                 }
@@ -103,12 +105,11 @@ class AuthViewModel(
        SIGN IN
     ------------------------------ */
     fun signIn_onEmailChanged(newEmail: String) {
-        // Normaliza email a minúsculas
         _signIn.update { it.copy(email = newEmail.trim().lowercase(), emailError = null) }
     }
 
     fun signIn_onPasswordChanged(newPass: String) {
-        _signIn.update { it.copy(password = newPass, passwordError = null) } // no normalizar password
+        _signIn.update { it.copy(password = newPass, passwordError = null) }
     }
 
     fun signIn_submit() {
@@ -138,7 +139,8 @@ class AuthViewModel(
 
                     val dest = when (role) {
                         "buyer" -> AuthNavDestination.ToBuyerHome
-                        "deliver", "delivery", "courier", "business" -> AuthNavDestination.ToCourierHome
+                        "business" -> AuthNavDestination.ToBusinessProfile // <- CAMBIO
+                        "deliver", "delivery", "courier" -> AuthNavDestination.ToCourierHome
                         else -> {
                             _signIn.update { it.copy(errorMessage = "Tipo de usuario desconocido: $role") }
                             AuthNavDestination.None
@@ -164,26 +166,21 @@ class AuthViewModel(
        CREATE ACCOUNT (Sign Up)
     ------------------------------ */
     fun create_onNameChanged(newName: String) {
-        // Normaliza nombre a minúsculas
         _create.update { it.copy(name = newName.trim().lowercase(), nameError = null) }
     }
 
     fun create_onEmailChanged(newEmail: String) {
-        // Normaliza email a minúsculas
         _create.update { it.copy(email = newEmail.trim().lowercase(), emailError = null) }
     }
 
     fun create_onPasswordChanged(newPass: String) {
-        _create.update { it.copy(password = newPass, passwordError = null) } // no normalizar password
+        _create.update { it.copy(password = newPass, passwordError = null) }
     }
 
     fun create_onPolicyToggled(accepted: Boolean) {
         _create.update { it.copy(acceptedPolicy = accepted, acceptedPolicyError = null) }
     }
 
-    /**
-     * @param type El tipo llega desde la vista (buyer/business/etc.) y se normaliza aquí.
-     */
     fun create_submit(
         idType: String = "id",
         idNumber: String = "N/A",
@@ -197,7 +194,7 @@ class AuthViewModel(
         val pass  = cur.password
         val policyOk = cur.acceptedPolicy
 
-        val typeNorm = type.trim().lowercase()  // <- usamos exactamente lo que llegó del input
+        val typeNorm = type.trim().lowercase()
 
         var nameErr: String? = null
         var emailErr: String? = null
@@ -235,7 +232,8 @@ class AuthViewModel(
                 val result = authService.signUp(
                     user = user,
                     password = pass,
-                    businessName = businessName,
+                    // Si es business y no te pasan nombre, usamos el del usuario:
+                    businessName = businessName ?: if (typeNorm == "business") name else null,
                     businessLogo = businessLogo,
                     businessAddress = null,
                     buyerAddresses = null
@@ -283,12 +281,13 @@ class AuthViewModel(
         val role = _student.value.studentId.trim().lowercase()
         val dest = when (role) {
             "buyer" -> AuthNavDestination.ToBuyerHome
+            "business" -> AuthNavDestination.ToBusinessProfile // <- CAMBIO
             "deliver", "courier", "driver", "delivery" -> AuthNavDestination.ToCourierHome
             else -> AuthNavDestination.None
         }
 
         if (dest == AuthNavDestination.None) {
-            _student.update { it.copy(errorMessage = "Escribe buyer o deliver (courier) para continuar.") }
+            _student.update { it.copy(errorMessage = "Escribe buyer / business / deliver para continuar.") }
         } else {
             _student.update { it.copy(nav = dest) }
         }
