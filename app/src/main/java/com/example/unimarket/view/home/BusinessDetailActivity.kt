@@ -61,7 +61,7 @@ class BusinessDetailActivity : AppCompatActivity() {
         imgLogo = findViewById(R.id.imgBusinessLogo)
         tvName = findViewById(R.id.tvBusinessName)
         tvCategories = findViewById(R.id.tvBusinessCategories)
-        tvDescription = findViewById(R.id.tvBusinessDescription)
+        tvDescription = findViewById(R.id.tvBusinessCategories)
         tvRating = findViewById(R.id.tvBusinessRating)
         tvRatingCount = findViewById(R.id.tvBusinessRatingCount)
         progress = findViewById(R.id.progress)

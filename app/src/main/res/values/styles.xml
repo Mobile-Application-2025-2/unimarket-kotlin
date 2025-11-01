@@ -131,5 +131,14 @@
         <item name="cornerSize">50%</item>
     </style>
 
+    <!-- Solo esquinas superiores redondeadas (para la imagen del producto) -->
+    <style name="ShapeAppearance.Uni.TopRounded22" parent="ShapeAppearance.MaterialComponents.SmallComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">22dp</item>
+        <item name="cornerSizeTopRight">22dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+
 </resources>
 
