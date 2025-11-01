@@ -1,5 +1,4 @@
-package com.example.unimarket.view.map
-
+package com.example.unimarket.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider

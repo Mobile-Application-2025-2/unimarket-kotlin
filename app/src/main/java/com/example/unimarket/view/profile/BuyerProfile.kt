@@ -13,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.unimarket.R
 import com.example.unimarket.view.auth.WelcomePage
+import com.example.unimarket.view.map.BusinessMapActivity
 import com.example.unimarket.viewmodel.BuyerNavDestination
 import com.example.unimarket.viewmodel.BuyerViewModel
 import kotlinx.coroutines.launch
@@ -77,7 +78,7 @@ class BuyerAccountActivity : AppCompatActivity() {
         // ---------- Bottom nav ----------
         navHome.setOnClickListener { finish() } // volver al Home
         navSearch.setOnClickListener { /* TODO: ir a búsqueda */ }
-        navMap.setOnClickListener { /* TODO: ir a mapa */ }
+        navMap.setOnClickListener { startActivity(Intent(this, BusinessMapActivity::class.java)) }
         navProfile.setOnClickListener { /* ya estás aquí */ }
 
         // ---------- Observa estado del VM ----------

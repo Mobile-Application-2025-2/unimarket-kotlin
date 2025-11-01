@@ -1,5 +1,6 @@
 package com.example.unimarket.model.domain.service
 
+import android.util.Log
 import com.example.unimarket.model.data.platform.GeocodingProvider
 import com.example.unimarket.model.data.platform.LocationProvider
 import com.example.unimarket.model.domain.entity.Business
@@ -9,10 +10,11 @@ import kotlinx.coroutines.withContext
 import kotlin.math.*
 
 data class BusinessPin(val business: Business, val position: LatLng)
-
+data class GeocodeDebug(val name: String, val address: String, val latLng: LatLng?)
 data class NearbyResult(
     val myLocation: LatLng,
-    val pins: List<BusinessPin>
+    val pins: List<BusinessPin>,
+    val debug: List<GeocodeDebug>
 )
 
 class NearbyBusinessesService(
@@ -20,25 +22,30 @@ class NearbyBusinessesService(
     private val geocoder: GeocodingProvider,
     private val locationProvider: LocationProvider
 ) {
-    suspend fun loadNearby(radiusMeters: Double = 2500.0): Result<NearbyResult> = withContext(Dispatchers.IO) {
-        val me = locationProvider.getCurrentLocation()
-            ?: return@withContext Result.failure(IllegalStateException("Sin ubicación"))
+    suspend fun loadNearby(radiusMeters: Double = 2500.0): Result<NearbyResult> =
+        withContext(Dispatchers.IO) {
+            val me = locationProvider.getCurrentLocation()
+                ?: return@withContext Result.failure(IllegalStateException("Sin ubicación"))
 
-        val businesses = businessService.getAllBusinesses().getOrElse {
-            return@withContext Result.failure(it)
-        }
-
-        val geocoded = mutableListOf<BusinessPin>()
-        for (b in businesses) {
-            val addr = b.address?.direccion?.trim().orEmpty()
-            if (addr.isBlank()) continue
-            val latLng = geocoder.geocodeOnce(addr) ?: continue
-            if (distanceMeters(me, latLng) <= radiusMeters) {
-                geocoded += BusinessPin(b, latLng)
+            val businesses = businessService.getAllBusinesses().getOrElse {
+                Log.e("BusinessMap", "Firestore error: ${it.message}")
+                return@withContext Result.failure(it)
             }
+
+            val pins = mutableListOf<BusinessPin>()
+            val debug = mutableListOf<GeocodeDebug>()
+
+            for (b in businesses) {
+                val addr = b.address?.direccion?.trim().orEmpty()
+                val latLng = if (addr.isNotBlank()) geocoder.geocodeOnce(addr) else null
+                debug += GeocodeDebug(b.name ?: "Negocio", addr, latLng)
+
+                if (latLng != null && distanceMeters(me, latLng) <= radiusMeters) {
+                    pins += BusinessPin(b, latLng)
+                }
+            }
+            Result.success(NearbyResult(me, pins, debug))
         }
-        Result.success(NearbyResult(me, geocoded))
-    }
 
     private fun distanceMeters(a: LatLng, b: LatLng): Double {
         val R = 6371000.0

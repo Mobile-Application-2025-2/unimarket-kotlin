@@ -18,8 +18,6 @@ class FusedLocationProvider(private val context: Context) : LocationProvider {
                 if (!cont.isCompleted) cont.resume(loc?.let { LatLng(it.latitude, it.longitude) })
             }
             .addOnFailureListener { if (!cont.isCompleted) cont.resume(null) }
-
-        // Fallback a lastLocation si no llega lectura en ~3s
         android.os.Handler(Looper.getMainLooper()).postDelayed({
             client.lastLocation
                 .addOnSuccessListener { last ->

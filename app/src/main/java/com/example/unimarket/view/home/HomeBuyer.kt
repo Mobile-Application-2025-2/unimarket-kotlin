@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.unimarket.R
 import com.example.unimarket.model.domain.entity.Business
+import com.example.unimarket.view.map.BusinessMapActivity
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.launch
@@ -68,6 +69,10 @@ class HomeBuyerActivity : AppCompatActivity() {
 
         // Observa navegación
         observeNav()
+
+        val navMap: ImageButton = findViewById(R.id.nav_map)
+        navMap.setOnClickListener { startActivity(Intent(this, BusinessMapActivity::class.java)) }
+
     }
 
     private fun setupFilterChips() {
