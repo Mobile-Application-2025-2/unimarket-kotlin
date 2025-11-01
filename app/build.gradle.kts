@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.gms.google-services")
+    id("kotlin-kapt")
 }
 
 android {
@@ -81,5 +82,16 @@ dependencies {
     implementation("androidx.compose.runtime:runtime-livedata:1.6.8")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6")
     implementation("io.coil-kt:coil:2.7.0")
+
+    // Concurrency en background
+    implementation ("androidx.work:work-runtime-ktx:2.9.1")
+
+    // (ya usas Coil y coroutines; si faltan, deja estas)
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation ("io.coil-kt:coil:2.6.0")
+
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    kapt("androidx.room:room-compiler:2.6.1")
 }
 
