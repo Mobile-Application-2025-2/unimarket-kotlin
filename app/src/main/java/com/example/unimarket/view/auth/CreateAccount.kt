@@ -19,6 +19,7 @@ import com.example.unimarket.viewmodel.AuthViewModel
 import com.google.android.material.textfield.TextInputLayout
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import kotlinx.coroutines.launch
+import com.example.unimarket.workers.PrefetchBusinessesWorker
 
 class CreateAccountActivity : AppCompatActivity() {
 
@@ -126,6 +127,7 @@ class CreateAccountActivity : AppCompatActivity() {
                     // Navegación
                     when (ui.nav) {
                         AuthNavDestination.ToStudentCode -> {
+                            PrefetchBusinessesWorker.enqueue(applicationContext, replace = true)
                             startActivity(Intent(this@CreateAccountActivity, StudentCodeActivity::class.java))
                             finish()
                             viewModel.create_clearNavAndToast()
