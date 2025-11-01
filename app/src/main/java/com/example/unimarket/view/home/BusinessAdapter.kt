@@ -10,7 +10,6 @@ import coil.load                       // ← NUEVO
 import com.example.unimarket.R
 import com.example.unimarket.model.domain.entity.Business
 
-
 class BusinessAdapter(
     private var items: List<Business>,
     private val onClick: (Business) -> Unit
