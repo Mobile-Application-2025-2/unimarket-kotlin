@@ -126,5 +126,19 @@
         <item name="cornerSizeBottomRight">0dp</item>
     </style>
 
+    <style name="Widget.App.BusinessFilterChip" parent="Widget.Material3.Chip.Filter">
+        <item name="android:textAppearance">@style/TextAppearance.App.Body</item>
+        <item name="android:fontFamily">@font/poppins_medium</item>
+        <item name="fontFamily">@font/poppins_medium</item>
+        <item name="android:textColor">@color/business_chip_text</item>
+        <item name="chipBackgroundColor">@color/business_chip_bg</item>
+        <item name="chipStrokeWidth">0dp</item>
+        <item name="chipMinHeight">40dp</item>
+        <item name="chipStartPadding">16dp</item>
+        <item name="chipEndPadding">16dp</item>
+        <item name="chipSpacing">12dp</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.App.Input</item>
+    </style>
+
 </resources>
 

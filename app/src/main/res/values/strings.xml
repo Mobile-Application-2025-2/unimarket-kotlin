@@ -37,4 +37,24 @@
     <string name="escribe_password">Password</string>
 
     <string name="account_type">Type</string>
+
+    <!-- Business detail -->
+    <string name="business_detail_favorite">Añadir a favoritos</string>
+    <string name="business_detail_cart">Ir al carrito</string>
+    <string name="business_detail_logo">Logo del negocio</string>
+    <string name="business_detail_brand">Marca del negocio</string>
+    <string name="business_detail_delivery">Descuentos</string>
+    <string name="business_detail_eta_default">15 - 25 min</string>
+    <string name="business_detail_products_count">+%1$d productos</string>
+    <string name="business_detail_empty">No hay productos disponibles en esta sección por ahora.</string>
+    <string name="business_detail_category_discounts">Descuentos</string>
+    <string name="business_detail_category_popular">Populares</string>
+    <string name="business_detail_category_combo_15">Combos 15cm</string>
+    <string name="business_detail_category_combo_30">Combos 30cm</string>
+    <string name="business_detail_category_others">No se que más</string>
+    <string name="business_detail_reviews_format">(%1$s+)</string>
+    <string name="business_detail_rating_format">%1$.1f</string>
+    <string name="business_detail_price_format">$%1$.0f</string>
+    <string name="business_detail_rating_count">%1$.1f</string>
+    <string name="business_detail_nav_placeholder">Funcionalidad no disponible aún.</string>
 </resources>

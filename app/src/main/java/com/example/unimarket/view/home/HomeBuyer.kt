@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.unimarket.R
 import com.example.unimarket.model.domain.entity.Business
+import com.example.unimarket.view.business.BusinessDetailActivity
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.launch
@@ -37,7 +38,17 @@ class HomeBuyerActivity : AppCompatActivity() {
         businessAdapter = BusinessAdapter(
             items = emptyList(),
             onClick = { business: Business ->
-                Toast.makeText(this, business.name.ifBlank { "Negocio" }, Toast.LENGTH_SHORT).show()
+                val businessId = business.id
+                if (businessId.isNotBlank()) {
+                    startActivity(
+                        BusinessDetailActivity.createIntent(
+                            this,
+                            businessId
+                        )
+                    )
+                } else {
+                    Toast.makeText(this, business.name.ifBlank { "Negocio" }, Toast.LENGTH_SHORT).show()
+                }
             }
         )
         rvBusinesses.apply {
