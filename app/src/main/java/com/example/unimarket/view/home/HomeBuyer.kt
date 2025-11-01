@@ -37,7 +37,15 @@ class HomeBuyerActivity : AppCompatActivity() {
         businessAdapter = BusinessAdapter(
             items = emptyList(),
             onClick = { business: Business ->
-                Toast.makeText(this, business.name.ifBlank { "Negocio" }, Toast.LENGTH_SHORT).show()
+                if (business.id.isBlank()) {
+                    Toast.makeText(this, R.string.business_detail_missing, Toast.LENGTH_SHORT).show()
+                } else {
+                    startActivity(
+                        Intent(this, BusinessDetailActivity::class.java).apply {
+                            putExtra(BusinessDetailActivity.EXTRA_BUSINESS_ID, business.id)
+                        }
+                    )
+                }
             }
         )
         rvBusinesses.apply {
