@@ -15,9 +15,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.App">
 
+        <activity
+            android:name=".view.map.BusinessMapActivity"
+            android:exported="false"/>
+
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="@string/google_maps_key" />
+            android:value="@string/google_maps_key"/>
+
 
         <!-- Launcher -->
         <activity

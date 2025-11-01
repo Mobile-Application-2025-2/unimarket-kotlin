@@ -1,7 +1,6 @@
 package com.example.unimarket.model.domain.entity
-
-// Regla: { products:[productId], price:number }
 data class Cart(
-    val products: List<String> = emptyList(),
-    val price: Double = 0.0
+    val products: Map<String, Int> = emptyMap(),
+    val price: Double = 0.0,
+    val business: String=""
 )

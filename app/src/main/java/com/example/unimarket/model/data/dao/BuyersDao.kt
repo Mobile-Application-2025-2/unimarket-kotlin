@@ -20,8 +20,6 @@ class BuyersDao {
     suspend fun update(uid: String, partial: Map<String, Any?>) {
         col.document(uid).update(partial).await()
     }
-
-    /** Agrega una dirección a la lista address[] (array de maps). */
     suspend fun appendAddress(uid: String, address: Address) {
         db.runTransaction { t ->
             val ref = col.document(uid)
@@ -31,32 +29,59 @@ class BuyersDao {
             t.update(ref, mapOf("address" to updated))
         }.await()
     }
-
-    /** Agrega un productId al carrito y acumula el precio. */
-    suspend fun addToCart(uid: String, productId: String, productPrice: Double) {
+    suspend fun addToCart(uid: String, productId: String, unitPrice: Double, businessId: String) {
+        val col = FirestoreProvider.buyers()
+        val db = FirestoreProvider.db
         db.runTransaction { t ->
             val ref = col.document(uid)
             val snap = t.get(ref)
             val buyer = snap.toObject(Buyer::class.java) ?: Buyer()
-            val newProducts = buyer.cart.products.toMutableList().apply { add(productId) }
-            val newPrice = (buyer.cart.price) + productPrice
-            t.update(ref, mapOf("cart.products" to newProducts, "cart.price" to newPrice))
+            val cart = buyer.cart
+
+            val sameBiz = cart.business.isBlank() || cart.business == businessId
+            val baseItems = if (sameBiz) cart.products.toMutableMap() else mutableMapOf()
+            val basePrice = if (sameBiz) cart.price else 0.0
+
+            val newQty = (baseItems[productId] ?: 0) + 1
+            baseItems[productId] = newQty
+
+            val next = mapOf(
+                "cart.items" to baseItems.toMap(),
+                "cart.price" to (basePrice + unitPrice),
+                "cart.business" to (if (cart.business.isBlank() || !sameBiz) businessId else cart.business)
+            )
+            t.update(ref, next)
         }.await()
     }
-
-    /** Remueve un productId del carrito y descuenta su precio. */
-    suspend fun removeFromCart(uid: String, productId: String, productPrice: Double) {
+    suspend fun removeFromCart(uid: String, productId: String, unitPrice: Double) {
+        val col = FirestoreProvider.buyers()
+        val db = FirestoreProvider.db
         db.runTransaction { t ->
             val ref = col.document(uid)
             val snap = t.get(ref)
             val buyer = snap.toObject(Buyer::class.java) ?: Buyer()
-            val newProducts = buyer.cart.products.toMutableList().apply { remove(productId) }
-            val newPrice = (buyer.cart.price - productPrice).coerceAtLeast(0.0)
-            t.update(ref, mapOf("cart.products" to newProducts, "cart.price" to newPrice))
+            val items = buyer.cart.products.toMutableMap()
+            val qty = (items[productId] ?: 0) - 1
+            if (qty <= 0) items.remove(productId) else items[productId] = qty
+
+            val newPrice = (buyer.cart.price - unitPrice).coerceAtLeast(0.0)
+            val newBiz = if (items.isEmpty()) "" else buyer.cart.business
+
+            t.update(ref, mapOf(
+                "cart.items" to items.toMap(),
+                "cart.price" to newPrice,
+                "cart.business" to newBiz
+            ))
         }.await()
     }
 
     suspend fun clearCart(uid: String) {
-        col.document(uid).update(mapOf("cart.products" to emptyList<String>(), "cart.price" to 0.0)).await()
+        FirestoreProvider.buyers().document(uid).update(
+            mapOf(
+                "cart.items" to emptyMap<String, Int>(),
+                "cart.price" to 0.0,
+                "cart.business" to ""
+            )
+        ).await()
     }
 }
