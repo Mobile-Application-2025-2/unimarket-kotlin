@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 
 class CreateAccountActivity : AppCompatActivity() {
 
+
     private lateinit var b: ActivityCreateAccountBinding
     private val viewModel: AuthViewModel by viewModels()
     private var canProceed: Boolean = false
