@@ -192,6 +192,8 @@ class BusinessDetailViewModel(
     }
 
     private fun buildDescription(business: Business): String {
+        val custom = business.description.trim()
+        if (custom.isNotEmpty()) return custom
         val direccion = business.address.direccion.ifBlank { "" }
         return direccion.ifBlank { "Disfruta los productos de la comunidad universitaria" }
     }
@@ -214,6 +216,8 @@ class BusinessDetailViewModel(
     }
 
     private fun pickHeroImage(business: Business, items: List<BusinessProductItem>): String {
+        val banner = business.banner.trim()
+        if (banner.isNotEmpty()) return banner
         val businessLogo = business.logo.trim()
         if (businessLogo.isNotEmpty()) return businessLogo
         return items.firstOrNull { it.imageUrl.isNotBlank() }?.imageUrl.orEmpty()

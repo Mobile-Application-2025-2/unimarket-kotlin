@@ -40,6 +40,7 @@ class ProductsDao {
         val name = getString("name").orEmpty()
         val description = getString("description").orEmpty()
         val category = getString("category").orEmpty()
+        val categoryLabel = getString("categoryLabel").orEmpty()
         val business = getString("business").orEmpty()
         val image = getString("image").orEmpty()
         val price = get("price").toDoubleOrZero()
@@ -54,6 +55,7 @@ class ProductsDao {
             price = price,
             description = description,
             category = category,
+            categoryLabel = categoryLabel,
             business = business,
             rating = rating,
             comments = comments,

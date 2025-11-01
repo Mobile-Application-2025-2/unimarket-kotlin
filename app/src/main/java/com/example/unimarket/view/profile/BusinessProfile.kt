@@ -10,6 +10,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.unimarket.databinding.BusinessProfileBinding
 import com.example.unimarket.view.auth.WelcomePage
+import com.example.unimarket.view.profile.manage.BusinessManageActivity
 import com.example.unimarket.viewmodel.BusinessNavDestination
 import com.example.unimarket.viewmodel.BusinessViewModel
 import kotlinx.coroutines.launch
@@ -46,7 +47,9 @@ class BusinessAccountActivity : AppCompatActivity() {
         b.tvSeeAll.setOnClickListener        { ping("Ver todas las compras") }
 
         // Card Acciones
-        b.rowProducts.setOnClickListener { ping("Productos") }
+        b.rowProducts.setOnClickListener {
+            startActivity(Intent(this, BusinessManageActivity::class.java))
+        }
         b.rowReviews.setOnClickListener  { ping("User Reviews") }
 
         // ✅ Logout via ViewModel (MVVM)

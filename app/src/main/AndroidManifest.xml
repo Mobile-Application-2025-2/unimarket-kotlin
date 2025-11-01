@@ -41,6 +41,7 @@
         <!-- Perfiles -->
         <activity android:name=".view.profile.BuyerAccountActivity" android:exported="false" />
         <activity android:name=".view.profile.BusinessAccountActivity" android:exported="false" />
+        <activity android:name=".view.profile.manage.BusinessManageActivity" android:exported="false" />
 
     </application>
 </manifest>

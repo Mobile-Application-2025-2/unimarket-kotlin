@@ -29,7 +29,11 @@ class ProductService(
         val biz = businessesDao.getById(businessUid) ?: error("Business profile not found")
 
         // Guardar con business correcto
-        val toSave = p.copy(business = biz.id.ifBlank { businessUid })
+        val label = p.categoryLabel.ifBlank { p.category }
+        val toSave = p.copy(
+            business = biz.id.ifBlank { businessUid },
+            categoryLabel = label
+        )
         productsDao.create(toSave)
     }
 
@@ -37,7 +41,8 @@ class ProductService(
         requireNotBlank(id, "productId")
         val uid = FirebaseAuthProvider.auth.currentUser?.uid ?: error("Not authenticated")
         require(p.business == uid) { "You can only update your own business products" }
-        productsDao.update(id, p)
+        val label = p.categoryLabel.ifBlank { p.category }
+        productsDao.update(id, p.copy(categoryLabel = label))
     }
 
     suspend fun deleteProduct(id: String): Result<Unit> = runCatching {

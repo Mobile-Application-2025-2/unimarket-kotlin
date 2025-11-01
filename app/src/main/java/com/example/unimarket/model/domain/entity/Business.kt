@@ -11,5 +11,9 @@ data class Business(
     val products: List<String> = emptyList(),
     val logo: String = "",
     val categories: List<Category> = emptyList(),
+    val description: String = "",
+    val status: String = "",
+    val isOpen: Boolean = true,
+    val banner: String = "",
     @get:Exclude @set:Exclude var id: String = "" // uid
 )
