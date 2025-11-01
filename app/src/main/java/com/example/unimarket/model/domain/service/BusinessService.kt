@@ -38,7 +38,11 @@ class BusinessService(
         name: String? = null,
         logoUrl: String? = null,
         address: com.example.unimarket.model.domain.entity.Address? = null,
-        categories: List<Category>? = null
+        categories: List<Category>? = null,
+        status: String? = null,
+        isOpen: Boolean? = null,
+        description: String? = null,
+        bannerUrl: String? = null
     ): Result<Unit> = runCatching {
         val updates = mutableMapOf<String, Any>(
             "updatedAt" to Timestamp.now()
@@ -47,6 +51,10 @@ class BusinessService(
         if (logoUrl != null)  updates["logoUrl"] = logoUrl   // en tu BD actual usas "logo"; si quieres, cámbialo a "logo"
         if (address != null)  updates["address"] = address
         if (categories != null) updates["categories"] = categories  // guardará objetos Category
+        if (status != null) updates["status"] = status.trim()
+        if (isOpen != null) updates["isOpen"] = isOpen
+        if (description != null) updates["description"] = description.trim()
+        if (bannerUrl != null) updates["banner"] = bannerUrl.trim()
 
         val hasRealUpdates = updates.any { it.key != "updatedAt" }
         if (!hasRealUpdates) return@runCatching
@@ -148,6 +156,19 @@ private fun Any?.asDouble(): Double = when (val v = this) {
     else -> 0.0
 }
 
+private fun Any?.asBoolean(default: Boolean = false): Boolean = when (val v = this) {
+    is Boolean -> v
+    is Number -> v.toInt() != 0
+    is String -> when {
+        v.equals("true", ignoreCase = true) -> true
+        v.equals("false", ignoreCase = true) -> false
+        v == "1" -> true
+        v == "0" -> false
+        else -> default
+    }
+    else -> default
+}
+
 private fun DocumentSnapshot.toBusinessSafe(): Business? {
     val data = data ?: return null
 
@@ -156,7 +177,14 @@ private fun DocumentSnapshot.toBusinessSafe(): Business? {
     val products = data["products"].asStringList()
     val logo     = (data["logo"] as? String)?.trim()
         ?: (data["logoUrl"] as? String)?.trim().orEmpty()
-
+    val banner   = (data["banner"] as? String)?.trim()
+        ?: (data["coverUrl"] as? String)?.trim()
+        ?: (data["cover"] as? String)?.trim().orEmpty()
+    val description = (data["description"] as? String)?.trim().orEmpty()
+    val status      = (data["status"] as? String)?.trim().orEmpty()
+    val isOpen      = data["isOpen"].asBoolean(
+        default = status.equals("abierto", ignoreCase = true)
+    )
     val addressAny    = data["address"]
     val categoriesAny = data["categories"]
 
@@ -170,6 +198,10 @@ private fun DocumentSnapshot.toBusinessSafe(): Business? {
         rating     = rating,
         products   = products,
         logo       = logo,
-        categories = categories
+        categories = categories,
+        description = description,
+        status = status,
+        isOpen = isOpen,
+        banner = banner
     )
 }

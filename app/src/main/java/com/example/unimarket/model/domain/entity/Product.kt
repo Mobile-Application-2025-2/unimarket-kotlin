@@ -10,9 +10,10 @@ data class Product(
     val price: Double = 0.0,
     val description: String = "",
     val category: String = "",
+    val categoryLabel: String = "",
     val business: String = "",
     val rating: Double = 0.0,
     val comments: List<String> = emptyList(),
     val image: String = "",
-    @get:Exclude @set:Exclude var id: String = "" // docId
+    @get:Exclude @set:Exclude var id: String = ""
 )

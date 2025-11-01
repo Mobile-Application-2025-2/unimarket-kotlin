@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="20dp"
+    android:paddingEnd="20dp"
+    android:paddingTop="24dp"
+    android:paddingBottom="24dp">
+
+    <TextView
+        android:id="@+id/tvInfoTitle"
+        style="@style/TextAppearance.App.Title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/text_primary"
+        android:textStyle="bold"
+        tools:text="Editar información" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutBusinessName"
+        style="@style/Widget.App.FilledInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        app:hintTextColor="@color/textGray">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputBusinessName"
+            style="@style/TextAppearance.App.Input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/business_owner_product_name"
+            android:inputType="textCapWords" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutBusinessDescription"
+        style="@style/Widget.App.FilledInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        app:hintTextColor="@color/textGray">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputBusinessDescription"
+            style="@style/TextAppearance.App.Input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/business_owner_info_description"
+            android:inputType="textCapSentences|textMultiLine"
+            android:maxLines="4" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutBusinessStatus"
+        style="@style/Widget.App.FilledInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        app:hintTextColor="@color/textGray">
+
+        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+            android:id="@+id/inputBusinessStatus"
+            style="@style/TextAppearance.App.Input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/business_owner_info_status"
+            android:inputType="textCapWords" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.switchmaterial.SwitchMaterial
+        android:id="@+id/switchBusinessOpen"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="@string/business_owner_info_open"
+        android:textColor="@color/text_primary" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutBusinessLogo"
+        style="@style/Widget.App.FilledInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        app:hintTextColor="@color/textGray">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputBusinessLogo"
+            style="@style/TextAppearance.App.Input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/business_owner_info_logo"
+            android:inputType="textUri" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutBusinessBanner"
+        style="@style/Widget.App.FilledInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        app:hintTextColor="@color/textGray">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputBusinessBanner"
+            style="@style/TextAppearance.App.Input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/business_owner_info_banner"
+            android:inputType="textUri" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnSaveBusiness"
+        style="@style/Widget.Unimarket.Button.Primary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="@string/business_owner_info_save"
+        android:textAllCaps="false"
+        android:textStyle="bold"
+        app:cornerRadius="24dp" />
+
+</LinearLayout>
