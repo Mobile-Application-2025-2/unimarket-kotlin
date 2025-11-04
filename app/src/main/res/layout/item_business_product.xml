@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    android:foreground="?attr/selectableItemBackground"
+    app:cardCornerRadius="18dp"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/yellowStroke"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Imagen top rounded -->
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/imgProduct"
+            android:layout_width="match_parent"
+            android:layout_height="112dp"
+            android:scaleType="centerCrop"
+            app:shapeAppearance="@style/ShapeAppearance.Uni.TopRounded22"
+            tools:src="@drawable/personajesingup"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <!-- Fila 1: Nombre / Rating -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/tvProductName"
+                    style="@style/TextAppearance.App.Body"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13.5sp"
+                    tools:text="Corolla"/>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/tvProductRating"
+                        style="@style/TextAppearance.App.Caption"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text_primary"
+                        android:textStyle="bold"
+                        tools:text="4.0"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingStart="2dp"
+                        android:text="★"
+                        android:textSize="12.5sp"
+                        android:textColor="@color/yellowLight"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Fila 2: Descripción -->
+            <TextView
+                android:id="@+id/tvProductSubtitle"
+                style="@style/TextAppearance.App.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/textGray"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:paddingTop="2dp"
+                tools:text="Car Burguer"/>
+
+            <!-- Fila 3: Precio / Botón + -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="6dp">
+
+                <TextView
+                    android:id="@+id/tvProductPrice"
+                    style="@style/TextAppearance.App.Body"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13.5sp"
+                    tools:text="$30.000"/>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_alignParentEnd="true"
+                    app:cardCornerRadius="15dp"
+                    app:strokeColor="@color/yellowStroke"
+                    app:strokeWidth="2dp">
+
+                    <ImageButton
+                        android:id="@+id/btnAdd"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@android:color/transparent"
+                        android:padding="6dp"
+                        android:src="@drawable/ic_add_circle_24"
+                        android:contentDescription="@string/cd_business_product_add"/>
+                </com.google.android.material.card.MaterialCardView>
+            </RelativeLayout>
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

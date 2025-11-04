@@ -49,7 +49,7 @@ class AuthService(
             "buyer" -> {
                 val buyer = Buyer(
                     address = buyerAddresses ?: emptyList(),
-                    cart = Cart(products = emptyList(), price = 0.0)
+                    cart = Cart(products = emptyMap(), price = 0.0)
                 )
                 buyersDao.create(created.id, buyer)
             }

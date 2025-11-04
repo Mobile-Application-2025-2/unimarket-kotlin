@@ -84,7 +84,6 @@ class WelcomePage : AppCompatActivity() {
                             viewModel.welcome_clearNav()
                         }
                         AuthNavDestination.ToStudentCode -> {
-                            // Si algún flujo te lleva a StudentCode, manéjalo aquí si lo necesitas.
                             viewModel.welcome_clearNav()
                         }
                         AuthNavDestination.None -> Unit

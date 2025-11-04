@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
+        android:name=".App" 
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -14,9 +15,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.App">
 
+        <activity
+            android:name=".view.map.BusinessMapActivity"
+            android:exported="false"/>
+
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="@string/google_maps_key" />
+            android:value="@string/google_maps_key"/>
+
 
         <!-- Launcher -->
         <activity
@@ -36,6 +42,7 @@
         <!-- Homes -->
         <activity android:name=".view.home.HomeBuyerActivity" android:exported="false" />
         <activity android:name=".view.home.CourierHomeActivity" android:exported="false" />
+        <activity android:name=".view.home.BusinessDetailActivity" android:exported="false" />
 
         <!-- Perfiles -->
         <activity android:name=".view.profile.BuyerAccountActivity" android:exported="false" />

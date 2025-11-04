@@ -37,4 +37,24 @@
     <string name="escribe_password">Password</string>
 
     <string name="account_type">Type</string>
+    <string name="business_products_title">Productos</string>
+    <string name="business_products_empty">No encontramos productos para mostrar.</string>
+    <string name="business_products_filter_all">Todos</string>
+    <string name="business_product_added_toast">Agregado %1$s</string>
+    <string name="business_action_favorite">Pronto podrás guardar favoritos</string>
+    <string name="business_action_orders">Pronto verás tus pedidos</string>
+    <string name="business_action_profile">Muy pronto podrás ver tu perfil</string>
+    <string name="business_detail_missing">No pudimos abrir este negocio. Intenta más tarde.</string>
+    <string name="cd_business_product_image">Imagen del producto</string>
+    <string name="cd_business_product_rating">Calificación del producto</string>
+    <string name="cd_business_product_add">Agregar producto al pedido</string>
+    <string name="cd_business_cover">Imagen de portada del negocio</string>
+    <string name="cd_business_favorite">Marcar negocio como favorito</string>
+    <string name="cd_business_orders">Ver pedidos del negocio</string>
+    <string name="cd_bottom_home">Inicio</string>
+    <string name="cd_bottom_favorites">Favoritos</string>
+    <string name="cd_bottom_orders">Pedidos</string>
+    <string name="cd_bottom_profile">Perfil</string>
+    <string name="cd_business_logo">Logo del negocio</string>
+    <string name="cd_business_rating">Calificación del negocio</string>
 </resources>

@@ -8,6 +8,10 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.DocumentSnapshot
 import kotlinx.coroutines.tasks.await
+import coil.ImageLoader
+import coil.request.ImageRequest
+import com.example.unimarket.model.data.local.dao.BusinessLocalDao
+import com.example.unimarket.model.data.local.entity.BusinessLocalEntity
 
 class BusinessService(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
@@ -31,6 +35,26 @@ class BusinessService(
                 null
             }
         }
+    }
+
+    suspend fun getAllAndPersist(localDao: BusinessLocalDao?): Result<List<Business>> = runCatching {
+        val items = getAllBusinesses().getOrThrow() // 👈 tu función actual
+
+        // Guardado local (si hay DAO)
+        localDao?.let { dao ->
+            val entities = items.map { b ->
+                BusinessLocalEntity(
+                    id = b.id,
+                    name = b.name,
+                    logoUrl = b.logo.ifBlank { null },
+                    categoryNames = b.categories.joinToString(",") { it.name } // o vacío si no aplica
+                )
+            }
+            dao.clear()
+            dao.upsertAll(entities)
+        }
+
+        items
     }
 
     suspend fun updateBusiness(
