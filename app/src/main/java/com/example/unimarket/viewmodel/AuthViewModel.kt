@@ -17,7 +17,6 @@ sealed class AuthNavDestination {
     object ToLogin : AuthNavDestination()
     object ToStudentCode : AuthNavDestination()
     object ToBuyerHome : AuthNavDestination()
-    object ToCourierHome : AuthNavDestination()
     object ToBusinessProfile : AuthNavDestination() // <- NUEVO
 }
 
@@ -51,16 +50,28 @@ data class CreateAccountUiState(
 )
 
 data class StudentCodeUiState(
-    val studentId: String = "",
+    val step: OnbStep = OnbStep.CODE,
+    val title: String = "Código estudiantil",
+    val subtitle: String = "",
+    val hint: String = "Student ID",
+    val cta: String = "Continuar",
+
+    val textValue: String = "",
     val canProceed: Boolean = false,
     val errorMessage: String? = null,
     val requestOpenCamera: Boolean = false,
     val nav: AuthNavDestination = AuthNavDestination.None
+
+    val role: String = ""
 )
 
 class AuthViewModel(
     private val authService: AuthService = AuthService()
 ) : ViewModel() {
+
+    private var tmpCode: String = ""
+    private var tmpAddress: String = ""
+    private var tmpLogoUrl: String = ""
 
     private val _welcome = MutableStateFlow(WelcomeUiState())
     val welcome: StateFlow<WelcomeUiState> = _welcome
@@ -87,8 +98,6 @@ class AuthViewModel(
                 when (role) {
                     "buyer" -> _welcome.update { it.copy(shouldPlayIntro = false, nav = AuthNavDestination.ToBuyerHome) }
                     "business" -> _welcome.update { it.copy(shouldPlayIntro = false, nav = AuthNavDestination.ToBusinessProfile) } // <- CAMBIO
-                    "deliver", "delivery", "courier" ->
-                        _welcome.update { it.copy(shouldPlayIntro = false, nav = AuthNavDestination.ToCourierHome) }
                     else -> _welcome.update { it.copy(shouldPlayIntro = true, nav = AuthNavDestination.None) }
                 }
             } else {
@@ -132,21 +141,47 @@ class AuthViewModel(
         viewModelScope.launch {
             try {
                 val result = authService.signIn(email, pass)
-                result.onSuccess { user ->
-                    SessionManager.ensureFreshIdToken(forceRefresh = false)
-                    val session = SessionManager.get()
-                    val role = (session?.type ?: user.type).trim().lowercase()
+                result.onSuccess { userAfterLogin ->
+                    // 1) Refrescar token y claims SIEMPRE
+                    val session = SessionManager.ensureFreshIdToken(forceRefresh = true)
 
-                    val dest = when (role) {
-                        "buyer" -> AuthNavDestination.ToBuyerHome
-                        "business" -> AuthNavDestination.ToBusinessProfile // <- CAMBIO
-                        "deliver", "delivery", "courier" -> AuthNavDestination.ToCourierHome
-                        else -> {
-                            _signIn.update { it.copy(errorMessage = "Tipo de usuario desconocido: $role") }
-                            AuthNavDestination.None
+                    // 2) Verificar email
+                    val verified = authService.isEmailVerified().getOrElse { false }
+                    if (!verified) {
+                        // cerrar sesión para no dejar estado sucio
+                        authService.signOut()
+                        SessionManager.clear()
+                        _signIn.update {
+                            it.copy(
+                                errorMessage = "Debes verificar tu correo antes de continuar.",
+                                isSubmitting = false
+                            )
                         }
+                        return@onSuccess
                     }
-                    _signIn.update { it.copy(nav = dest) }
+
+                    // 3) Cargar perfil para ver si falta onboarding
+                    val profile = authService.currentUser().getOrNull()
+                    val needsOnboarding = (profile?.onboardingCompleted == false)
+
+                    if (needsOnboarding) {
+                        _signIn.update { it.copy(nav = AuthNavDestination.ToStudentCode) }
+                    } else {
+                        // 4) Resolver rol: primero claim, luego perfil, luego el del user retornado
+                        val role = (session?.type?.takeIf { it.isNotBlank() }
+                            ?: profile?.type
+                            ?: userAfterLogin.type).trim().lowercase()
+
+                        val dest = when (role) {
+                            "buyer"    -> AuthNavDestination.ToBuyerHome
+                            "business" -> AuthNavDestination.ToBusinessProfile
+                            else -> {
+                                _signIn.update { it.copy(errorMessage = "Tipo de usuario desconocido: $role") }
+                                AuthNavDestination.None
+                            }
+                        }
+                        _signIn.update { it.copy(nav = dest) }
+                    }
                 }.onFailure { e ->
                     _signIn.update { it.copy(errorMessage = e.message ?: "Error al iniciar sesión") }
                 }
@@ -157,6 +192,7 @@ class AuthViewModel(
             }
         }
     }
+
 
     fun signIn_clearNavAndErrors() {
         _signIn.update { it.copy(nav = AuthNavDestination.None, errorMessage = null) }
@@ -239,12 +275,12 @@ class AuthViewModel(
                     buyerAddresses = null
                 )
                 result.onSuccess { createdUser ->
-                    SessionManager.ensureFreshIdToken(forceRefresh = false)
-                    val session = SessionManager.get()
-                    val role = (session?.type ?: createdUser.type).trim().lowercase()
+                    authService.sendEmailVerification()
+                    authService.signOut()
+                    SessionManager.clear()
                     _create.update {
                         it.copy(
-                            toastMessage = "Cuenta creada ($role)",
+                            toastMessage = "Cuenta creada ($role). Revisa tu correo para verificar.",
                             nav = AuthNavDestination.ToStudentCode
                         )
                     }
@@ -266,30 +302,161 @@ class AuthViewModel(
     /* -----------------------------
        STUDENT CODE
     ------------------------------ */
-    fun student_onInputChanged(newCode: String) {
-        val norm = newCode.trim().lowercase()
-        _student.update {
-            it.copy(
-                studentId = norm,
-                canProceed = norm.isNotEmpty(),
-                errorMessage = null
-            )
+
+    fun student_init() {
+        viewModelScope.launch {
+            // rol desde claim de sesión o perfil
+            SessionManager.ensureFreshIdToken(false)
+            val claimRole = SessionManager.get()?.type?.trim()?.lowercase().orEmpty()
+            val role = if (claimRole.isNotBlank()) claimRole else (authService.currentUser().getOrNull()?.type ?: "").trim().lowercase()
+
+            val title = if (role == "business") "Documento/NIT" else "Código estudiantil"
+            val hint  = if (role == "business") "NIT o documento" else "Student ID"
+
+            _student.update {
+                it.copy(
+                    role = role,
+                    step = OnbStep.CODE,
+                    title = title,
+                    subtitle = "",
+                    hint = hint,
+                    cta = "Continuar",
+                    textValue = "",
+                    canProceed = false,
+                    errorMessage = null
+                )
+            }
         }
     }
 
+
+    fun student_onInputChanged(newText: String) {
+        val t = newText.trim()
+        val st = _student.value
+        val ok = when (st.step) {
+            OnbStep.CODE    -> t.length >= 3
+            OnbStep.ADDRESS -> t.isNotEmpty()
+            OnbStep.LOGO    -> URL_REGEX.matches(t) // valida URL simple
+        }
+        _student.update { it.copy(textValue = t, canProceed = ok, errorMessage = null) }
+    }
+
+    private val URL_REGEX = Regex("https?://[\\w\\-._~:/?#\\[\\]@!$&'()*+,;=%]+")
+
+    fun student_next() {
+        val st = _student.value
+        if (!st.canProceed) {
+            _student.update { it.copy(errorMessage = "Completa el campo para continuar") }
+            return
+        }
+        when (st.step) {
+            OnbStep.CODE -> {
+                tmpCode = st.textValue
+                // Paso siguiente: dirección
+                val title = "Dirección"
+                val hint = "Cra. 1 #20-63"
+                _student.update {
+                    it.copy(
+                        step = OnbStep.ADDRESS,
+                        title = title,
+                        subtitle = "",
+                        hint = hint,
+                        cta = if (st.role == "business") "Continuar" else "Finalizar",
+                        textValue = "",
+                        canProceed = false,
+                        errorMessage = null
+                    )
+                }
+            }
+            OnbStep.ADDRESS -> {
+                tmpAddress = st.textValue
+                if (st.role == "business") {
+                    // Paso 3: logo URL
+                    _student.update {
+                        it.copy(
+                            step = OnbStep.LOGO,
+                            title = "Logo del negocio (URL)",
+                            subtitle = "Pega un enlace http(s) a tu logo",
+                            hint = "https://…",
+                            cta = "Finalizar",
+                            textValue = "",
+                            canProceed = false,
+                            errorMessage = null
+                        )
+                    }
+                } else {
+                    // BUYER: persistir y terminar
+                    finalizeBuyer()
+                }
+            }
+            OnbStep.LOGO -> {
+                tmpLogoUrl = st.textValue
+                finalizeBusiness()
+            }
+        }
+    }
+
+    private fun finalizeBuyer() {
+        viewModelScope.launch {
+            try {
+                // 1) marca onboarding del user
+                authService.completeOnboarding(tmpCode).getOrThrow()
+                // 2) actualiza dirección en buyers
+                authService.updateBuyerAddress(tmpAddress).getOrThrow()
+                // 3) navegar a home buyer
+                _student.update { it.copy(nav = AuthNavDestination.ToBuyerHome) }
+            } catch (e: Exception) {
+                _student.update { it.copy(errorMessage = e.message ?: "No se pudo guardar") }
+            }
+        }
+    }
+
+    private fun finalizeBusiness() {
+        viewModelScope.launch {
+            try {
+                authService.completeOnboarding(tmpCode).getOrThrow()
+                authService.updateBusinessAddressAndLogo(tmpAddress, tmpLogoUrl).getOrThrow()
+                _student.update { it.copy(nav = AuthNavDestination.ToBusinessProfile) }
+            } catch (e: Exception) {
+                _student.update { it.copy(errorMessage = e.message ?: "No se pudo guardar") }
+            }
+        }
+    }
+
+
     fun student_onGetStartedClicked() {
-        val role = _student.value.studentId.trim().lowercase()
-        val dest = when (role) {
-            "buyer" -> AuthNavDestination.ToBuyerHome
-            "business" -> AuthNavDestination.ToBusinessProfile // <- CAMBIO
-            "deliver", "courier", "driver", "delivery" -> AuthNavDestination.ToCourierHome
-            else -> AuthNavDestination.None
+        val code = _student.value.studentId.trim()
+        if (code.isEmpty()) {
+            _student.update { it.copy(errorMessage = "Escribe tu código estudiantil") }
+            return
         }
 
-        if (dest == AuthNavDestination.None) {
-            _student.update { it.copy(errorMessage = "Escribe buyer / business / deliver para continuar.") }
-        } else {
-            _student.update { it.copy(nav = dest) }
+        viewModelScope.launch {
+            try {
+                // 1) persistir onboarding
+                authService.completeOnboarding(code).getOrThrow()
+
+                // 2) refrescar sesión (por si usas claims a futuro)
+                SessionManager.ensureFreshIdToken(forceRefresh = false)
+
+                // 3) resolver rol desde claim o, si viene vacío, desde el perfil
+                val roleFromClaim = SessionManager.get()?.type?.trim().orEmpty().lowercase()
+                val effectiveRole = if (roleFromClaim.isNotBlank()) {
+                    roleFromClaim
+                } else {
+                    val prof = authService.currentUser().getOrNull()
+                    prof?.type?.trim()?.lowercase().orEmpty()
+                }
+
+                val dest = when (effectiveRole) {
+                    "buyer"    -> AuthNavDestination.ToBuyerHome
+                    "business" -> AuthNavDestination.ToBusinessProfile
+                    else -> AuthNavDestination.ToBuyerHome
+                }
+                _student.update { it.copy(nav = dest) }
+            } catch (e: Exception) {
+                _student.update { it.copy(errorMessage = e.message ?: "No se pudo completar el onboarding") }
+            }
         }
     }
 
@@ -299,6 +466,13 @@ class AuthViewModel(
 
     fun student_clearNavAndErrors() {
         _student.update { it.copy(nav = AuthNavDestination.None, errorMessage = null) }
+    }
+
+    fun signIn_resendVerification() {
+        viewModelScope.launch {
+            authService.sendEmailVerification()
+            _signIn.update { it.copy(errorMessage = "Correo de verificación reenviado") }
+        }
     }
 
     /* -----------------------------
