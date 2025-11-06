@@ -4,7 +4,10 @@ import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unimarket.model.domain.entity.User
+import com.example.unimarket.model.domain.entity.Category
 import com.example.unimarket.model.domain.service.AuthService
+import com.example.unimarket.model.domain.service.CategoryService
+import com.example.unimarket.model.domain.service.BusinessService
 import com.example.unimarket.model.session.SessionManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +21,7 @@ sealed class AuthNavDestination {
     object ToStudentCode : AuthNavDestination()
     object ToBuyerHome : AuthNavDestination()
     object ToCourierHome : AuthNavDestination()
-    object ToBusinessProfile : AuthNavDestination() // <- NUEVO
+    object ToBusinessProfile : AuthNavDestination()
 }
 
 data class WelcomeUiState(
@@ -50,7 +53,7 @@ data class CreateAccountUiState(
     val nav: AuthNavDestination = AuthNavDestination.None
 )
 
-enum class OnbStep { CODE, ADDRESS, LOGO }
+enum class OnbStep { CODE, ADDRESS, LOGO, CATEGORIES }
 
 data class StudentCodeUiState(
     val step: OnbStep = OnbStep.CODE,
@@ -59,21 +62,30 @@ data class StudentCodeUiState(
     val hint: String = "Student ID",
     val cta: String = "Continuar",
 
-    val textValue: String = "",     // input del paso actual (código / dirección / logo URL)
+    val textValue: String = "",
     val canProceed: Boolean = false,
     val errorMessage: String? = null,
     val requestOpenCamera: Boolean = false,
     val nav: AuthNavDestination = AuthNavDestination.None,
 
-    val role: String = "" 
+    val role: String = "",
+
+    val categories: List<String> = emptyList(),
+    val selectedCats: List<String> = emptyList()
 )
 
 class AuthViewModel(
-    private val authService: AuthService = AuthService()
+    private val authService: AuthService = AuthService(),
+    private val categoryService: CategoryService = CategoryService(),
+    private val businessService: BusinessService = BusinessService()
 ) : ViewModel() {
+
     private var tmpCode: String = ""
     private var tmpAddress: String = ""
     private var tmpLogoUrl: String = ""
+
+    // cache en VM: objetos reales y selección
+    private var availableCats: List<Category> = emptyList()
 
     private val _welcome = MutableStateFlow(WelcomeUiState())
     val welcome: StateFlow<WelcomeUiState> = _welcome
@@ -99,7 +111,7 @@ class AuthViewModel(
                 val role = session.type.trim().lowercase()
                 when (role) {
                     "buyer" -> _welcome.update { it.copy(shouldPlayIntro = false, nav = AuthNavDestination.ToBuyerHome) }
-                    "business" -> _welcome.update { it.copy(shouldPlayIntro = false, nav = AuthNavDestination.ToBusinessProfile) } // <- CAMBIO
+                    "business" -> _welcome.update { it.copy(shouldPlayIntro = false, nav = AuthNavDestination.ToBusinessProfile) }
                     "deliver", "delivery", "courier" ->
                         _welcome.update { it.copy(shouldPlayIntro = false, nav = AuthNavDestination.ToCourierHome) }
                     else -> _welcome.update { it.copy(shouldPlayIntro = true, nav = AuthNavDestination.None) }
@@ -124,6 +136,7 @@ class AuthViewModel(
     fun signIn_onPasswordChanged(newPass: String) {
         _signIn.update { it.copy(password = newPass, passwordError = null) }
     }
+
     fun signIn_submit() {
         val email = _signIn.value.email.trim().lowercase()
         val pass  = _signIn.value.password
@@ -149,7 +162,6 @@ class AuthViewModel(
                     val session = SessionManager.get()
                     val role = (session?.type ?: user.type).trim().lowercase()
 
-                    // ← NUEVO: si no ha hecho onboarding, primero va al wizard
                     val mustOnboard = (user.onboardingCompleted != true)
 
                     val dest = if (mustOnboard) {
@@ -251,7 +263,6 @@ class AuthViewModel(
                 val result = authService.signUp(
                     user = user,
                     password = pass,
-                    // Si es business y no te pasan nombre, usamos el del usuario:
                     businessName = businessName ?: if (typeNorm == "business") name else null,
                     businessLogo = businessLogo,
                     businessAddress = null,
@@ -288,20 +299,23 @@ class AuthViewModel(
 
     fun student_init() {
         viewModelScope.launch {
-            // rol desde claim de sesión o perfil
             SessionManager.ensureFreshIdToken(false)
             val claimRole = SessionManager.get()?.type?.trim()?.lowercase().orEmpty()
-            val role = if (claimRole.isNotBlank()) claimRole else (authService.currentUser().getOrNull()?.type ?: "").trim().lowercase()
+            val role = if (claimRole.isNotBlank()) claimRole
+            else (authService.currentUser().getOrNull()?.type ?: "").trim().lowercase()
 
             val title = if (role == "business") "Documento/NIT" else "Código estudiantil"
-            val hint  = if (role == "business") "NIT o documento" else "Student ID"
+            val hint  = if (role == "business") "NIT o documento" else "Código"
+
+            val subtitleText = "Si eres estudiante, ingresa tu código estudiantil. " +
+                    "Si eres externo a la universidad, ingresa tu NIT o cédula."
 
             _student.update {
                 it.copy(
                     role = role,
                     step = OnbStep.CODE,
                     title = title,
-                    subtitle = "",
+                    subtitle = subtitleText,
                     hint = hint,
                     cta = "Continuar",
                     textValue = "",
@@ -316,9 +330,10 @@ class AuthViewModel(
         val t = newText.trim()
         val st = _student.value
         val ok = when (st.step) {
-            OnbStep.CODE    -> t.length >= 3
-            OnbStep.ADDRESS -> t.isNotEmpty()
-            OnbStep.LOGO    -> URL_REGEX.matches(t) // valida URL simple
+            OnbStep.CODE       -> t.length >= 3
+            OnbStep.ADDRESS    -> t.isNotEmpty()
+            OnbStep.LOGO       -> URL_REGEX.matches(t)
+            OnbStep.CATEGORIES -> st.selectedCats.isNotEmpty() && st.selectedCats.size <= 3
         }
         _student.update { it.copy(textValue = t, canProceed = ok, errorMessage = null) }
     }
@@ -326,21 +341,33 @@ class AuthViewModel(
 
     fun student_next() {
         val st = _student.value
-        if (!st.canProceed) {
-            _student.update { it.copy(errorMessage = "Completa el campo para continuar") }
+
+        val allow = when (st.step) {
+            OnbStep.CATEGORIES -> st.selectedCats.isNotEmpty() && st.selectedCats.size <= 3
+            else -> st.canProceed
+        }
+        if (!allow) {
+            val msg = if (st.step == OnbStep.CATEGORIES)
+                "Selecciona entre 1 y 3 categorías."
+            else
+                "Completa el campo para continuar"
+            _student.update { it.copy(errorMessage = msg) }
             return
         }
+
         when (st.step) {
             OnbStep.CODE -> {
                 tmpCode = st.textValue
-                // Paso siguiente: dirección
                 val title = "Dirección"
-                val hint = "Cra. 1 #20-63"
+                val hint = "Dirección"
+                val subtitleDir = "Escribe la dirección en la que recibes los pedidos " +
+                        "o donde ofreces los productos o servicios."
+
                 _student.update {
                     it.copy(
                         step = OnbStep.ADDRESS,
                         title = title,
-                        subtitle = "",
+                        subtitle = subtitleDir,
                         hint = hint,
                         cta = if (st.role == "business") "Continuar" else "Finalizar",
                         textValue = "",
@@ -352,51 +379,85 @@ class AuthViewModel(
             OnbStep.ADDRESS -> {
                 tmpAddress = st.textValue
                 if (st.role == "business") {
-                    // Paso 3: logo URL
+                    val subtitleLogo = "Escribe la URL del logo de tu negocio (por ejemplo, " +
+                            "un enlace que empiece por http o https)."
                     _student.update {
                         it.copy(
                             step = OnbStep.LOGO,
                             title = "Logo del negocio (URL)",
-                            subtitle = "Pega un enlace http(s) a tu logo",
+                            subtitle = subtitleLogo,
                             hint = "https://…",
-                            cta = "Finalizar",
+                            cta = "Continuar",
                             textValue = "",
                             canProceed = false,
                             errorMessage = null
                         )
                     }
                 } else {
-                    // BUYER: persistir y terminar
                     finalizeBuyer()
                 }
             }
             OnbStep.LOGO -> {
                 tmpLogoUrl = st.textValue
-                finalizeBusiness()
+                // FETCH con CategoryService
+                viewModelScope.launch {
+                    val cats = categoryService.listAll().getOrElse { emptyList() }
+                    availableCats = cats
+                    val names = cats.map { it.name }.sorted()
+
+                    _student.update {
+                        it.copy(
+                            step = OnbStep.CATEGORIES,
+                            title = "Categorías del negocio",
+                            subtitle = formatCatsSubtitle(emptyList()),
+                            hint = "Usa el ícono para seleccionar",
+                            cta = "Finalizar",
+                            textValue = "",
+                            canProceed = false,
+                            categories = names,
+                            selectedCats = emptyList(),
+                            errorMessage = null
+                        )
+                    }
+                }
+            }
+            OnbStep.CATEGORIES -> {
+                finalizeBusinessWithCategories(st.selectedCats)
             }
         }
     }
 
-    private fun finalizeBuyer() {
-        viewModelScope.launch {
-            try {
-                // 1) marca onboarding del user
-                authService.completeOnboarding(tmpCode).getOrThrow()
-                // 2) actualiza dirección en buyers
-                authService.updateBuyerAddress(tmpAddress).getOrThrow()
-                // 3) navegar a home buyer
-                _student.update { it.copy(nav = AuthNavDestination.ToBuyerHome) }
-            } catch (e: Exception) {
-                _student.update { it.copy(errorMessage = e.message ?: "No se pudo guardar") }
-            }
+    fun student_onCategoriesPicked(selected: List<String>) {
+        val limited = selected.take(3)
+        _student.update {
+            it.copy(
+                selectedCats = limited,
+                subtitle = formatCatsSubtitle(limited),
+                canProceed = limited.isNotEmpty() && limited.size <= 3,
+                errorMessage = null
+            )
         }
     }
 
-    private fun finalizeBusiness() {
+    private fun finalizeBusinessWithCategories(selectedNames: List<String>) {
         viewModelScope.launch {
             try {
+                // 1) marca onboarding + guarda address y logo
                 authService.completeOnboarding(tmpCode).getOrThrow()
                 authService.updateBusinessAddressAndLogo(tmpAddress, tmpLogoUrl).getOrThrow()
+
+                // 2) uid actual (sin FirebaseAuth en el VM)
+                val uid = authService.currentUser().getOrNull()?.id
+                    ?: error("No authenticated user")
+
+                // 3) mapear nombres -> objetos Category (con id + name) y limitar a 3
+                val chosen: List<Category> = selectedNames.mapNotNull { name ->
+                    availableCats.firstOrNull { it.name == name }
+                }.take(3)
+
+                businessService.updateBusiness(uid, categories = chosen).getOrThrow()
+
+                // 5) navegar
                 _student.update { it.copy(nav = AuthNavDestination.ToBusinessProfile) }
             } catch (e: Exception) {
                 _student.update { it.copy(errorMessage = e.message ?: "No se pudo guardar") }
@@ -404,21 +465,19 @@ class AuthViewModel(
         }
     }
 
+    private fun formatCatsSubtitle(selected: List<String>): String =
+        if (selected.isEmpty()) "Selecciona hasta 3 categorías."
+        else "Seleccionadas: " + selected.joinToString(", ")
 
-
-    fun student_onGetStartedClicked() {
-        val role = _student.value.role.trim().lowercase()
-        val dest = when (role) {
-            "buyer" -> AuthNavDestination.ToBuyerHome
-            "business" -> AuthNavDestination.ToBusinessProfile // <- CAMBIO
-            "deliver", "courier", "driver", "delivery" -> AuthNavDestination.ToCourierHome
-            else -> AuthNavDestination.None
-        }
-
-        if (dest == AuthNavDestination.None) {
-            _student.update { it.copy(errorMessage = "Escribe buyer / business para continuar.") }
-        } else {
-            _student.update { it.copy(nav = dest) }
+    private fun finalizeBuyer() {
+        viewModelScope.launch {
+            try {
+                authService.completeOnboarding(tmpCode).getOrThrow()
+                authService.updateBuyerAddress(tmpAddress).getOrThrow()
+                _student.update { it.copy(nav = AuthNavDestination.ToBuyerHome) }
+            } catch (e: Exception) {
+                _student.update { it.copy(errorMessage = e.message ?: "No se pudo guardar") }
+            }
         }
     }
 

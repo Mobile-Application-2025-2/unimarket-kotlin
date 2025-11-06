@@ -13,6 +13,9 @@ class AuthDao {
     suspend fun signUp(user: User, password: String): Result<User> = runCatching {
         val res: AuthResult = auth.createUserWithEmailAndPassword(user.email, password).await()
         val uid = res.user?.uid ?: error("No UID from FirebaseAuth")
+
+        res.user?.sendEmailVerification()?.await()
+
         val data = mapOf(
             "email" to user.email,
             "name" to user.name,

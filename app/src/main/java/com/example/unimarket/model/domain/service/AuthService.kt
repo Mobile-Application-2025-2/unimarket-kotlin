@@ -102,6 +102,12 @@ class AuthService(
     suspend fun signIn(email: String, password: String): Result<User> = runCatching {
         val user = authDao.signIn(email, password).getOrThrow()
 
+        val current = FirebaseAuthProvider.auth.currentUser ?: error("No authenticated user")
+        if (!current.isEmailVerified) {
+            FirebaseAuthProvider.auth.signOut()
+            error("Debes verificar tu correo antes de iniciar sesión. Revisa tu bandeja y spam.")
+        }
+
         val fresh = SessionManager.ensureFreshIdToken(forceRefresh = true)
         val uid = FirebaseAuthProvider.auth.currentUser?.uid ?: user.id
         val claimType = fresh?.type.orEmpty()
