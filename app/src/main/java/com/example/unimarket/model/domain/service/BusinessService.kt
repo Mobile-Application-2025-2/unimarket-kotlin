@@ -93,10 +93,14 @@ class BusinessService(
             return@runCatching
         }
 
-        val updated = current.copy(
-            categories = current.categories + category
-        )
-        ref.set(updated).await()
+        val newList = current.categories + category
+        // ✅ Actualiza SOLO el campo categories (y updatedAt), sin pisar el resto del doc
+        ref.update(
+            mapOf(
+                "categories" to newList,
+                "updatedAt" to Timestamp.now()
+            )
+        ).await()
     }
 
     suspend fun addCategoryById(businessId: String, categoryId: String): Result<Unit> = runCatching {

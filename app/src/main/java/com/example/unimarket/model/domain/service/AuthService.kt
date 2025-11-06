@@ -102,6 +102,12 @@ class AuthService(
     suspend fun signIn(email: String, password: String): Result<User> = runCatching {
         val user = authDao.signIn(email, password).getOrThrow()
 
+        val current = FirebaseAuthProvider.auth.currentUser ?: error("No authenticated user")
+        if (!current.isEmailVerified) {
+            FirebaseAuthProvider.auth.signOut()
+            error("Debes verificar tu correo antes de iniciar sesión. Revisa tu bandeja y spam.")
+        }
+
         val fresh = SessionManager.ensureFreshIdToken(forceRefresh = true)
         val uid = FirebaseAuthProvider.auth.currentUser?.uid ?: user.id
         val claimType = fresh?.type.orEmpty()
@@ -138,5 +144,61 @@ class AuthService(
 
         SessionManager.ensureFreshIdToken(forceRefresh = false)
         u
+    }
+
+    // Enviar correo de verificación al usuario autenticado
+    suspend fun sendEmailVerification(): Result<Unit> = runCatching {
+        val u = FirebaseAuthProvider.auth.currentUser ?: error("No authenticated user")
+        u.sendEmailVerification().await()
+        Unit
+    }
+
+    // Forzar refresh del usuario (para re-leer emailVerified)
+    suspend fun reloadCurrentUser(): Result<Unit> = runCatching {
+        FirebaseAuthProvider.auth.currentUser?.reload()?.await()
+        Unit
+    }
+
+    // Consultar si el email ya está verificado
+    suspend fun isEmailVerified(): Result<Boolean> = runCatching {
+        FirebaseAuthProvider.auth.currentUser?.reload()?.await()
+        FirebaseAuthProvider.auth.currentUser?.isEmailVerified == true
+    }
+
+    // Completar onboarding (graba studentCode y marca bandera)
+    suspend fun completeOnboarding(studentCode: String): Result<Unit> = runCatching {
+        val uid = FirebaseAuthProvider.auth.currentUser?.uid ?: error("No authenticated user")
+        usersDao.update(
+            uid,
+            mapOf(
+                "studentCode" to studentCode,
+                "onboardingCompleted" to true
+            )
+        )
+    }
+
+    suspend fun updateBuyerAddress(line: String) = runCatching {
+        val uid = FirebaseAuthProvider.auth.currentUser?.uid ?: error("No authenticated user")
+        // Construye Address con 'direccion' y los demás vacíos
+        val address = mapOf(
+            "direccion" to line,
+            "edificio" to "",
+            "piso" to "",
+            "salon" to "",
+            "local" to ""
+        )
+        buyersDao.update(uid, mapOf("address" to listOf(address)))
+    }   
+
+    suspend fun updateBusinessAddressAndLogo(line: String, logoUrl: String) = runCatching {
+        val uid = FirebaseAuthProvider.auth.currentUser?.uid ?: error("No authenticated user")
+        val address = mapOf(
+            "direccion" to line,
+            "edificio" to "",
+            "piso" to "",
+            "salon" to "",
+            "local" to ""
+        )
+        businessesDao.update(uid, mapOf("address" to address, "logo" to logoUrl))
     }
 }
