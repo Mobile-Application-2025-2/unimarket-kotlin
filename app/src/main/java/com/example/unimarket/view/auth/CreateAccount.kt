@@ -126,8 +126,12 @@ class CreateAccountActivity : AppCompatActivity() {
 
                     // Navegación
                     when (ui.nav) {
+                        AuthNavDestination.ToLogin -> {
+                            startActivity(Intent(this@CreateAccountActivity, LoginActivity::class.java))
+                            finish()
+                            viewModel.create_clearNavAndToast()
+                        }
                         AuthNavDestination.ToStudentCode -> {
-                            PrefetchBusinessesWorker.enqueue(applicationContext, replace = true)
                             startActivity(Intent(this@CreateAccountActivity, StudentCodeActivity::class.java))
                             finish()
                             viewModel.create_clearNavAndToast()

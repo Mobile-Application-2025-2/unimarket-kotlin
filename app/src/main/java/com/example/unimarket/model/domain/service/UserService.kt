@@ -15,4 +15,16 @@ class UserService(
         requireNotBlank(uid, "uid")
         usersDao.update(uid, partial)
     }
+
+    suspend fun completeOnboarding(uid: String, studentCode: String) = runCatching {
+        requireNotBlank(uid, "uid")
+        requireNotBlank(studentCode, "studentCode")
+        usersDao.update(
+            uid,
+            mapOf(
+                "studentCode" to studentCode,
+                "onboardingCompleted" to true
+            )
+        )
+    }
 }

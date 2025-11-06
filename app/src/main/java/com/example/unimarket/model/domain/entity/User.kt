@@ -9,5 +9,7 @@ data class User(
     val idType: String = "",
     val idNumber: String = "",
     val type: String = "",
+    val onboardingCompleted: Boolean = false,
+    val studentCode: String? = null,
     @get:Exclude @set:Exclude var id: String = "" // uid (no se escribe en Firestore)
 )

@@ -138,8 +138,8 @@ class LoginActivity : AppCompatActivity() {
                             finish()
                             viewModel.signIn_clearNavAndErrors()
                         }
-                        AuthNavDestination.ToCourierHome -> {
-                            val intent = Intent(this@LoginActivity, CourierHomeActivity::class.java)
+                        AuthNavDestination.ToStudentCode -> {
+                            val intent = Intent(this@LoginActivity, StudentCodeActivity::class.java)
                                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                             startActivity(intent)
                             finish()

@@ -18,7 +18,9 @@ class AuthDao {
             "name" to user.name,
             "idType" to user.idType,
             "idNumber" to user.idNumber,
-            "type" to user.type.lowercase()
+            "type" to user.type.lowercase(),
+            "onboardingCompleted" to (user.onboardingCompleted),
+            "studentCode" to user.studentCode
         )
         usersCol.document(uid).set(data).await()
         user.copy(id = uid)

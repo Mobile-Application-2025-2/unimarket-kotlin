@@ -1,11 +1,9 @@
 package com.example.unimarket.view.auth
 
 import android.content.Intent
-import android.graphics.Bitmap
 import android.os.Bundle
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doAfterTextChanged
@@ -25,12 +23,6 @@ class StudentCodeActivity : AppCompatActivity() {
     private lateinit var b: ActivityStudentCodeBinding
     private val viewModel: AuthViewModel by viewModels()
 
-    private val cameraLauncher = registerForActivityResult(
-        ActivityResultContracts.TakePicturePreview()
-    ) { bitmap: Bitmap? ->
-        viewModel.student_onCameraResult(bitmap)
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -38,78 +30,63 @@ class StudentCodeActivity : AppCompatActivity() {
         (b.root.parent as? ViewGroup)?.removeView(b.root)
         setContentView(b.root)
 
+        // Init del flujo (define rol y primer paso)
+        viewModel.student_init()
+
+        // Inputs -> VM
         b.etStudentId.doAfterTextChanged { text ->
-            viewModel.student_onInputChanged(text?.toString() ?: "")
-        }
-        viewModel.student_onInputChanged(b.etStudentId.text?.toString() ?: "")
-
-        b.btnGetStarted.setOnClickListener {
-            viewModel.student_onGetStartedClicked()
+            viewModel.student_onInputChanged(text?.toString().orEmpty())
         }
 
-        b.tilStudentId.setEndIconOnClickListener {
-            viewModel.student_onCameraIconClicked()
-        }
+        // CTA
+        b.btnGetStarted.setOnClickListener { viewModel.student_next() }
 
-        observeWelcomeForAutoNavigation()
+        // End icon (cámara del layout). Mantener por compatibilidad:
+        b.tilStudentId.setEndIconOnClickListener { viewModel.student_onCameraIconClicked() }
+
         observeStudentUi()
-
-        viewModel.welcome_onInit()
-    }
-
-    private fun observeWelcomeForAutoNavigation() {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.welcome.collect { ui ->
-                    when (ui.nav) {
-                        AuthNavDestination.ToBuyerHome -> {
-                            startActivity(Intent(this@StudentCodeActivity, HomeBuyerActivity::class.java))
-                            finish()
-                        }
-                        AuthNavDestination.ToCourierHome -> {
-                            startActivity(Intent(this@StudentCodeActivity, CourierHomeActivity::class.java))
-                            finish()
-                        }
-                        AuthNavDestination.ToBusinessProfile -> {
-                            startActivity(Intent(this@StudentCodeActivity, BusinessAccountActivity::class.java))
-                            finish()
-                        }
-                        else -> Unit
-                    }
-                }
-            }
-        }
     }
 
     private fun observeStudentUi() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.student.collect { ui ->
+                    // Bind dinámico de textos del paso actual (usar ids reales del XML)
+                    b.title.text = ui.title
+                    b.subtitle.text = ui.subtitle
+                    b.tilStudentId.hint = ui.hint
+                    b.btnGetStarted.text = ui.cta
+
+                    // Sincroniza el texto si cambió por estado
+                    val current = b.etStudentId.text?.toString().orEmpty()
+                    if (current != ui.textValue) {
+                        b.etStudentId.setText(ui.textValue)
+                        b.etStudentId.setSelection(b.etStudentId.text?.length ?: 0)
+                    }
+
+                    // Habilitar/Deshabilitar CTA según validación
                     b.btnGetStarted.isEnabled = ui.canProceed
 
+                    // Mensaje de error (one-shot)
                     ui.errorMessage?.let { msg ->
                         Toast.makeText(this@StudentCodeActivity, msg, Toast.LENGTH_SHORT).show()
                         viewModel.student_clearNavAndErrors()
                     }
 
-                    if (ui.requestOpenCamera) {
-                        cameraLauncher.launch(null)
-                        viewModel.student_onCameraHandled()
-                    }
-
+                    // Navegación final
                     when (ui.nav) {
                         AuthNavDestination.ToBuyerHome -> {
                             startActivity(Intent(this@StudentCodeActivity, HomeBuyerActivity::class.java))
                             finish()
                             viewModel.student_clearNavAndErrors()
                         }
-                        AuthNavDestination.ToCourierHome -> {
-                            startActivity(Intent(this@StudentCodeActivity, CourierHomeActivity::class.java))
+                        AuthNavDestination.ToBusinessProfile -> {
+                            startActivity(Intent(this@StudentCodeActivity, BusinessAccountActivity::class.java))
                             finish()
                             viewModel.student_clearNavAndErrors()
                         }
-                        AuthNavDestination.ToBusinessProfile -> {
-                            startActivity(Intent(this@StudentCodeActivity, BusinessAccountActivity::class.java))
+                        AuthNavDestination.ToCourierHome -> {
+                            startActivity(Intent(this@StudentCodeActivity, CourierHomeActivity::class.java))
                             finish()
                             viewModel.student_clearNavAndErrors()
                         }
