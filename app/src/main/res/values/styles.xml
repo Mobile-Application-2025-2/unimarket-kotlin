@@ -140,5 +140,20 @@
         <item name="cornerSizeBottomRight">0dp</item>
     </style>
 
+    <style name="TextAppearance.App.ProductCategory">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">@font/mplus_1p_extrabold</item>
+        <item name="fontFamily">@font/mplus_1p_extrabold</item>
+    </style>
+
+    <style name="ShapeAppearance.Material3.Corner.Top18" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">18dp</item>
+        <item name="cornerSizeTopRight">18dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+
 </resources>
 

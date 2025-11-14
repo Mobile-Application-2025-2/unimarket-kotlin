@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-// 👇 Respeto los nombres existentes
 sealed class BuyerNavDestination {
     object None : BuyerNavDestination()
     object ToWelcome : BuyerNavDestination()
@@ -36,7 +35,6 @@ class BuyerViewModel(
         loadUserName()
     }
 
-    /** Lee el name desde users/{uid}.name; si no existe, usa alias del email. */
     private fun loadUserName() {
         viewModelScope.launch {
             _ui.update { it.copy(loading = true, error = null) }
@@ -61,7 +59,6 @@ class BuyerViewModel(
         }
     }
 
-    /** Logout manteniendo tu navegación existente. */
     fun logout() {
         viewModelScope.launch {
             try {

@@ -10,9 +10,18 @@ import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import com.example.unimarket.R
 
-class BusinessProductsAdapter(
+data class BusinessProductItem(
+    val id: String,
+    val name: String,
+    val subtitle: String,
+    val price: String,
+    val rating: String,
+    val imageUrl: String
+)
+
+class ProductsAdapter(
     private val onAddClick: (BusinessProductItem) -> Unit
-) : RecyclerView.Adapter<BusinessProductsAdapter.ProductViewHolder>() {
+) : RecyclerView.Adapter<ProductsAdapter.ProductViewHolder>() {
 
     private val items = mutableListOf<BusinessProductItem>()
 
@@ -23,7 +32,8 @@ class BusinessProductsAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProductViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_business_product, parent, false)
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.product_card, parent, false)
         return ProductViewHolder(view, onAddClick)
     }
 
@@ -62,6 +72,7 @@ class BusinessProductsAdapter(
                 imgProduct.setImageResource(R.drawable.personajesingup)
             }
 
+            // Clicks
             itemView.setOnClickListener { onAddClick(item) }
             btnAdd.setOnClickListener { onAddClick(item) }
         }

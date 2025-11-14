@@ -10,12 +10,6 @@ class ProductService(
     private val productsDao: ProductsDao = ProductsDao(),
     private val businessesDao: BusinessesDao = BusinessesDao()
 ) {
-    /**
-     * Crea un producto asegurando:
-     *  - category existe
-     *  - business == UID autenticado
-     *  - businesses/{uid} existe (coincide con reglas)
-     */
     suspend fun createProduct(p: Product): Result<String> = runCatching {
         requireNotBlank(p.name, "name")
         requireNotBlank(p.category, "category")
@@ -25,10 +19,8 @@ class ProductService(
         val businessUid = p.business.ifBlank { uid }
         require(businessUid == uid) { "You can only create products for your own business" }
 
-        // Verifica que el perfil de business exista
         val biz = businessesDao.getById(businessUid) ?: error("Business profile not found")
 
-        // Guardar con business correcto
         val toSave = p.copy(business = biz.id.ifBlank { businessUid })
         productsDao.create(toSave)
     }
@@ -50,13 +42,20 @@ class ProductService(
         productsDao.getById(id) ?: error("Product not found")
     }
 
-    suspend fun listByCategory(categoryId: String) = runCatching {
-        requireNotBlank(categoryId, "categoryId")
-        productsDao.listByCategory(categoryId)
-    }
+    suspend fun listByIds(ids: List<String>): Result<List<Product>> = runCatching {
+        require(ids.isNotEmpty()) { "productIds must not be empty" }
 
-    suspend fun listByBusiness(businessUid: String) = runCatching {
-        requireNotBlank(businessUid, "businessUid")
-        productsDao.listByBusiness(businessUid)
+        val result = mutableListOf<Product>()
+
+        for (rawId in ids) {
+            requireNotBlank(rawId, "productId")
+
+            val p = productsDao.getById(rawId)
+            if (p != null) {
+                result += p
+            }
+        }
+
+        result.toList()
     }
 }

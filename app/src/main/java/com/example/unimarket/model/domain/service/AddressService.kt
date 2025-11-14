@@ -16,7 +16,6 @@ class AddressService(
         businessesDao.setAddress(uid, address)
     }
 
-    /** Agrega una dirección a la lista del buyer autenticado. */
     suspend fun addBuyerAddress(address: Address): Result<Unit> = runCatching {
         validateAddress(address)
         val uid = FirebaseAuthProvider.auth.currentUser?.uid ?: error("Not authenticated")

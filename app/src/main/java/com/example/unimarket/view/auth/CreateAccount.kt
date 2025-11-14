@@ -1,9 +1,14 @@
 package com.example.unimarket.view.auth
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.text.method.PasswordTransformationMethod
+import android.view.Gravity
 import android.widget.ArrayAdapter
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -53,8 +58,8 @@ class CreateAccountActivity : AppCompatActivity() {
         b.btnBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
 
         // Botones federados (TODO)
-        b.btnOutlook.setOnClickListener { /* TODO: federated sign-in */ }
-        b.btnGoogle.setOnClickListener  { /* TODO: Google Sign-In */ }
+        b.btnOutlook.setOnClickListener { showFeatureUnavailableToast() }
+        b.btnGoogle.setOnClickListener  { showFeatureUnavailableToast() }
 
         // Inputs -> VM (normalizados)
         b.etName.doAfterTextChanged {
@@ -241,4 +246,44 @@ class CreateAccountActivity : AppCompatActivity() {
         private val EMAIL_REGEX = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
         private const val STATE_TYPE_ID = "state_type_id"
     }
+
+    private fun showFeatureUnavailableToast() {
+        // Contenedor horizontal
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+            // Fondo gris oscuro tipo toast
+            setBackgroundColor(Color.parseColor("#FFFFFF"))
+        }
+
+        // Icono (usa algún drawable que ya tengas, por ej. tu logo)
+        val iconView = ImageView(this).apply {
+            // Cambia este drawable por el tuyo, por ejemplo R.drawable.ic_unimarket_logo
+            setImageResource(R.drawable.personajesingup)
+            val size = dp(20)
+            layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                rightMargin = dp(8)
+            }
+        }
+
+        // Texto
+        val textView = TextView(this).apply {
+            text = "Esta opción aún no está habilitada"
+            setTextColor(Color.BLACK)
+            textSize = 14f
+        }
+
+        container.addView(iconView)
+        container.addView(textView)
+
+        Toast(this).apply {
+            duration = Toast.LENGTH_SHORT
+            view = container
+            show()
+        }
+    }
+
+    private fun dp(value: Int): Int =
+        (value * resources.displayMetrics.density).toInt()
 }

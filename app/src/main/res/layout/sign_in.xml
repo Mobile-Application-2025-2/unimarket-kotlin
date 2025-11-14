@@ -197,6 +197,7 @@
                     android:layout_height="56dp"
                     android:hint="@string/escribe_email"
                     android:inputType="textEmailAddress"
+                    android:maxLength="50"
                     android:paddingStart="18dp"
                     android:paddingEnd="18dp"
                     android:textColor="@color/textGray"
@@ -232,6 +233,7 @@
                         android:layout_height="56dp"
                         android:hint="@string/hint_password"
                         android:inputType="textPassword|textNoSuggestions"
+                        android:maxLength="50"
                         android:paddingStart="16dp"
                         android:paddingEnd="56dp"
                         android:textColorHint="@color/textGray"/>

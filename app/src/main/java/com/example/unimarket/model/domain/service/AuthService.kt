@@ -33,7 +33,6 @@ class AuthService(
 
         buyerAddresses: List<Address>? = null
     ): Result<User> = runCatching {
-        // 1) Validaciones base (users/)
         requireEmail(user.email)
         requireNotBlank(user.name, "name")
         requireNotBlank(user.idType, "idType")
@@ -41,10 +40,8 @@ class AuthService(
         require(user.type in listOf("buyer", "business")) { "type must be buyer|business" }
         require(password.length >= 6) { "password must be >= 6" }
 
-        // 2) Crear credenciales + users/{uid}
         val created = authDao.signUp(user, password).getOrThrow()
 
-        // 3) Inicializar colección por rol
         when (created.type) {
             "buyer" -> {
                 val buyer = Buyer(
@@ -69,7 +66,6 @@ class AuthService(
             }
         }
 
-        // 4) Hacer login explícito
         authDao.signIn(user.email, password).getOrThrow()
 
         val fresh = SessionManager.ensureFreshIdToken(forceRefresh = true)
@@ -146,26 +142,22 @@ class AuthService(
         u
     }
 
-    // Enviar correo de verificación al usuario autenticado
     suspend fun sendEmailVerification(): Result<Unit> = runCatching {
         val u = FirebaseAuthProvider.auth.currentUser ?: error("No authenticated user")
         u.sendEmailVerification().await()
         Unit
     }
 
-    // Forzar refresh del usuario (para re-leer emailVerified)
     suspend fun reloadCurrentUser(): Result<Unit> = runCatching {
         FirebaseAuthProvider.auth.currentUser?.reload()?.await()
         Unit
     }
 
-    // Consultar si el email ya está verificado
     suspend fun isEmailVerified(): Result<Boolean> = runCatching {
         FirebaseAuthProvider.auth.currentUser?.reload()?.await()
         FirebaseAuthProvider.auth.currentUser?.isEmailVerified == true
     }
 
-    // Completar onboarding (graba studentCode y marca bandera)
     suspend fun completeOnboarding(studentCode: String): Result<Unit> = runCatching {
         val uid = FirebaseAuthProvider.auth.currentUser?.uid ?: error("No authenticated user")
         usersDao.update(
@@ -179,7 +171,6 @@ class AuthService(
 
     suspend fun updateBuyerAddress(line: String) = runCatching {
         val uid = FirebaseAuthProvider.auth.currentUser?.uid ?: error("No authenticated user")
-        // Construye Address con 'direccion' y los demás vacíos
         val address = mapOf(
             "direccion" to line,
             "edificio" to "",

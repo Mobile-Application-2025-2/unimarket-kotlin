@@ -203,6 +203,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="63dp"
                     android:hint="@string/hint_name"
+                    android:maxLength="50"
                     android:textColorHint="@color/textGray"
                     android:paddingStart="16dp"
                     android:paddingEnd="48dp"/>
@@ -245,6 +246,7 @@
                     android:layout_height="63dp"
                     android:hint="@string/hint_email"
                     android:inputType="textEmailAddress"
+                    android:maxLength="50"
                     android:textColorHint="@color/textGray"
                     android:paddingStart="16dp"
                     android:paddingEnd="48dp"/>
@@ -287,6 +289,7 @@
                     android:layout_height="63dp"
                     android:hint="@string/hint_password"
                     android:inputType="textPassword"
+                    android:maxLength="50"
                     android:paddingStart="16dp"
                     android:paddingEnd="56dp"
                     android:textColorHint="@color/textGray"/>

@@ -17,14 +17,13 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Imagen top rounded -->
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/imgProduct"
             android:layout_width="match_parent"
-            android:layout_height="112dp"
+            android:layout_height="132dp"
             android:scaleType="centerCrop"
-            app:shapeAppearance="@style/ShapeAppearance.Uni.TopRounded22"
-            tools:src="@drawable/personajesingup"/>
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Top18"
+            tools:src="@drawable/funko"/>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -32,7 +31,7 @@
             android:orientation="vertical"
             android:padding="12dp">
 
-            <!-- Fila 1: Nombre / Rating -->
+            <!-- Nombre / Rating -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -41,13 +40,13 @@
 
                 <TextView
                     android:id="@+id/tvProductName"
-                    style="@style/TextAppearance.App.Body"
+                    style="@style/TextAppearance.App.ProductCategory"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
-                    android:textSize="13.5sp"
+                    android:textSize="18sp"
                     tools:text="Corolla"/>
 
                 <LinearLayout
@@ -58,24 +57,27 @@
 
                     <TextView
                         android:id="@+id/tvProductRating"
-                        style="@style/TextAppearance.App.Caption"
+                        style="@style/TextAppearance.App.Body"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textColor="@color/text_primary"
                         android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:textSize="16sp"
                         tools:text="4.0"/>
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:paddingStart="2dp"
-                        android:text="★"
-                        android:textSize="12.5sp"
-                        android:textColor="@color/yellowLight"/>
+                    <!-- Estrella más grande -->
+                    <ImageView
+                        android:id="@+id/ivProductStar"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_marginStart="4dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/star_rating"
+                        app:tint="@color/yellowLight"/>
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Fila 2: Descripción -->
+            <!-- Subtítulo -->
             <TextView
                 android:id="@+id/tvProductSubtitle"
                 style="@style/TextAppearance.App.Caption"
@@ -85,41 +87,39 @@
                 android:maxLines="1"
                 android:ellipsize="end"
                 android:paddingTop="2dp"
+                android:textSize="14sp"
                 tools:text="Car Burguer"/>
 
-            <!-- Fila 3: Precio / Botón + -->
+            <!-- Precio / Botón + (solo el drawable, sin fondo cuadrado) -->
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingTop="6dp">
+                android:paddingTop="8dp">
 
+                <!-- Botón más grande, transparente, usando tu drawable -->
                 <TextView
                     android:id="@+id/tvProductPrice"
                     style="@style/TextAppearance.App.Body"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textStyle="bold"
                     android:textColor="@color/text_primary"
-                    android:textSize="13.5sp"
-                    tools:text="$30.000"/>
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    tools:text="$30.000" />
 
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
+                <ImageButton
+                    android:id="@+id/btnAdd"
+                    android:layout_width="45dp"
+                    android:layout_height="45dp"
+                    android:layout_alignParentTop="true"
                     android:layout_alignParentEnd="true"
-                    app:cardCornerRadius="15dp"
-                    app:strokeColor="@color/yellowStroke"
-                    app:strokeWidth="2dp">
-
-                    <ImageButton
-                        android:id="@+id/btnAdd"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:background="@android:color/transparent"
-                        android:padding="6dp"
-                        android:src="@drawable/ic_add_circle_24"
-                        android:contentDescription="@string/cd_business_product_add"/>
-                </com.google.android.material.card.MaterialCardView>
+                    android:layout_marginTop="3dp"
+                    android:adjustViewBounds="true"
+                    android:background="@android:color/transparent"
+                    android:contentDescription="@string/cd_business_product_add"
+                    android:padding="0dp"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/carbon_add_filled" />
             </RelativeLayout>
         </LinearLayout>
     </LinearLayout>

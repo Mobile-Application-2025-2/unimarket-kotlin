@@ -20,7 +20,6 @@ sealed class AuthNavDestination {
     object ToLogin : AuthNavDestination()
     object ToStudentCode : AuthNavDestination()
     object ToBuyerHome : AuthNavDestination()
-    object ToCourierHome : AuthNavDestination()
     object ToBusinessProfile : AuthNavDestination()
 }
 
@@ -84,7 +83,6 @@ class AuthViewModel(
     private var tmpAddress: String = ""
     private var tmpLogoUrl: String = ""
 
-    // cache en VM: objetos reales y selección
     private var availableCats: List<Category> = emptyList()
 
     private val _welcome = MutableStateFlow(WelcomeUiState())
@@ -112,8 +110,6 @@ class AuthViewModel(
                 when (role) {
                     "buyer" -> _welcome.update { it.copy(shouldPlayIntro = false, nav = AuthNavDestination.ToBuyerHome) }
                     "business" -> _welcome.update { it.copy(shouldPlayIntro = false, nav = AuthNavDestination.ToBusinessProfile) }
-                    "deliver", "delivery", "courier" ->
-                        _welcome.update { it.copy(shouldPlayIntro = false, nav = AuthNavDestination.ToCourierHome) }
                     else -> _welcome.update { it.copy(shouldPlayIntro = true, nav = AuthNavDestination.None) }
                 }
             } else {
@@ -170,7 +166,6 @@ class AuthViewModel(
                         when (role) {
                             "buyer" -> AuthNavDestination.ToBuyerHome
                             "business" -> AuthNavDestination.ToBusinessProfile
-                            "deliver", "delivery", "courier" -> AuthNavDestination.ToCourierHome
                             else -> {
                                 _signIn.update { it.copy(errorMessage = "Tipo de usuario desconocido: $role") }
                                 AuthNavDestination.None
@@ -399,7 +394,6 @@ class AuthViewModel(
             }
             OnbStep.LOGO -> {
                 tmpLogoUrl = st.textValue
-                // FETCH con CategoryService
                 viewModelScope.launch {
                     val cats = categoryService.listAll().getOrElse { emptyList() }
                     availableCats = cats
@@ -442,22 +436,18 @@ class AuthViewModel(
     private fun finalizeBusinessWithCategories(selectedNames: List<String>) {
         viewModelScope.launch {
             try {
-                // 1) marca onboarding + guarda address y logo
                 authService.completeOnboarding(tmpCode).getOrThrow()
                 authService.updateBusinessAddressAndLogo(tmpAddress, tmpLogoUrl).getOrThrow()
 
-                // 2) uid actual (sin FirebaseAuth en el VM)
                 val uid = authService.currentUser().getOrNull()?.id
                     ?: error("No authenticated user")
 
-                // 3) mapear nombres -> objetos Category (con id + name) y limitar a 3
                 val chosen: List<Category> = selectedNames.mapNotNull { name ->
                     availableCats.firstOrNull { it.name == name }
                 }.take(3)
 
                 businessService.updateBusiness(uid, categories = chosen).getOrThrow()
 
-                // 5) navegar
                 _student.update { it.copy(nav = AuthNavDestination.ToBusinessProfile) }
             } catch (e: Exception) {
                 _student.update { it.copy(errorMessage = e.message ?: "No se pudo guardar") }

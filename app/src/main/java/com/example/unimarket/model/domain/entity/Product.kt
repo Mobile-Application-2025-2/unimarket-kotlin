@@ -2,9 +2,6 @@ package com.example.unimarket.model.domain.entity
 
 import com.google.firebase.firestore.Exclude
 
-// Regla:
-// { name, price(string), description, category(categoryId), business(businessUid),
-//   rating(number), comments:[commentId], image }
 data class Product(
     val name: String = "",
     val price: Double = 0.0,

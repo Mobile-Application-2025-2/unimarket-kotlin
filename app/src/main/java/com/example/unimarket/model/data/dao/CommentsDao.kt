@@ -15,14 +15,10 @@ class CommentsDao {
             d.toObject(Comment::class.java)?.also { it.id = d.id }
         }
 
-    /**
-     * Crea el comentario y añade su id a product.comments (arrayUnion).
-     */
     suspend fun create(c: Comment): String {
         val newId = db.runTransaction { t ->
             val ref = col.document()
             t.set(ref, c.copy().also { it.id = "" })
-            // mantener lista de comments en el producto (denormalización simple)
             t.update(products.document(c.product), "comments", FieldValue.arrayUnion(ref.id))
             ref.id
         }.await()

@@ -3,286 +3,309 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/layoutBusinessDetail"
+    android:id="@+id/rootBuyerFixed"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/lightGray">
+    android:layout_height="match_parent">
 
-    <!-- HERO -->
-    <ImageView
-        android:id="@+id/imgHero"
-        android:layout_width="0dp"
-        android:layout_height="200dp"
-        android:scaleType="centerCrop"
-        android:src="@drawable/formas"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
-    <!-- Acciones arriba -->
-    <ImageButton
-        android:id="@+id/btnBack"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:background="@android:color/transparent"
-        android:padding="12dp"
-        android:src="@drawable/back"
-        android:contentDescription="@string/back"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"/>
-
+    <!-- HEADER (fijo) -->
     <LinearLayout
-        android:id="@+id/layoutTopActions"
-        android:layout_width="wrap_content"
+        android:id="@+id/header"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
+        android:orientation="vertical"
+        android:paddingTop="12dp"
+        android:paddingBottom="8dp"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <ImageButton
-            android:id="@+id/btnFavorite"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="@android:color/transparent"
-            android:padding="8dp"
-            android:src="@drawable/heart"
-            app:tint="@color/text_primary"
-            android:contentDescription="@string/cd_business_favorite"/>
+        <!-- Brand bar -->
+        <LinearLayout
+            android:id="@+id/brandBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="16dp"
+            android:paddingEnd="12dp">
 
-        <ImageButton
-            android:id="@+id/btnOrders"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="@android:color/transparent"
-            android:padding="8dp"
-            android:src="@drawable/carrito"
-            app:tint="@color/text_primary"
-            android:contentDescription="@string/cd_business_orders"/>
+            <ImageView
+                android:id="@+id/imgBrand"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:contentDescription="@string/app_name"
+                android:src="@drawable/personajesingup"/>
+
+            <TextView
+                android:id="@+id/tvBrand"
+                style="@style/TextAppearance.App.Title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:text="@string/app_name"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"/>
+
+            <ImageButton
+                android:id="@+id/btnFavorites"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Favoritos"
+                android:padding="8dp"
+                android:scaleType="fitCenter"
+                app:tint="@color/text_primary"
+                android:src="@drawable/heart"/>
+
+            <ImageButton
+                android:id="@+id/btnOrdersTop"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Carrito"
+                android:padding="8dp"
+                android:scaleType="fitCenter"
+                app:tint="@color/text_primary"
+                android:src="@drawable/carrito"/>
+        </LinearLayout>
     </LinearLayout>
 
-    <!-- CONTENIDO -->
+    <!-- CONTENIDO SCROLLEABLE (entre header y footer) -->
     <androidx.core.widget.NestedScrollView
         android:id="@+id/scrollContent"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:fillViewport="true"
         android:clipToPadding="false"
-        android:paddingBottom="88dp"
-        app:layout_constraintTop_toBottomOf="@id/imgHero"
+        android:paddingBottom="84dp"
+        app:layout_constraintTop_toBottomOf="@id/header"
+        app:layout_constraintBottom_toTopOf="@id/footer"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/bottomNav"
-        android:layout_marginTop="-48dp">
+        app:layout_constraintEnd_toEndOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp">
+            android:orientation="vertical">
 
-            <!-- Tarjeta blanca que se solapa con el banner -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardBusinessInfo"
+            <!-- HERO -->
+            <FrameLayout
+                android:id="@+id/heroContainer"
+                android:layout_width="match_parent"
+                android:layout_height="220dp"
+                android:clipToPadding="false"
+                android:clipChildren="false">
+
+                <ImageView
+                    android:id="@+id/ivHero"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    tools:src="@drawable/funko" />
+
+                <!-- Botón calificar -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top|end"
+                    android:layout_marginEnd="20dp"
+                    android:layout_marginTop="16dp"
+                    android:text="Calificar"
+                    android:textAllCaps="false"
+                    android:textStyle="bold"
+                    android:textSize="14sp"
+                    android:textColor="@color/white"
+                    app:backgroundTint="@color/yellowLight"
+                    app:cornerRadius="24dp"
+                    app:iconPadding="0dp"/>
+            </FrameLayout>
+
+            <!-- Info negocio centrada -->
+            <LinearLayout
+                android:id="@+id/businessInfo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="2dp">
+                android:orientation="vertical"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="8dp"
+                android:gravity="center_horizontal">
+
+                <TextView
+                    android:id="@+id/tvBusinessName"
+                    style="@style/TextAppearance.App.Title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:textAlignment="center"
+                    android:textColor="@color/text_primary"
+                    tools:text="Subway" />
 
                 <LinearLayout
+                    android:id="@+id/ratingRow"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:paddingTop="36dp"
-                    android:paddingBottom="12dp"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp">
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:paddingTop="2dp">
 
-                    <!-- LOGO redondo centrado y superpuesto -->
-                    <FrameLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="0dp">
-
-                        <com.google.android.material.imageview.ShapeableImageView
-                            android:id="@+id/imgBusinessLogo"
-                            android:layout_width="56dp"
-                            android:layout_height="56dp"
-                            android:layout_gravity="center_horizontal"
-                            android:translationY="-28dp"
-                            android:scaleType="centerCrop"
-                            android:src="@drawable/personajesingup"
-                            app:shapeAppearanceOverlay="@style/ShapeAppearance.App.Circle"
-                            app:strokeColor="@color/yellowStroke"
-                            app:strokeWidth="1dp"
-                            android:contentDescription="@string/cd_business_logo"/>
-                    </FrameLayout>
-
-                    <!-- Nombre centrado -->
                     <TextView
-                        android:id="@+id/tvBusinessName"
-                        style="@style/TextAppearance.App.Title"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center"
-                        android:textColor="@color/text_primary"
-                        tools:text="Subway"/>
-
-                    <!-- Fila: Rating + (200+) centrados -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/tvBusinessRating"
-                            style="@style/TextAppearance.App.Caption"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textStyle="bold"
-                            android:textColor="@color/text_primary"
-                            tools:text="4.0 ★"/>
-
-                        <TextView
-                            android:id="@+id/tvBusinessRatingCount"
-                            style="@style/TextAppearance.App.Caption"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:paddingStart="6dp"
-                            android:textColor="@color/textGray"
-                            tools:text="(200+)"/>
-                    </LinearLayout>
-
-                    <!-- (Opcional) descripción/categorías debajo; los mantiene tu VM -->
-                    <TextView
-                        android:id="@+id/tvBusinessCategories"
-                        style="@style/TextAppearance.App.Caption"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center"
-                        android:paddingTop="2dp"
-                        android:textColor="@color/textGray"
-                        tools:text="Sandwiches · Bebidas"/>
-
-                    <!-- Chips tipo tabs -->
-                    <HorizontalScrollView
-                        android:id="@+id/scrollFilters"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:scrollbars="none"
-                        android:overScrollMode="never"
-                        android:paddingBottom="2dp">
-
-                        <com.google.android.material.chip.ChipGroup
-                            android:id="@+id/chipGroupProductFilters"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            app:singleSelection="true"
-                            app:selectionRequired="true"
-                            app:chipSpacingHorizontal="10dp"/>
-                    </HorizontalScrollView>
-
-                    <!-- Título sección productos -->
-                    <TextView
-                        android:id="@+id/tvSectionTitle"
+                        android:id="@+id/tvRating"
                         style="@style/TextAppearance.App.Body"
-                        android:layout_width="match_parent"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
-                        android:textStyle="bold"
                         android:textColor="@color/text_primary"
-                        android:text="@string/business_products_title"/>
+                        tools:text="4.0" />
 
-                    <!-- Grid productos -->
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/rvBusinessProducts"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:nestedScrollingEnabled="false"
-                        android:layout_marginTop="8dp"
-                        tools:listitem="@layout/item_business_product"/>
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_marginStart="4dp"
+                        android:src="@drawable/star_rating"
+                        app:tint="@color/yellowLight"
+                        android:contentDescription="@null"/>
 
                     <TextView
-                        android:id="@+id/tvEmpty"
+                        android:id="@+id/tvVotes"
                         style="@style/TextAppearance.App.Caption"
-                        android:layout_width="match_parent"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:gravity="center"
-                        android:text="@string/business_products_empty"
-                        android:visibility="gone"/>
+                        android:layout_marginStart="6dp"
+                        android:textColor="@color/black"
+                        tools:text="(200+)" />
                 </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <!-- Chips de categorías de productos (opcional) -->
+            <HorizontalScrollView
+                android:id="@+id/scrollFilters"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:scrollbars="none"
+                android:overScrollMode="never"
+                android:paddingBottom="2dp">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupProductFilters"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true"
+                    app:selectionRequired="true"
+                    app:chipSpacingHorizontal="10dp"/>
+            </HorizontalScrollView>
+
+            <TextView
+                android:id="@+id/sectionDiscounts"
+                style="@style/TextAppearance.App.ProductCategory"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="4dp"
+                tools:text="Productos" />
+
+            <!-- GRID de productos (2 por fila) -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvProducts"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="4dp"
+                android:clipToPadding="false"
+                android:nestedScrollingEnabled="false"
+                tools:listitem="@layout/product_card"
+                tools:itemCount="6"/>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- FOOTER (mantengo IDs y listeners de tu Activity) -->
-    <LinearLayout
-        android:id="@+id/bottomNav"
+    <!-- FOOTER (fijo) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/footer"
         android:layout_width="0dp"
-        android:layout_height="72dp"
-        android:background="@color/white"
-        android:gravity="center"
-        android:orientation="horizontal"
+        android:layout_height="55dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:cardBackgroundColor="@color/yellowLight"
+        app:cardElevation="0dp"
+        app:cardCornerRadius="0dp"
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.App.TopRoundedOnly">
 
-        <ImageButton
-            android:id="@+id/navHome"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@android:color/transparent"
-            android:padding="12dp"
-            android:src="@drawable/map"
-            app:tint="@color/text_primary"
-            android:contentDescription="@string/cd_bottom_home"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:baselineAligned="false"
+            android:weightSum="4"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp">
 
-        <ImageButton
-            android:id="@+id/navFavorites"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@android:color/transparent"
-            android:padding="12dp"
-            android:src="@drawable/heart"
-            app:tint="@color/text_primary"
-            android:contentDescription="@string/cd_bottom_favorites"/>
+            <ImageButton
+                android:id="@+id/nav_home"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:background="@android:color/transparent"
+                android:contentDescription="home"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:scaleType="fitCenter"
+                android:adjustViewBounds="true"
+                android:src="@drawable/ic_shopping_front_24"
+                app:tint="@android:color/white"/>
 
-        <ImageButton
-            android:id="@+id/navBag"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@android:color/transparent"
-            android:padding="12dp"
-            android:src="@drawable/footer_shopping_bag_24"
-            app:tint="@color/text_primary"
-            android:contentDescription="@string/cd_bottom_orders"/>
+            <ImageButton
+                android:id="@+id/nav_search"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:background="@android:color/transparent"
+                android:contentDescription="search"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:scaleType="fitCenter"
+                android:adjustViewBounds="true"
+                android:src="@drawable/footer_shopping_bag_24"/>
 
-        <ImageButton
-            android:id="@+id/navProfile"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@android:color/transparent"
-            android:padding="12dp"
-            android:src="@drawable/person_outline_24"
-            app:tint="@color/text_primary"
-            android:contentDescription="@string/cd_bottom_profile"/>
-    </LinearLayout>
+            <ImageButton
+                android:id="@+id/nav_map"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:background="@android:color/transparent"
+                android:contentDescription="map"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:scaleType="fitCenter"
+                android:adjustViewBounds="true"
+                android:src="@drawable/map"/>
 
-    <ProgressBar
-        android:id="@+id/progress"
-        style="?android:attr/progressBarStyleLarge"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+            <ImageButton
+                android:id="@+id/nav_profile"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:background="@android:color/transparent"
+                android:contentDescription="profile"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:scaleType="fitCenter"
+                android:adjustViewBounds="true"
+                android:src="@drawable/baseline_person_outline_24"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

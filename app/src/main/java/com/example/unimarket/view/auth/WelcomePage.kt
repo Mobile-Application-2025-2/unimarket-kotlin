@@ -20,7 +20,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.unimarket.R
-import com.example.unimarket.view.home.CourierHomeActivity
 import com.example.unimarket.view.home.HomeBuyerActivity
 import com.example.unimarket.view.profile.BusinessAccountActivity
 import com.example.unimarket.viewmodel.AuthNavDestination
@@ -70,11 +69,6 @@ class WelcomePage : AppCompatActivity() {
                         }
                         AuthNavDestination.ToBuyerHome -> {
                             startActivity(Intent(this@WelcomePage, HomeBuyerActivity::class.java))
-                            finish()
-                            viewModel.welcome_clearNav()
-                        }
-                        AuthNavDestination.ToCourierHome -> {
-                            startActivity(Intent(this@WelcomePage, CourierHomeActivity::class.java))
                             finish()
                             viewModel.welcome_clearNav()
                         }

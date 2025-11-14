@@ -8,9 +8,7 @@ import com.example.unimarket.model.domain.validation.Validators.requireNotBlank
 class CommentService(
     private val commentsDao: CommentsDao = CommentsDao()
 ) {
-    /**
-     * Crea comentario con el buyer autenticado.
-     */
+
     suspend fun createComment(
         rating: Double,
         comment: String,

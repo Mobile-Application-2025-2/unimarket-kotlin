@@ -6,9 +6,11 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import coil.load                       // ← NUEVO
+import coil.load
 import com.example.unimarket.R
 import com.example.unimarket.model.domain.entity.Business
+import java.util.Locale
+
 class BusinessAdapter(
     private var items: List<Business>,
     private val onClick: (Business) -> Unit
@@ -45,12 +47,15 @@ class BusinessAdapter(
 
         fun bind(b: Business) {
             tvName.text = b.name.ifBlank { "Negocio universitario" }
+
             tvSubtitle.text = b.categories
                 .mapNotNull { it.name?.trim()?.takeIf { n -> n.isNotEmpty() } }
                 .joinToString(" - ")
 
-            tvRating.text = if (b.rating > 0) String.format("%.1f", b.rating) else "4.7"
-            tvReviewsCount.text = "(120)"
+            tvRating.text = String.format(Locale.US, "%.1f", b.rating)
+
+            tvReviewsCount.text = "(${b.amountRatings})"
+
             tvEta.text = "15–25 min"
 
             val url = b.logo?.trim().orEmpty()

@@ -21,7 +21,7 @@ import com.example.unimarket.model.data.platform.FusedLocationProvider
 import com.example.unimarket.model.domain.service.BusinessService
 import com.example.unimarket.model.domain.service.NearbyBusinessesService
 import com.example.unimarket.view.home.HomeBuyerActivity
-import com.example.unimarket.view.profile.BusinessAccountActivity
+import com.example.unimarket.view.profile.BuyerAccountActivity
 import com.example.unimarket.viewmodel.BusinessMapViewModel
 import com.example.unimarket.viewmodel.MapNav
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -73,18 +73,23 @@ class BusinessMapActivity : AppCompatActivity(R.layout.business_map_page) {
     }
 
     private fun requestLocationPermission() {
-        permissionLauncher.launch(arrayOf(
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        ))
+        permissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
     }
 
     private fun enableMyLocation() {
-        try { map?.isMyLocationEnabled = hasLocationPermission() } catch (_: SecurityException) {}
+        try {
+            map?.isMyLocationEnabled = hasLocationPermission()
+        } catch (_: SecurityException) { }
     }
 
     private fun showPermissionSnackbar() {
-        Snackbar.make(findViewById(R.id.root_map),
+        Snackbar.make(
+            findViewById(R.id.root_map),
             "Activa la ubicación para ver negocios cercanos",
             Snackbar.LENGTH_LONG
         ).setAction("Configurar") {
@@ -100,6 +105,7 @@ class BusinessMapActivity : AppCompatActivity(R.layout.business_map_page) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // ids del XML: mapView, progress, fabMyLocation
         mapView = findViewById(R.id.mapView)
         val progress = findViewById<View>(R.id.progress)
         val fabMyLocation = findViewById<FloatingActionButton>(R.id.fabMyLocation)
@@ -118,23 +124,42 @@ class BusinessMapActivity : AppCompatActivity(R.layout.business_map_page) {
 
         fabMyLocation.setOnClickListener {
             val loc = viewModel.ui.value.myLocation
-            if (loc != null) {
-                map?.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 16f))
-            } else if (!hasLocationPermission()) {
-                requestLocationPermission()
-            } else {
-                loadIfNeeded(force = true)
+            when {
+                loc != null -> map?.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 16f))
+                !hasLocationPermission() -> requestLocationPermission()
+                else -> loadIfNeeded(force = true)
             }
         }
 
+        // Footer: ids nav_home, nav_search, nav_map, nav_profile
         highlightFooterSelection()
+
         findViewById<ImageButton>(R.id.nav_home).setOnClickListener {
-            startActivity(Intent(this, HomeBuyerActivity::class.java)); finish()
-        }
-        findViewById<ImageButton>(R.id.nav_profile).setOnClickListener {
-            startActivity(Intent(this, BusinessAccountActivity::class.java)); finish()
+            startActivity(Intent(this, HomeBuyerActivity::class.java))
+            finish()
         }
 
+        // search aún no disponible → no hace nada (o podrías poner Snackbar/Toast si quieres)
+        findViewById<ImageButton>(R.id.nav_search).setOnClickListener {
+            Snackbar.make(
+                findViewById(R.id.root_map),
+                "Esta opción aún no está habilitada",
+                Snackbar.LENGTH_SHORT
+            ).show()
+        }
+
+        // estamos en map → no navegamos a ningún lado al tocarlo
+        findViewById<ImageButton>(R.id.nav_map).setOnClickListener {
+            // no-op
+        }
+
+        // perfil de buyer
+        findViewById<ImageButton>(R.id.nav_profile).setOnClickListener {
+            startActivity(Intent(this, BuyerAccountActivity::class.java))
+            finish()
+        }
+
+        // Observa el estado del ViewModel
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.ui.collect { ui ->
@@ -154,13 +179,20 @@ class BusinessMapActivity : AppCompatActivity(R.layout.business_map_page) {
                             var any = false
                             ui.myLocation?.let { builder.include(it); any = true }
                             ui.markers.forEach { builder.include(it.position); any = true }
-                            if (any) gmap.animateCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 80))
+                            if (any) {
+                                gmap.animateCamera(
+                                    CameraUpdateFactory.newLatLngBounds(builder.build(), 80)
+                                )
+                            }
                         }
                     }
 
                     when (ui.nav) {
                         MapNav.None -> Unit
-                        MapNav.Close -> { viewModel.clearNav(); finish() }
+                        MapNav.Close -> {
+                            viewModel.clearNav()
+                            finish()
+                        }
                     }
                 }
             }
@@ -179,7 +211,11 @@ class BusinessMapActivity : AppCompatActivity(R.layout.business_map_page) {
 
     private fun highlightFooterSelection() {
         fun setAlpha(id: Int, alpha: Float) =
-            findViewById<ImageButton>(id).apply { imageAlpha = (alpha * 255).toInt() }
+            findViewById<ImageButton>(id).apply {
+                imageAlpha = (alpha * 255).toInt()
+            }
+
+        // home y profile apagados, map encendido (ids del XML)
         setAlpha(R.id.nav_home, 0.55f)
         setAlpha(R.id.nav_search, 0.55f)
         setAlpha(R.id.nav_map, 1.0f)
@@ -187,11 +223,30 @@ class BusinessMapActivity : AppCompatActivity(R.layout.business_map_page) {
     }
 
     // MapView lifecycle
-    override fun onResume() { super.onResume(); mapView.onResume(); enableMyLocation(); loadIfNeeded() }
-    override fun onPause() { mapView.onPause(); super.onPause() }
-    override fun onDestroy() { mapView.onDestroy(); super.onDestroy() }
-    override fun onLowMemory() { super.onLowMemory(); mapView.onLowMemory() }
+    override fun onResume() {
+        super.onResume()
+        mapView.onResume()
+        enableMyLocation()
+        loadIfNeeded()
+    }
+
+    override fun onPause() {
+        mapView.onPause()
+        super.onPause()
+    }
+
+    override fun onDestroy() {
+        mapView.onDestroy()
+        super.onDestroy()
+    }
+
+    override fun onLowMemory() {
+        super.onLowMemory()
+        mapView.onLowMemory()
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState); mapView.onSaveInstanceState(outState)
+        super.onSaveInstanceState(outState)
+        mapView.onSaveInstanceState(outState)
     }
 }

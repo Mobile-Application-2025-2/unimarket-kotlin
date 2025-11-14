@@ -16,7 +16,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.unimarket.R
-import com.example.unimarket.view.home.CourierHomeActivity
 import com.example.unimarket.view.home.HomeBuyerActivity
 import com.example.unimarket.view.profile.BusinessAccountActivity
 import com.example.unimarket.viewmodel.AuthNavDestination
@@ -26,6 +25,10 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.launch
 import com.example.unimarket.workers.PrefetchBusinessesWorker
+import android.graphics.Color
+import android.view.Gravity
+import android.widget.LinearLayout
+import com.google.android.material.card.MaterialCardView
 
 
 class LoginActivity : AppCompatActivity() {
@@ -57,6 +60,11 @@ class LoginActivity : AppCompatActivity() {
         tilPassword = findViewById(R.id.tilPassword)
         etPassword = findViewById(R.id.etPassword)
         ivToggle = findViewById(R.id.ivTogglePassword)
+        val btnOutlook = findViewById<MaterialCardView>(R.id.btnOutlook)
+        val btnGoogle = findViewById<MaterialCardView>(R.id.btnGoogle)
+
+        btnOutlook.setOnClickListener { showFeatureUnavailableToast() }
+        btnGoogle.setOnClickListener  { showFeatureUnavailableToast() }
 
         // Toggle password
         val closedFromIv = ivToggle.drawable
@@ -160,4 +168,45 @@ class LoginActivity : AppCompatActivity() {
             override fun afterTextChanged(s: Editable?) { block(s?.toString() ?: "") }
         })
     }
+
+    private fun showFeatureUnavailableToast() {
+        // Contenedor horizontal
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+            // Fondo gris oscuro tipo toast
+            setBackgroundColor(Color.parseColor("#FFFFFF"))
+        }
+
+        // Icono (usa algún drawable que ya tengas, por ej. tu logo)
+        val iconView = ImageView(this).apply {
+            // Cambia este drawable por el tuyo, por ejemplo R.drawable.ic_unimarket_logo
+            setImageResource(R.drawable.personajesingup)
+            val size = dp(20)
+            layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                rightMargin = dp(8)
+            }
+        }
+
+        // Texto
+        val textView = TextView(this).apply {
+            text = "Esta opción aún no está habilitada"
+            setTextColor(Color.BLACK)
+            textSize = 14f
+        }
+
+        container.addView(iconView)
+        container.addView(textView)
+
+        Toast(this).apply {
+            duration = Toast.LENGTH_SHORT
+            view = container
+            show()
+        }
+    }
+
+    private fun dp(value: Int): Int =
+        (value * resources.displayMetrics.density).toInt()
+
 }

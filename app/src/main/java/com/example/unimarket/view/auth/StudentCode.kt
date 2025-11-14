@@ -1,10 +1,13 @@
 package com.example.unimarket.view.auth
 
 import android.content.Intent
+import android.graphics.Bitmap
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -13,7 +16,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.unimarket.databinding.ActivityStudentCodeBinding
-import com.example.unimarket.view.home.CourierHomeActivity
 import com.example.unimarket.view.home.HomeBuyerActivity
 import com.example.unimarket.view.profile.BusinessAccountActivity
 import com.example.unimarket.viewmodel.AuthNavDestination
@@ -25,6 +27,20 @@ class StudentCodeActivity : AppCompatActivity() {
 
     private lateinit var b: ActivityStudentCodeBinding
     private val viewModel: AuthViewModel by viewModels()
+
+    // Preview de la foto
+    private var photoPreview: ImageView? = null
+
+    // Launcher de cámara (igual al que tenías antes, pero aquí)
+    private val cameraLauncher =
+        registerForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap: Bitmap? ->
+            if (bitmap != null) {
+                val iv = ensurePhotoPreview()
+                iv.setImageBitmap(bitmap)
+                iv.visibility = View.VISIBLE
+                viewModel.student_onCameraResult(bitmap)
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,14 +60,24 @@ class StudentCodeActivity : AppCompatActivity() {
         // CTA
         b.btnGetStarted.setOnClickListener { viewModel.student_next() }
 
-        // Icono al final (antiguamente cámara). Lo reusamos en CATEGORIES como "abrir selector"
+        // End icon:
+        // - CODE -> cámara
+        // - CATEGORIES -> selector categorías
         b.tilStudentId.setEndIconOnClickListener {
-            maybeOpenCategoriesPicker()
+            val ui = viewModel.student.value
+            when (ui.step) {
+                OnbStep.CODE -> openCamera()
+                OnbStep.CATEGORIES -> maybeOpenCategoriesPicker()
+                else -> Unit
+            }
         }
 
-        // tap sobre el campo abre el selector cuando estamos en CATEGORIES
+        // Tap sobre el campo abre el selector SOLO en CATEGORIES
         b.etStudentId.setOnClickListener {
-            maybeOpenCategoriesPicker()
+            val ui = viewModel.student.value
+            if (ui.step == OnbStep.CATEGORIES) {
+                maybeOpenCategoriesPicker()
+            }
         }
 
         observeStudentUi()
@@ -70,29 +96,28 @@ class StudentCodeActivity : AppCompatActivity() {
                     // Config UI según paso
                     when (ui.step) {
                         OnbStep.CODE, OnbStep.ADDRESS, OnbStep.LOGO -> {
-                            // Campo editable normal
                             b.etStudentId.isEnabled = true
                             b.etStudentId.isFocusable = true
                             b.etStudentId.isFocusableInTouchMode = true
                             b.etStudentId.isClickable = true
-                            b.tilStudentId.isEndIconVisible = true // mantiene icono (por si lo usas)
+                            b.tilStudentId.isEndIconVisible = true
                         }
                         OnbStep.CATEGORIES -> {
-                            // Campo como "display" de la selección (solo lectura)
                             b.etStudentId.isEnabled = false
                             b.etStudentId.isFocusable = false
                             b.etStudentId.isFocusableInTouchMode = false
-                            b.etStudentId.isClickable = true // para abrir el diálogo al tocar
+                            b.etStudentId.isClickable = true
                             b.tilStudentId.isEndIconVisible = true
-                            // Texto visible = categorías escogidas
-                            val display = if (ui.selectedCats.isEmpty()) "" else ui.selectedCats.joinToString(", ")
+
+                            val display =
+                                if (ui.selectedCats.isEmpty()) "" else ui.selectedCats.joinToString(", ")
                             if (b.etStudentId.text?.toString() != display) {
                                 b.etStudentId.setText(display)
                             }
                         }
                     }
 
-                    // Sincroniza texto en pasos NO-CATEGORIES (lo maneja VM)
+                    // Sincroniza texto en pasos NO-CATEGORIES
                     if (ui.step != OnbStep.CATEGORIES) {
                         val current = b.etStudentId.text?.toString().orEmpty()
                         if (current != ui.textValue) {
@@ -113,17 +138,22 @@ class StudentCodeActivity : AppCompatActivity() {
                     // Navegación final
                     when (ui.nav) {
                         AuthNavDestination.ToBuyerHome -> {
-                            startActivity(Intent(this@StudentCodeActivity, HomeBuyerActivity::class.java))
+                            startActivity(
+                                Intent(
+                                    this@StudentCodeActivity,
+                                    HomeBuyerActivity::class.java
+                                )
+                            )
                             finish()
                             viewModel.student_clearNavAndErrors()
                         }
                         AuthNavDestination.ToBusinessProfile -> {
-                            startActivity(Intent(this@StudentCodeActivity, BusinessAccountActivity::class.java))
-                            finish()
-                            viewModel.student_clearNavAndErrors()
-                        }
-                        AuthNavDestination.ToCourierHome -> {
-                            startActivity(Intent(this@StudentCodeActivity, CourierHomeActivity::class.java))
+                            startActivity(
+                                Intent(
+                                    this@StudentCodeActivity,
+                                    BusinessAccountActivity::class.java
+                                )
+                            )
                             finish()
                             viewModel.student_clearNavAndErrors()
                         }
@@ -145,7 +175,6 @@ class StudentCodeActivity : AppCompatActivity() {
         val items = ui.categories.toTypedArray()
         val checked = BooleanArray(items.size) { idx -> ui.selectedCats.contains(items[idx]) }
 
-        // 👇 Buffer vivo durante toda la vida del diálogo
         val current = ui.selectedCats.toMutableList()
 
         AlertDialog.Builder(this)
@@ -164,15 +193,54 @@ class StudentCodeActivity : AppCompatActivity() {
                     current.remove(name)
                 }
 
-                // Opcional: refleja en vivo
                 viewModel.student_onCategoriesPicked(current)
             }
             .setPositiveButton("OK") { _, _ ->
-                // ✅ Confirmar TODA la selección acumulada
                 viewModel.student_onCategoriesPicked(current)
                 b.etStudentId.setText(current.joinToString(", "))
             }
             .setNegativeButton("Cancelar", null)
             .show()
     }
+
+    // -------- Cámara y preview --------
+
+    private fun openCamera() {
+        cameraLauncher.launch(null)
+    }
+
+    /** Crea (si hace falta) un ImageView pequeño centrado debajo del campo. */
+    private fun ensurePhotoPreview(): ImageView {
+        photoPreview?.let { return it }
+
+        val root = b.root as ViewGroup
+        val sizePx = dp(80)
+
+        val iv = ImageView(this).apply {
+            id = View.generateViewId()
+            layoutParams = ViewGroup.LayoutParams(sizePx, sizePx)
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            visibility = View.GONE
+        }
+
+        root.addView(iv)
+
+        root.post {
+            val marginTop = dp(8)
+
+            val centerX =
+                b.tilStudentId.x + (b.tilStudentId.width - sizePx) / 2f
+            val topY = b.tilStudentId.y + b.tilStudentId.height + marginTop
+
+            iv.x = centerX
+            iv.y = topY
+            iv.bringToFront()
+        }
+
+        photoPreview = iv
+        return iv
+    }
+
+    private fun dp(value: Int): Int =
+        (value * resources.displayMetrics.density).toInt()
 }

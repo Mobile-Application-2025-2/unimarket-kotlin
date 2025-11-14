@@ -1,25 +1,21 @@
 package com.example.unimarket.model.domain.service
 
 import android.util.Log
+import com.example.unimarket.model.data.local.dao.BusinessLocalDao
+import com.example.unimarket.model.data.local.entity.BusinessLocalEntity
 import com.example.unimarket.model.domain.entity.Address
 import com.example.unimarket.model.domain.entity.Business
 import com.example.unimarket.model.domain.entity.Category
 import com.google.firebase.Timestamp
-import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
-import coil.ImageLoader
-import coil.request.ImageRequest
-import com.example.unimarket.model.data.local.dao.BusinessLocalDao
-import com.example.unimarket.model.data.local.entity.BusinessLocalEntity
 
 class BusinessService(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
     private val businesses = db.collection("businesses")
     private val categoriesCol = db.collection("categories")
-
-    /* =============== CRUD =============== */
 
     suspend fun getBusiness(businessId: String): Result<Business> = runCatching {
         val snap = businesses.document(req(businessId, "businessId")).get().await()
@@ -30,7 +26,9 @@ class BusinessService(
     suspend fun getAllBusinesses(): Result<List<Business>> = runCatching {
         val snaps = businesses.get().await()
         snaps.documents.mapNotNull { d ->
-            try { d.toBusinessSafe() } catch (t: Throwable) {
+            try {
+                d.toBusinessSafe()
+            } catch (t: Throwable) {
                 Log.e("BusinessService", "toBusinessSafe failed for ${d.id}", t)
                 null
             }
@@ -38,16 +36,15 @@ class BusinessService(
     }
 
     suspend fun getAllAndPersist(localDao: BusinessLocalDao?): Result<List<Business>> = runCatching {
-        val items = getAllBusinesses().getOrThrow() // 👈 tu función actual
+        val items = getAllBusinesses().getOrThrow()
 
-        // Guardado local (si hay DAO)
         localDao?.let { dao ->
             val entities = items.map { b ->
                 BusinessLocalEntity(
                     id = b.id,
                     name = b.name,
                     logoUrl = b.logo.ifBlank { null },
-                    categoryNames = b.categories.joinToString(",") { it.name } // o vacío si no aplica
+                    categoryNames = b.categories.joinToString(",") { it.name }
                 )
             }
             dao.clear()
@@ -61,16 +58,16 @@ class BusinessService(
         businessId: String,
         name: String? = null,
         logoUrl: String? = null,
-        address: com.example.unimarket.model.domain.entity.Address? = null,
+        address: Address? = null,
         categories: List<Category>? = null
     ): Result<Unit> = runCatching {
         val updates = mutableMapOf<String, Any>(
             "updatedAt" to Timestamp.now()
         )
-        if (name != null)     updates["name"] = name.trim()
-        if (logoUrl != null)  updates["logoUrl"] = logoUrl   // en tu BD actual usas "logo"; si quieres, cámbialo a "logo"
-        if (address != null)  updates["address"] = address
-        if (categories != null) updates["categories"] = categories  // guardará objetos Category
+        if (name != null)        updates["name"] = name.trim()
+        if (logoUrl != null)     updates["logoUrl"] = logoUrl
+        if (address != null)     updates["address"] = address
+        if (categories != null)  updates["categories"] = categories
 
         val hasRealUpdates = updates.any { it.key != "updatedAt" }
         if (!hasRealUpdates) return@runCatching
@@ -80,7 +77,21 @@ class BusinessService(
             .await()
     }
 
-    /* ============ Categorías (lista de Category) ============ */
+    suspend fun updateRating(
+        businessId: String,
+        rating: Double,
+        amountRatings: Long
+    ): Result<Unit> = runCatching {
+        val updates = mapOf(
+            "rating" to rating,
+            "amountRatings" to amountRatings,
+            "updatedAt" to Timestamp.now()
+        )
+
+        businesses.document(req(businessId, "businessId"))
+            .update(updates)
+            .await()
+    }
 
     suspend fun addCategoryToBusiness(businessId: String, category: Category): Result<Unit> = runCatching {
         val ref = businesses.document(req(businessId, "businessId"))
@@ -94,7 +105,6 @@ class BusinessService(
         }
 
         val newList = current.categories + category
-        // ✅ Actualiza SOLO el campo categories (y updatedAt), sin pisar el resto del doc
         ref.update(
             mapOf(
                 "categories" to newList,
@@ -131,7 +141,7 @@ class BusinessService(
         ).await()
     }
 
-    /* =============== helpers =============== */
+
     private fun req(v: String?, label: String): String {
         val x = v?.trim().orEmpty()
         require(x.isNotEmpty()) { "$label is empty" }
@@ -139,16 +149,12 @@ class BusinessService(
     }
 }
 
-/* ================== Mapeos seguros desde Firestore ================== */
 
-// address = { direccion: "..." }
 private fun Any?.asAddress(): Address {
     val m = this as? Map<*, *> ?: return Address()
     val direccion = (m["direccion"] as? String)?.trim().orEmpty()
     return Address(direccion = direccion)
 }
-
-// categories puede venir como List<String> o List<Map<*, *>>
 private fun Any?.asCategoryListFlexible(): List<Category> {
     val raw = this as? List<*> ?: return emptyList()
     return raw.mapNotNull { item ->
@@ -173,14 +179,23 @@ private fun Any?.asStringList(): List<String> =
 private fun Any?.asDouble(): Double = when (val v = this) {
     is Number -> v.toDouble()
     is String -> v.toDoubleOrNull() ?: 0.0
-    else -> 0.0
+    else      -> 0.0
+}
+
+private fun Any?.asLong(): Long = when (val v = this) {
+    is Number -> v.toLong()
+    is String -> v.toLongOrNull() ?: 0L
+    else      -> 0L
 }
 
 private fun DocumentSnapshot.toBusinessSafe(): Business? {
     val data = data ?: return null
 
-    val name     = (data["name"] as? String)?.trim().orEmpty()
-    val rating   = data["rating"].asDouble()
+    val name   = (data["name"] as? String)?.trim().orEmpty()
+    val rating = data["rating"].asDouble()
+
+    val amountRatings = (data["amountRatings"] ?: data["amount_ratings"]).asLong()
+
     val products = data["products"].asStringList()
     val logo     = (data["logo"] as? String)?.trim()
         ?: (data["logoUrl"] as? String)?.trim().orEmpty()
@@ -192,12 +207,13 @@ private fun DocumentSnapshot.toBusinessSafe(): Business? {
     val categories = categoriesAny.asCategoryListFlexible()
 
     return Business(
-        id         = id,
-        name       = name,
-        address    = address,
-        rating     = rating,
-        products   = products,
-        logo       = logo,
-        categories = categories
+        id            = id,
+        name          = name,
+        address       = address,
+        rating        = rating,
+        amountRatings = amountRatings,
+        products      = products,
+        logo          = logo,
+        categories    = categories
     )
 }

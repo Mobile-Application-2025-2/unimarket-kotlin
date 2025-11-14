@@ -8,11 +8,17 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.example.unimarket.R
 import com.example.unimarket.databinding.BusinessProfileBinding
 import com.example.unimarket.view.auth.WelcomePage
 import com.example.unimarket.viewmodel.BusinessNavDestination
 import com.example.unimarket.viewmodel.BusinessViewModel
 import kotlinx.coroutines.launch
+import android.view.Gravity
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.graphics.Color
 
 class BusinessAccountActivity : AppCompatActivity() {
 
@@ -24,7 +30,6 @@ class BusinessAccountActivity : AppCompatActivity() {
         b = BusinessProfileBinding.inflate(layoutInflater)
         setContentView(b.root)
 
-        // Si viene un nombre por Intent, úsalo como override visual
         intent.getStringExtra(EXTRA_USER_NAME)?.let { name ->
             if (name.isNotBlank()) b.tvUserName.text = name
         }
@@ -32,32 +37,26 @@ class BusinessAccountActivity : AppCompatActivity() {
         fun ping(msg: String) =
             Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
 
-        // Encabezado / marca
-        b.brandBar.setOnClickListener { ping("Brand bar") }
+        b.brandBar.setOnClickListener { showFeatureUnavailableToast() }
 
-        // Card Business Info
-        b.rowBusinessInfo.setOnClickListener { ping("Business Info") }
-        b.rowAddresses.setOnClickListener   { ping("Addresses") }
+        b.rowBusinessInfo.setOnClickListener { showFeatureUnavailableToast() }
+        b.rowAddresses.setOnClickListener   { showFeatureUnavailableToast() }
 
-        // Card Compras
-        b.rowOrdersHeader.setOnClickListener { ping("Compras - header") }
-        b.rowOrder1.setOnClickListener       { ping("Compra 1") }
-        b.rowOrder2.setOnClickListener       { ping("Compra 2") }
-        b.tvSeeAll.setOnClickListener        { ping("Ver todas las compras") }
+        b.rowOrdersHeader.setOnClickListener { showFeatureUnavailableToast() }
+        b.rowOrder1.setOnClickListener       { showFeatureUnavailableToast() }
+        b.rowOrder2.setOnClickListener       { showFeatureUnavailableToast() }
+        b.tvSeeAll.setOnClickListener        { showFeatureUnavailableToast() }
 
-        // Card Acciones
         b.rowProducts.setOnClickListener { ping("Productos") }
-        b.rowReviews.setOnClickListener  { ping("User Reviews") }
+        b.rowReviews.setOnClickListener  { showFeatureUnavailableToast() }
 
-        // ✅ Logout via ViewModel (MVVM)
         b.rowLogout.setOnClickListener { vm.logout() }
 
         // Footer
-        b.navHome.setOnClickListener    { ping("Home") }
-        b.navBag.setOnClickListener     { ping("Bag") }
+        b.navHome.setOnClickListener    { showFeatureUnavailableToast() }
+        b.navBag.setOnClickListener     { showFeatureUnavailableToast() }
         b.navProfile.setOnClickListener { /* ya estás aquí */ }
 
-        // Observa el estado del VM
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 vm.ui.collect { ui ->
@@ -86,4 +85,39 @@ class BusinessAccountActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_USER_NAME = "extra.USER_NAME"
     }
+    private fun showFeatureUnavailableToast() {
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+            setBackgroundColor(Color.parseColor("#FFFFFF"))
+        }
+
+        val iconView = ImageView(this).apply {
+            // usa un drawable que ya tengas; aquí reutilizo el del header
+            setImageResource(R.drawable.personajesingup)
+            val size = dp(20)
+            layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                rightMargin = dp(8)
+            }
+        }
+
+        val textView = TextView(this).apply {
+            text = "Esta opción aún no está habilitada"
+            setTextColor(Color.BLACK)
+            textSize = 14f
+        }
+
+        container.addView(iconView)
+        container.addView(textView)
+
+        Toast(this).apply {
+            duration = Toast.LENGTH_SHORT
+            view = container
+            show()
+        }
+    }
+
+    private fun dp(value: Int): Int =
+        (value * resources.displayMetrics.density).toInt()
 }

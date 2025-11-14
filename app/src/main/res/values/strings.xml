@@ -57,4 +57,5 @@
     <string name="cd_bottom_profile">Perfil</string>
     <string name="cd_business_logo">Logo del negocio</string>
     <string name="cd_business_rating">Calificación del negocio</string>
+    <string name="feature_not_available">Está opción está deshabilitada por el momento</string>
 </resources>

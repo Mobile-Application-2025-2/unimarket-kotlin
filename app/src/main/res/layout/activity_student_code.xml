@@ -98,6 +98,7 @@
                         android:layout_height="56dp"
                         android:layout_marginStart="20dp"
                         android:hint="ID"
+                        android:maxLength="50"
                         android:paddingStart="16dp"
                         android:paddingEnd="16dp"
                         android:textColorHint="@color/textGray" />
