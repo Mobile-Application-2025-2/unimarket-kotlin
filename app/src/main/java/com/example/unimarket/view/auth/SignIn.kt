@@ -1,12 +1,16 @@
 package com.example.unimarket.view.auth
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.text.Editable
+import android.text.InputFilter
 import android.text.TextWatcher
 import android.text.method.PasswordTransformationMethod
+import android.view.Gravity
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -21,15 +25,11 @@ import com.example.unimarket.view.profile.BusinessAccountActivity
 import com.example.unimarket.viewmodel.AuthNavDestination
 import com.example.unimarket.viewmodel.AuthViewModel
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.launch
 import com.example.unimarket.workers.PrefetchBusinessesWorker
-import android.graphics.Color
-import android.view.Gravity
-import android.widget.LinearLayout
-import com.google.android.material.card.MaterialCardView
-
 
 class LoginActivity : AppCompatActivity() {
 
@@ -61,7 +61,11 @@ class LoginActivity : AppCompatActivity() {
         etPassword = findViewById(R.id.etPassword)
         ivToggle = findViewById(R.id.ivTogglePassword)
         val btnOutlook = findViewById<MaterialCardView>(R.id.btnOutlook)
-        val btnGoogle = findViewById<MaterialCardView>(R.id.btnGoogle)
+        val btnGoogle  = findViewById<MaterialCardView>(R.id.btnGoogle)
+
+        // Límite 50 caracteres
+        attachMaxLengthBehavior(etEmail)
+        attachMaxLengthBehavior(etPassword)
 
         btnOutlook.setOnClickListener { showFeatureUnavailableToast() }
         btnGoogle.setOnClickListener  { showFeatureUnavailableToast() }
@@ -95,9 +99,19 @@ class LoginActivity : AppCompatActivity() {
         tilPassword.setEndIconOnClickListener { passwordVisible = !passwordVisible; renderPasswordUi() }
         renderPasswordUi()
 
-        // Inputs -> VM
-        etEmail.doAfterTextChangedCompat { viewModel.signIn_onEmailChanged(it) }
-        etPassword.doAfterTextChangedCompat { viewModel.signIn_onPasswordChanged(it) }
+        // Inputs -> VM + limpieza de helpers
+        etEmail.doAfterTextChangedCompat { value ->
+            viewModel.signIn_onEmailChanged(value)
+            if (EMAIL_REGEX.matches(value.trim())) {
+                tilEmail.error = null
+            }
+        }
+        etPassword.doAfterTextChangedCompat { value ->
+            viewModel.signIn_onPasswordChanged(value)
+            if (value.length >= 8) {
+                tilPassword.error = null
+            }
+        }
 
         // Botones
         btnBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
@@ -108,9 +122,15 @@ class LoginActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.signIn.collect { ui ->
-                    // Errores de campo
-                    tilEmail.error = ui.emailError
-                    tilPassword.error = ui.passwordError
+                    val emailNow = etEmail.text?.toString().orEmpty().trim()
+                    val passNow  = etPassword.text?.toString().orEmpty()
+
+                    val validEmail = EMAIL_REGEX.matches(emailNow)
+                    val validPass  = passNow.length >= 8
+
+                    // Solo mostramos errores del VM si el campo sigue inválido
+                    tilEmail.error = if (!validEmail) ui.emailError else null
+                    tilPassword.error = if (!validPass) ui.passwordError else null
 
                     // Loading
                     if (ui.isSubmitting) {
@@ -128,7 +148,7 @@ class LoginActivity : AppCompatActivity() {
                         viewModel.signIn_clearNavAndErrors()
                     }
 
-                    // Navegación (usa this@LoginActivity)
+                    // Navegación
                     when (ui.nav) {
                         AuthNavDestination.ToBuyerHome -> {
                             PrefetchBusinessesWorker.enqueue(applicationContext, replace = true)
@@ -169,19 +189,39 @@ class LoginActivity : AppCompatActivity() {
         })
     }
 
+    // --- Límite 50 caracteres + toast ---
+    private fun attachMaxLengthBehavior(field: TextInputEditText) {
+        val prevFilters = field.filters
+        field.filters = prevFilters + InputFilter.LengthFilter(MAX_LENGTH)
+
+        field.addTextChangedListener(object : TextWatcher {
+            private var lastLength = 0
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val newLen = s?.length ?: 0
+                if (newLen == MAX_LENGTH && newLen > lastLength) {
+                    showMaxLengthToast()
+                }
+                lastLength = newLen
+            }
+
+            override fun afterTextChanged(s: Editable?) {}
+        })
+    }
+
+    // ---- Toasts personalizados ----
+
     private fun showFeatureUnavailableToast() {
-        // Contenedor horizontal
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(12), dp(8), dp(12), dp(8))
-            // Fondo gris oscuro tipo toast
             setBackgroundColor(Color.parseColor("#FFFFFF"))
         }
 
-        // Icono (usa algún drawable que ya tengas, por ej. tu logo)
         val iconView = ImageView(this).apply {
-            // Cambia este drawable por el tuyo, por ejemplo R.drawable.ic_unimarket_logo
             setImageResource(R.drawable.personajesingup)
             val size = dp(20)
             layoutParams = LinearLayout.LayoutParams(size, size).apply {
@@ -189,9 +229,40 @@ class LoginActivity : AppCompatActivity() {
             }
         }
 
-        // Texto
         val textView = TextView(this).apply {
             text = "Esta opción aún no está habilitada"
+            setTextColor(Color.BLACK)
+            textSize = 14f
+        }
+
+        container.addView(iconView)
+        container.addView(textView)
+
+        Toast(this).apply {
+            duration = Toast.LENGTH_SHORT
+            view = container
+            show()
+        }
+    }
+
+    private fun showMaxLengthToast() {
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+            setBackgroundColor(Color.parseColor("#FFFFFF"))
+        }
+
+        val iconView = ImageView(this).apply {
+            setImageResource(R.drawable.personajesingup)
+            val size = dp(20)
+            layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                rightMargin = dp(8)
+            }
+        }
+
+        val textView = TextView(this).apply {
+            text = "No puedes ingresar más de 50 caracteres"
             setTextColor(Color.BLACK)
             textSize = 14f
         }
@@ -209,4 +280,8 @@ class LoginActivity : AppCompatActivity() {
     private fun dp(value: Int): Int =
         (value * resources.displayMetrics.density).toInt()
 
-}
+    companion object {
+        private const val MAX_LENGTH = 50
+        private val EMAIL_REGEX = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+    }
+}   

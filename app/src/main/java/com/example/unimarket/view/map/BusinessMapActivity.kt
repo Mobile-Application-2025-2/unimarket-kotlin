@@ -3,6 +3,7 @@ package com.example.unimarket.view.map
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
@@ -20,9 +21,11 @@ import com.example.unimarket.model.data.platform.AndroidGeocodingProvider
 import com.example.unimarket.model.data.platform.FusedLocationProvider
 import com.example.unimarket.model.domain.service.BusinessService
 import com.example.unimarket.model.domain.service.NearbyBusinessesService
+import com.example.unimarket.view.home.BusinessDetailActivity
 import com.example.unimarket.view.home.HomeBuyerActivity
 import com.example.unimarket.view.profile.BuyerAccountActivity
 import com.example.unimarket.viewmodel.BusinessMapViewModel
+import com.example.unimarket.viewmodel.MapMarkerUi
 import com.example.unimarket.viewmodel.MapNav
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -38,6 +41,15 @@ class BusinessMapActivity : AppCompatActivity(R.layout.business_map_page) {
     private var map: GoogleMap? = null
     private var loadedOnce = false
 
+    private var lastMarkers: List<MapMarkerUi> = emptyList()
+
+    private val markerHue: Float by lazy {
+        val colorInt = ContextCompat.getColor(this, R.color.yellowLight)
+        val hsv = FloatArray(3)
+        Color.colorToHSV(colorInt, hsv)
+        hsv[0]
+    }
+
     private val viewModel: BusinessMapViewModel by viewModels {
         BusinessMapViewModel.Factory(
             nearbyService = NearbyBusinessesService(
@@ -48,7 +60,8 @@ class BusinessMapActivity : AppCompatActivity(R.layout.business_map_page) {
                     bbox = floatArrayOf(4.45f, -74.20f, 4.85f, -73.95f)
                 ),
                 locationProvider = FusedLocationProvider(applicationContext)
-            )
+            ),
+            markerHue = markerHue
         )
     }
 
@@ -100,21 +113,44 @@ class BusinessMapActivity : AppCompatActivity(R.layout.business_map_page) {
             startActivity(intent)
         }.show()
     }
-    // ---------------------------------
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // ids del XML: mapView, progress, fabMyLocation
         mapView = findViewById(R.id.mapView)
         val progress = findViewById<View>(R.id.progress)
         val fabMyLocation = findViewById<FloatingActionButton>(R.id.fabMyLocation)
+
+        fabMyLocation.visibility = View.GONE
 
         mapView.onCreate(savedInstanceState)
         mapView.getMapAsync { gmap ->
             map = gmap.apply {
                 uiSettings.isZoomControlsEnabled = true
-                uiSettings.isMyLocationButtonEnabled = false
+                uiSettings.isMyLocationButtonEnabled = true
+
+                setOnInfoWindowClickListener { marker ->
+                    val businessId = marker.tag as? String ?: return@setOnInfoWindowClickListener
+
+                    val markerUi = lastMarkers.firstOrNull { it.businessId == businessId }
+                        ?: return@setOnInfoWindowClickListener
+
+                    val intent = Intent(this@BusinessMapActivity, BusinessDetailActivity::class.java).apply {
+                        putExtra(BusinessDetailActivity.EXTRA_BUSINESS_ID, markerUi.businessId)
+                        putExtra(BusinessDetailActivity.EXTRA_BUSINESS_NAME, markerUi.businessName)
+                        putExtra(BusinessDetailActivity.EXTRA_BUSINESS_RATING, markerUi.rating)
+                        putExtra(
+                            BusinessDetailActivity.EXTRA_BUSINESS_AMOUNT_RATINGS,
+                            markerUi.amountRatings
+                        )
+                        putExtra(BusinessDetailActivity.EXTRA_BUSINESS_LOGO_URL, markerUi.logoUrl)
+                        putStringArrayListExtra(
+                            BusinessDetailActivity.EXTRA_BUSINESS_PRODUCT_IDS,
+                            ArrayList(markerUi.productIds)
+                        )
+                    }
+                    startActivity(intent)
+                }
             }
             enableMyLocation()
             loadIfNeeded()
@@ -122,16 +158,6 @@ class BusinessMapActivity : AppCompatActivity(R.layout.business_map_page) {
 
         if (!hasLocationPermission()) requestLocationPermission()
 
-        fabMyLocation.setOnClickListener {
-            val loc = viewModel.ui.value.myLocation
-            when {
-                loc != null -> map?.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 16f))
-                !hasLocationPermission() -> requestLocationPermission()
-                else -> loadIfNeeded(force = true)
-            }
-        }
-
-        // Footer: ids nav_home, nav_search, nav_map, nav_profile
         highlightFooterSelection()
 
         findViewById<ImageButton>(R.id.nav_home).setOnClickListener {
@@ -139,7 +165,6 @@ class BusinessMapActivity : AppCompatActivity(R.layout.business_map_page) {
             finish()
         }
 
-        // search aún no disponible → no hace nada (o podrías poner Snackbar/Toast si quieres)
         findViewById<ImageButton>(R.id.nav_search).setOnClickListener {
             Snackbar.make(
                 findViewById(R.id.root_map),
@@ -148,18 +173,14 @@ class BusinessMapActivity : AppCompatActivity(R.layout.business_map_page) {
             ).show()
         }
 
-        // estamos en map → no navegamos a ningún lado al tocarlo
         findViewById<ImageButton>(R.id.nav_map).setOnClickListener {
-            // no-op
         }
 
-        // perfil de buyer
         findViewById<ImageButton>(R.id.nav_profile).setOnClickListener {
             startActivity(Intent(this, BuyerAccountActivity::class.java))
             finish()
         }
 
-        // Observa el estado del ViewModel
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.ui.collect { ui ->
@@ -173,12 +194,21 @@ class BusinessMapActivity : AppCompatActivity(R.layout.business_map_page) {
                     if (ui.myLocation != null || ui.markers.isNotEmpty()) {
                         map?.let { gmap ->
                             gmap.clear()
-                            ui.markers.forEach { gmap.addMarker(it) }
+
+                            lastMarkers = ui.markers
+
+                            ui.markers.forEach { markerUi ->
+                                val marker = gmap.addMarker(markerUi.options)
+                                marker?.tag = markerUi.businessId
+                            }
 
                             val builder = LatLngBounds.builder()
                             var any = false
                             ui.myLocation?.let { builder.include(it); any = true }
-                            ui.markers.forEach { builder.include(it.position); any = true }
+                            ui.markers.forEach {
+                                builder.include(it.options.position)
+                                any = true
+                            }
                             if (any) {
                                 gmap.animateCamera(
                                     CameraUpdateFactory.newLatLngBounds(builder.build(), 80)
@@ -215,7 +245,6 @@ class BusinessMapActivity : AppCompatActivity(R.layout.business_map_page) {
                 imageAlpha = (alpha * 255).toInt()
             }
 
-        // home y profile apagados, map encendido (ids del XML)
         setAlpha(R.id.nav_home, 0.55f)
         setAlpha(R.id.nav_search, 0.55f)
         setAlpha(R.id.nav_map, 1.0f)

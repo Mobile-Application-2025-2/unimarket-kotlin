@@ -269,7 +269,7 @@ class AuthViewModel(
                     val role = (session?.type ?: createdUser.type).trim().lowercase()
                     _create.update {
                         it.copy(
-                            toastMessage = "Cuenta creada ($role). Verifica tu cuenta para iniciar sesión.",
+                            toastMessage = "Cuenta creada ($role). Revisa la bandeja de tu correo o spam para verificar tu cuenta para iniciar sesión.",
                             nav = AuthNavDestination.ToLogin
                         )
                     }
