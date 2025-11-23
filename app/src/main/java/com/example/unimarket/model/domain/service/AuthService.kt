@@ -1,9 +1,9 @@
 package com.example.unimarket.model.domain.service
 
-import com.example.unimarket.model.data.dao.AuthDao
-import com.example.unimarket.model.data.dao.BuyersDao
-import com.example.unimarket.model.data.dao.BusinessesDao
-import com.example.unimarket.model.data.dao.UsersDao
+import com.example.unimarket.model.data.serviceAdapter.AuthServiceAdapter
+import com.example.unimarket.model.data.serviceAdapter.BuyersServiceAdapter
+import com.example.unimarket.model.data.serviceAdapter.BusinessesServiceAdapter
+import com.example.unimarket.model.data.serviceAdapter.UsersServiceAdapter
 import com.example.unimarket.model.data.firebase.FirebaseAuthProvider
 import com.example.unimarket.model.domain.entity.Address
 import com.example.unimarket.model.domain.entity.Buyer
@@ -17,10 +17,10 @@ import com.example.unimarket.model.session.UserSession
 import kotlinx.coroutines.tasks.await
 
 class AuthService(
-    private val authDao: AuthDao = AuthDao(),
-    private val buyersDao: BuyersDao = BuyersDao(),
-    private val businessesDao: BusinessesDao = BusinessesDao(),
-    private val usersDao: UsersDao = UsersDao()
+    private val authServiceAdapter: AuthServiceAdapter = AuthServiceAdapter(),
+    private val buyersServiceAdapter: BuyersServiceAdapter = BuyersServiceAdapter(),
+    private val businessesServiceAdapter: BusinessesServiceAdapter = BusinessesServiceAdapter(),
+    private val usersServiceAdapter: UsersServiceAdapter = UsersServiceAdapter()
 ) {
 
     suspend fun signUp(
@@ -40,7 +40,7 @@ class AuthService(
         require(user.type in listOf("buyer", "business")) { "type must be buyer|business" }
         require(password.length >= 6) { "password must be >= 6" }
 
-        val created = authDao.signUp(user, password).getOrThrow()
+        val created = authServiceAdapter.signUp(user, password).getOrThrow()
 
         when (created.type) {
             "buyer" -> {
@@ -48,7 +48,7 @@ class AuthService(
                     address = buyerAddresses ?: emptyList(),
                     cart = Cart(products = emptyMap(), price = 0.0)
                 )
-                buyersDao.create(created.id, buyer)
+                buyersServiceAdapter.create(created.id, buyer)
             }
             "business" -> {
                 val name = businessName ?: error("businessName is required for business sign up")
@@ -62,11 +62,11 @@ class AuthService(
                     products = emptyList(),
                     logo = logo
                 )
-                businessesDao.create(created.id, biz)
+                businessesServiceAdapter.create(created.id, biz)
             }
         }
 
-        authDao.signIn(user.email, password).getOrThrow()
+        authServiceAdapter.signIn(user.email, password).getOrThrow()
 
         val fresh = SessionManager.ensureFreshIdToken(forceRefresh = true)
 
@@ -74,7 +74,7 @@ class AuthService(
         val email = FirebaseAuthProvider.auth.currentUser?.email ?: created.email
         val claimType = fresh?.type.orEmpty()
         val profileType = if (claimType.isNotBlank()) claimType else {
-            usersDao.getById(uid)?.type ?: created.type
+            usersServiceAdapter.getById(uid)?.type ?: created.type
         }
 
         if (fresh == null) {
@@ -96,7 +96,7 @@ class AuthService(
     }
 
     suspend fun signIn(email: String, password: String): Result<User> = runCatching {
-        val user = authDao.signIn(email, password).getOrThrow()
+        val user = authServiceAdapter.signIn(email, password).getOrThrow()
 
         val current = FirebaseAuthProvider.auth.currentUser ?: error("No authenticated user")
         if (!current.isEmailVerified) {
@@ -108,7 +108,7 @@ class AuthService(
         val uid = FirebaseAuthProvider.auth.currentUser?.uid ?: user.id
         val claimType = fresh?.type.orEmpty()
         val profileType = if (claimType.isNotBlank()) claimType else {
-            usersDao.getById(uid)?.type ?: user.type
+            usersServiceAdapter.getById(uid)?.type ?: user.type
         }
 
         if (fresh == null) {
@@ -136,7 +136,7 @@ class AuthService(
     suspend fun currentUser(): Result<User?> = runCatching {
         val firebaseUser = FirebaseAuthProvider.auth.currentUser ?: return@runCatching null
         val uid = firebaseUser.uid
-        val u = usersDao.getById(uid)
+        val u = usersServiceAdapter.getById(uid)
 
         SessionManager.ensureFreshIdToken(forceRefresh = false)
         u
@@ -160,7 +160,7 @@ class AuthService(
 
     suspend fun completeOnboarding(studentCode: String): Result<Unit> = runCatching {
         val uid = FirebaseAuthProvider.auth.currentUser?.uid ?: error("No authenticated user")
-        usersDao.update(
+        usersServiceAdapter.update(
             uid,
             mapOf(
                 "studentCode" to studentCode,
@@ -178,7 +178,7 @@ class AuthService(
             "salon" to "",
             "local" to ""
         )
-        buyersDao.update(uid, mapOf("address" to listOf(address)))
+        buyersServiceAdapter.update(uid, mapOf("address" to listOf(address)))
     }   
 
     suspend fun updateBusinessAddressAndLogo(line: String, logoUrl: String) = runCatching {
@@ -190,6 +190,6 @@ class AuthService(
             "salon" to "",
             "local" to ""
         )
-        businessesDao.update(uid, mapOf("address" to address, "logo" to logoUrl))
+        businessesServiceAdapter.update(uid, mapOf("address" to address, "logo" to logoUrl))
     }
 }

@@ -28,7 +28,7 @@ import com.example.unimarket.viewmodel.AuthViewModel
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.launch
-import com.example.unimarket.workers.PrefetchBusinessesWorker
+// ⛔️ removed: import com.example.unimarket.workers.PrefetchBusinessesWorker
 
 class CreateAccountActivity : AppCompatActivity() {
 

@@ -1,11 +1,11 @@
-package com.example.unimarket.model.data.dao
+package com.example.unimarket.model.data.serviceAdapter
 
 import com.example.unimarket.model.data.firebase.FirestoreProvider
 import com.example.unimarket.model.domain.entity.Comment
 import com.google.firebase.firestore.FieldValue
 import kotlinx.coroutines.tasks.await
 
-class CommentsDao {
+class CommentsServiceAdapter {
     private val db = FirestoreProvider.db
     private val col = FirestoreProvider.comments()
     private val products = FirestoreProvider.products()

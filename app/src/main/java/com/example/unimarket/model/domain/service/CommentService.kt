@@ -1,12 +1,12 @@
 package com.example.unimarket.model.domain.service
 
-import com.example.unimarket.model.data.dao.CommentsDao
+import com.example.unimarket.model.data.serviceAdapter.CommentsServiceAdapter
 import com.example.unimarket.model.data.firebase.FirebaseAuthProvider
 import com.example.unimarket.model.domain.entity.Comment
 import com.example.unimarket.model.domain.validation.Validators.requireNotBlank
 
 class CommentService(
-    private val commentsDao: CommentsDao = CommentsDao()
+    private val commentsServiceAdapter: CommentsServiceAdapter = CommentsServiceAdapter()
 ) {
 
     suspend fun createComment(
@@ -22,7 +22,7 @@ class CommentService(
 
         val uid = FirebaseAuthProvider.auth.currentUser?.uid ?: error("Not authenticated")
 
-        commentsDao.create(
+        commentsServiceAdapter.create(
             Comment(
                 rating = rating,
                 comment = comment,

@@ -1,4 +1,4 @@
-package com.example.unimarket.model.data.dao
+package com.example.unimarket.model.data.serviceAdapter
 
 import com.example.unimarket.model.data.firebase.FirebaseAuthProvider
 import com.example.unimarket.model.data.firebase.FirestoreProvider
@@ -6,7 +6,7 @@ import com.example.unimarket.model.domain.entity.User
 import com.google.firebase.auth.AuthResult
 import kotlinx.coroutines.tasks.await
 
-class AuthDao {
+class AuthServiceAdapter {
     private val auth = FirebaseAuthProvider.auth
     private val usersCol = FirestoreProvider.users()
 
