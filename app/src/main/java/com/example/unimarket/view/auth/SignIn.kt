@@ -29,7 +29,6 @@ import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.launch
-import com.example.unimarket.workers.PrefetchBusinessesWorker
 
 class LoginActivity : AppCompatActivity() {
 
@@ -151,7 +150,6 @@ class LoginActivity : AppCompatActivity() {
                     // Navegación
                     when (ui.nav) {
                         AuthNavDestination.ToBuyerHome -> {
-                            PrefetchBusinessesWorker.enqueue(applicationContext, replace = true)
                             val intent = Intent(this@LoginActivity, HomeBuyerActivity::class.java)
                                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                             startActivity(intent)
@@ -159,7 +157,6 @@ class LoginActivity : AppCompatActivity() {
                             viewModel.signIn_clearNavAndErrors()
                         }
                         AuthNavDestination.ToBusinessProfile -> {
-                            PrefetchBusinessesWorker.enqueue(applicationContext, replace = true)
                             val intent = Intent(this@LoginActivity, BusinessAccountActivity::class.java)
                                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                             startActivity(intent)

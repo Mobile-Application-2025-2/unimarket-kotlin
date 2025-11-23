@@ -27,6 +27,8 @@ import com.example.unimarket.viewmodel.HomeNav
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.launch
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 
 class HomeBuyerActivity : AppCompatActivity() {
 
@@ -72,7 +74,6 @@ class HomeBuyerActivity : AppCompatActivity() {
         navMap = findViewById(R.id.nav_map)
         navProfile = findViewById(R.id.nav_profile)
 
-
         chipGroupFilters = findViewById(R.id.chipGroupFilters)
         chipAll         = findViewById(R.id.chip_all)
         chipFood        = findViewById(R.id.chip_food)
@@ -107,10 +108,7 @@ class HomeBuyerActivity : AppCompatActivity() {
     }
 
     private fun setupClicks() {
-
-        navProfile.setOnClickListener {
-            viewModel.onClickProfile()
-        }
+        navProfile.setOnClickListener { viewModel.onClickProfile() }
 
         chipAll.setOnClickListener        { viewModel.onFilterSelected(Filter.ALL) }
         chipFood.setOnClickListener       { viewModel.onFilterSelected(Filter.FOOD) }
@@ -133,9 +131,7 @@ class HomeBuyerActivity : AppCompatActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.ui.collect { ui ->
                     businessAdapter.submit(ui.businessesFiltered)
-
                     renderFilters(ui.selected)
-
                     ui.error?.let { msg ->
                         Toast.makeText(this@HomeBuyerActivity, msg, Toast.LENGTH_LONG).show()
                     }
@@ -166,7 +162,6 @@ class HomeBuyerActivity : AppCompatActivity() {
                             )
                             viewModel.navHandled()
                         }
-
                         is HomeNav.ToBusinessDetail -> {
                             val b = nav.business
                             val intent = Intent(
@@ -175,18 +170,9 @@ class HomeBuyerActivity : AppCompatActivity() {
                             ).apply {
                                 putExtra(BusinessDetailActivity.EXTRA_BUSINESS_ID, b.id)
                                 putExtra(BusinessDetailActivity.EXTRA_BUSINESS_NAME, b.name)
-                                putExtra(
-                                    BusinessDetailActivity.EXTRA_BUSINESS_RATING,
-                                    b.rating.toFloat()
-                                )
-                                putExtra(
-                                    BusinessDetailActivity.EXTRA_BUSINESS_AMOUNT_RATINGS,
-                                    b.amountRatings.toInt()
-                                )
-                                putExtra(
-                                    BusinessDetailActivity.EXTRA_BUSINESS_LOGO_URL,
-                                    b.logo
-                                )
+                                putExtra(BusinessDetailActivity.EXTRA_BUSINESS_RATING, b.rating.toFloat())
+                                putExtra(BusinessDetailActivity.EXTRA_BUSINESS_AMOUNT_RATINGS, b.amountRatings.toInt())
+                                putExtra(BusinessDetailActivity.EXTRA_BUSINESS_LOGO_URL, b.logo)
                                 putStringArrayListExtra(
                                     BusinessDetailActivity.EXTRA_BUSINESS_PRODUCT_IDS,
                                     ArrayList(b.products)
@@ -195,7 +181,6 @@ class HomeBuyerActivity : AppCompatActivity() {
                             startActivity(intent)
                             viewModel.navHandled()
                         }
-
                         HomeNav.None -> Unit
                     }
                 }
@@ -214,9 +199,7 @@ class HomeBuyerActivity : AppCompatActivity() {
         val iconView = ImageView(this).apply {
             setImageResource(R.drawable.personajesingup)
             val size = dp(20)
-            layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                rightMargin = dp(8)
-            }
+            layoutParams = LinearLayout.LayoutParams(size, size).apply { rightMargin = dp(8) }
         }
 
         val textView = TextView(this).apply {
@@ -235,6 +218,26 @@ class HomeBuyerActivity : AppCompatActivity() {
         }
     }
 
-    private fun dp(value: Int): Int =
-        (value * resources.displayMetrics.density).toInt()
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    private fun isOnline(): Boolean {
+        val cm = getSystemService(ConnectivityManager::class.java)
+        val net = cm.activeNetwork ?: return false
+        val caps = cm.getNetworkCapabilities(net) ?: return false
+        return caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+    }
+
+    // 🔁 Recarga cada vez que la activity vuelve al frente
+    override fun onStart() {
+        super.onStart()
+        viewModel.reloadBusinesses(isOnline())
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.reloadBusinesses(isOnline())
+    }
+
 }

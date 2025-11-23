@@ -1,6 +1,7 @@
 package com.example.unimarket.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unimarket.model.domain.entity.Business
 import com.example.unimarket.model.domain.entity.Category
@@ -9,10 +10,16 @@ import com.example.unimarket.model.domain.service.BusinessService
 import com.example.unimarket.model.domain.service.CategoryService
 import com.example.unimarket.model.domain.service.ProductService
 import com.google.firebase.firestore.FieldValue
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
+
+// Room local
+import com.example.unimarket.model.data.local.AppDatabase
+import com.example.unimarket.model.data.local.entity.TopBusinessLocalEntity
 
 enum class Filter { ALL, FOOD, STATIONERY, TUTORING, ACCESSORIES }
 
@@ -41,10 +48,19 @@ sealed class HomeNav {
 }
 
 class HomeBuyerViewModel(
-    private val service: BusinessService = BusinessService(),
-    private val categoryService: CategoryService = CategoryService(),
-    private val productService: ProductService = ProductService()
-) : ViewModel() {
+    application: Application,
+    private val service: BusinessService,
+    private val categoryService: CategoryService,
+    private val productService: ProductService
+) : AndroidViewModel(application) {
+
+    // 👇 Constructor secundario requerido por AndroidViewModelFactory
+    constructor(application: Application) : this(
+        application,
+        BusinessService(),
+        CategoryService(),
+        ProductService()
+    )
 
     private val _ui = MutableStateFlow(HomeUiState())
     val ui: StateFlow<HomeUiState> = _ui
@@ -55,11 +71,15 @@ class HomeBuyerViewModel(
     private val _detail = MutableStateFlow(BusinessDetailUiState())
     val detail: StateFlow<BusinessDetailUiState> = _detail
 
-    init { loadBusinesses() }
+    private var loadJob: Job? = null
+
+    init { reloadBusinesses(remoteFirst = true) }
 
     private fun loadBusinesses() {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             _ui.update { it.copy(loading = true, error = null) }
+
             service.getAllBusinesses()
                 .onSuccess { list ->
                     val sorted = list.sortedByDescending { it.rating }
@@ -68,18 +88,123 @@ class HomeBuyerViewModel(
                         st.copy(
                             businessesAll = sorted,
                             businessesFiltered = filtered,
-                            loading = false
+                            loading = false,
+                            error = null
                         )
                     }
                 }
                 .onFailure { e ->
-                    _ui.update {
-                        it.copy(
+                    // ⬇️ Si es una cancelación (por el reload), NO es un error de UI
+                    if (e is CancellationException) {
+                        _ui.update { it.copy(loading = false) }
+                        return@onFailure
+                    }
+
+                    // 🔁 Fallback a Room (offline)
+                    try {
+                        val ctx = getApplication<Application>().applicationContext
+                        val db = com.example.unimarket.model.data.local.AppDatabase.getInstance(ctx)
+                        val topLocal = db.topBusinessDao().getAllOnce()
+
+                        if (topLocal.isEmpty()) {
+                            _ui.update { it.copy(loading = false, error = e.message ?: "Error cargando negocios") }
+                            return@onFailure
+                        }
+
+                        val mapped = topLocal.map { it.toDomainBusiness() }.sortedByDescending { it.rating }
+                        _ui.update { st ->
+                            val filtered = filterBy(st.selected, mapped)
+                            st.copy(
+                                businessesAll = mapped,
+                                businessesFiltered = filtered,
+                                loading = false,
+                                error = null // viene de cache local → no mostramos error
+                            )
+                        }
+                    } catch (t: Throwable) {
+                        _ui.update { it.copy(loading = false, error = e.message ?: "Error cargando negocios") }
+                    }
+                }
+        }
+    }
+
+    fun reloadBusinessesRemoteFirst() = loadRemoteFirst()
+
+    fun reloadBusinesses(remoteFirst: Boolean) {
+        if (remoteFirst) {
+            loadRemoteFirst()
+        } else {
+            loadLocalOnly()
+        }
+    }
+
+    private fun loadRemoteFirst() {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            _ui.update { it.copy(loading = true, error = null) }
+
+            service.getAllBusinesses()
+                .onSuccess { list ->
+                    val sorted = list.sortedByDescending { it.rating }
+                    _ui.update { st ->
+                        val filtered = filterBy(st.selected, sorted)
+                        st.copy(
+                            businessesAll = sorted,
+                            businessesFiltered = filtered,
                             loading = false,
-                            error = e.message ?: "Error cargando negocios"
+                            error = null
                         )
                     }
                 }
+                .onFailure { e ->
+                    if (e is CancellationException) {
+                        _ui.update { it.copy(loading = false) }
+                        return@onFailure
+                    }
+                    // Fallback local si el remoto falla
+                    loadLocalOnly()
+                }
+        }
+    }
+
+    private fun loadLocalOnly() {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            try {
+                val ctx = getApplication<Application>().applicationContext
+                val db  = com.example.unimarket.model.data.local.AppDatabase.getInstance(ctx)
+                val top = db.topBusinessDao().getAllOnce()
+
+                if (top.isEmpty()) {
+                    _ui.update {
+                        it.copy(
+                            businessesAll = emptyList(),
+                            businessesFiltered = emptyList(),
+                            loading = false,
+                            // puedes dejar null si no quieres ningún toast aquí
+                            error = "Sin datos locales"
+                        )
+                    }
+                    return@launch
+                }
+
+                val mapped = top.map { it.toDomainBusiness() }.sortedByDescending { it.rating }
+                _ui.update { st ->
+                    val filtered = filterBy(st.selected, mapped)
+                    st.copy(
+                        businessesAll = mapped,
+                        businessesFiltered = filtered,
+                        loading = false,
+                        error = null
+                    )
+                }
+            } catch (t: Throwable) {
+                if (t is CancellationException) {
+                    _ui.update { it.copy(loading = false) } // sin error
+                } else {
+                    _ui.update { it.copy(loading = false, error = t.message ?: "Error leyendo cache local") }
+                }
+            }
         }
     }
 
@@ -111,7 +236,7 @@ class HomeBuyerViewModel(
     fun onClickProfile() { _nav.value = HomeNav.ToBuyerProfile }
     fun navHandled()     { _nav.value = HomeNav.None }
 
-    // --------- DETALLE DE NEGOCIO (MVVM) ---------
+    // --------- DETALLE ---------
 
     fun detail_init(businessId: String, businessName: String) {
         _detail.value = BusinessDetailUiState(
@@ -136,41 +261,25 @@ class HomeBuyerViewModel(
 
             productService.listByIds(productIds)
                 .onSuccess { list ->
-                    val cats = list
-                        .map { it.category.trim() }
-                        .filter { it.isNotEmpty() }
-                        .distinct()
-                        .sorted()
+                    val cats = list.map { it.category.trim() }.filter { it.isNotEmpty() }
+                        .distinct().sorted()
                     _detail.update {
-                        it.copy(
-                            products = list,
-                            categories = cats,
-                            loading = false,
-                            error = null
-                        )
+                        it.copy(products = list, categories = cats, loading = false, error = null)
                     }
                 }
-                .onFailure { e ->
-                    _detail.update {
-                        it.copy(
-                            loading = false,
-                            error = e.message ?: "Error cargando productos"
-                        )
-                    }
+                .onFailure { ex ->
+                    _detail.update { it.copy(loading = false, error = ex.message ?: "Error cargando productos") }
                 }
         }
     }
 
     fun detail_onFilterSelected(filterTag: String) {
-        _detail.update { st ->
-            st.copy(currentFilter = filterTag)
-        }
+        _detail.update { st -> st.copy(currentFilter = filterTag) }
     }
 
     fun detail_errorShown() {
         _detail.update { it.copy(error = null) }
     }
-
 
     private fun filterBy(filter: Filter, list: List<Business>): List<Business> =
         when (filter) {
@@ -200,16 +309,13 @@ class HomeBuyerViewModel(
         } ?: return
 
         viewModelScope.launch {
-            try {
-                categoryService.update(docId, mapOf("count" to FieldValue.increment(1)))
-            } catch (_: Exception) {
-            }
+            try { categoryService.update(docId, mapOf("count" to FieldValue.increment(1))) }
+            catch (_: Exception) { }
         }
     }
 
     fun rateBusiness(businessId: String, newAvg: Float, newCount: Int) {
         if (businessId.isBlank()) return
-
         viewModelScope.launch {
             service.updateRating(
                 businessId = businessId,
@@ -218,12 +324,8 @@ class HomeBuyerViewModel(
             ).onSuccess {
                 _ui.update { st ->
                     val updatedAll = st.businessesAll.map { b ->
-                        if (b.id == businessId) {
-                            b.copy(
-                                rating = newAvg.toDouble(),
-                                amountRatings = newCount.toLong()
-                            )
-                        } else b
+                        if (b.id == businessId) b.copy(rating = newAvg.toDouble(), amountRatings = newCount.toLong())
+                        else b
                     }
                     st.copy(
                         businessesAll = updatedAll,
@@ -231,14 +333,29 @@ class HomeBuyerViewModel(
                     )
                 }
             }.onFailure { e ->
-                _detail.update {
-                    it.copy(error = e.message ?: "Error actualizando calificación")
-                }
+                _detail.update { it.copy(error = e.message ?: "Error actualizando calificación") }
             }
         }
     }
 
-    companion object {
-        const val FILTER_ALL = "all"
-    }
+    companion object { const val FILTER_ALL = "all" }
+}
+
+/* ======= MAPPER LOCAL → DOMAIN ======= */
+private fun TopBusinessLocalEntity.toDomainBusiness(): Business {
+    val productIds: List<String> =
+        this.productIdsCsv?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
+
+    return Business(
+        id = this.businessId,
+        name = this.businessName,
+        rating = this.rating,
+        amountRatings = this.amountRatings,
+        logo = this.logoUrl ?: "",
+        products = productIds,
+        categories = listOf(
+            Category(id = this.categoryId, name = this.categoryName, count = 0L)
+        ),
+        address = com.example.unimarket.model.domain.entity.Address()
+    )
 }

@@ -1,12 +1,11 @@
-package com.example.unimarket.model.data.dao
+package com.example.unimarket.model.data.serviceAdapter
 
 import com.example.unimarket.model.data.firebase.FirestoreProvider
 import com.example.unimarket.model.domain.entity.Address
 import com.example.unimarket.model.domain.entity.Buyer
-import com.google.firebase.firestore.FieldValue
 import kotlinx.coroutines.tasks.await
 
-class BuyersDao {
+class BuyersServiceAdapter {
     private val db = FirestoreProvider.db
     private val col = FirestoreProvider.buyers()
 

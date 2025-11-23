@@ -13,6 +13,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -31,6 +32,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 import java.util.Locale
 import com.google.android.material.button.MaterialButton
+import android.content.res.ColorStateList
 
 class BusinessDetailActivity : AppCompatActivity() {
 
@@ -66,7 +68,6 @@ class BusinessDetailActivity : AppCompatActivity() {
         setupTopBarAndFooter()
         setupRecycler()
 
-
         businessId          = intent.getStringExtra(EXTRA_BUSINESS_ID).orEmpty()
         val businessName    = intent.getStringExtra(EXTRA_BUSINESS_NAME).orEmpty()
         currentRatingAvg    = intent.getFloatExtra(EXTRA_BUSINESS_RATING, 0f)
@@ -75,10 +76,8 @@ class BusinessDetailActivity : AppCompatActivity() {
         val productIds: List<String> =
             intent.getStringArrayListExtra(EXTRA_BUSINESS_PRODUCT_IDS) ?: emptyList()
 
-
         viewModel.detail_init(businessId, businessName)
         viewModel.detail_loadProducts(productIds)
-
 
         if (businessName.isNotBlank()) tvBusinessName.text = businessName
 
@@ -137,6 +136,30 @@ class BusinessDetailActivity : AppCompatActivity() {
 
         navProfile.setOnClickListener {
             viewModel.onClickProfile()
+        }
+
+        btnRateBusiness.apply {
+            stateListAnimator = null
+
+            val strongElevation = dp(10).toFloat()
+            elevation = strongElevation
+            translationZ = strongElevation
+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                val darkShadow = androidx.core.content.ContextCompat.getColor(
+                    context,
+                    android.R.color.black
+                )
+                outlineAmbientShadowColor = darkShadow
+                outlineSpotShadowColor = darkShadow
+            }
+
+            setTextColor(
+                androidx.core.content.ContextCompat.getColor(
+                    context,
+                    R.color.white
+                )
+            )
         }
 
         btnRateBusiness.setOnClickListener {
@@ -201,7 +224,6 @@ class BusinessDetailActivity : AppCompatActivity() {
         }
     }
 
-
     private fun renderChips(ui: BusinessDetailUiState) {
         chipGroupProductFilters.isSingleSelection = true
 
@@ -209,6 +231,22 @@ class BusinessDetailActivity : AppCompatActivity() {
 
         chipGroupProductFilters.setOnCheckedStateChangeListener(null)
         chipGroupProductFilters.removeAllViews()
+
+        // Colores desde colors.xml
+        val selectedBg  = ContextCompat.getColor(this, R.color.yellowLight)
+        val unselectedBg = ContextCompat.getColor(this, android.R.color.white)
+        val textColor   = ContextCompat.getColor(this, R.color.text_primary)
+
+        val bgColors = ColorStateList(
+            arrayOf(
+                intArrayOf(android.R.attr.state_checked),
+                intArrayOf(-android.R.attr.state_checked)
+            ),
+            intArrayOf(
+                selectedBg,
+                unselectedBg
+            )
+        )
 
         for (tag in tags) {
             val label = if (tag == FILTER_ALL) {
@@ -222,6 +260,12 @@ class BusinessDetailActivity : AppCompatActivity() {
                 this.tag = tag
                 text = label
                 isCheckable = true
+                isClickable = true
+
+                // colores personalizados
+                chipBackgroundColor = bgColors
+                setTextColor(textColor)
+                isCheckedIconVisible = false
             }
             chipGroupProductFilters.addView(chip)
         }
@@ -248,7 +292,6 @@ class BusinessDetailActivity : AppCompatActivity() {
         return View.NO_ID
     }
 
-
     private fun filterProducts(products: List<Product>, tag: String): List<Product> =
         when {
             tag.isBlank() || tag == FILTER_ALL -> products
@@ -271,7 +314,6 @@ class BusinessDetailActivity : AppCompatActivity() {
     private fun formatPrice(value: Double): String {
         return "$" + String.format(Locale("es", "CO"), "%,.0f", value)
     }
-
 
     private fun showRateDialog() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_rate_business, null)

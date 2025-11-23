@@ -1,10 +1,10 @@
-package com.example.unimarket.model.data.dao
+package com.example.unimarket.model.data.serviceAdapter
 
 import com.example.unimarket.model.data.firebase.FirestoreProvider
 import com.example.unimarket.model.domain.entity.Category
 import kotlinx.coroutines.tasks.await
 
-class CategoriesDao {
+class CategoriesServiceAdapter {
     private val col = FirestoreProvider.categories()
 
     suspend fun listAll(): List<Category> =

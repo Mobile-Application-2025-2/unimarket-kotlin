@@ -1,11 +1,11 @@
-package com.example.unimarket.model.data.dao
+package com.example.unimarket.model.data.serviceAdapter
 
 import com.example.unimarket.model.data.firebase.FirestoreProvider
 import com.example.unimarket.model.domain.entity.Address
 import com.example.unimarket.model.domain.entity.Business
 import kotlinx.coroutines.tasks.await
 
-class BusinessesDao {
+class BusinessesServiceAdapter {
     private val col = FirestoreProvider.businesses()
 
     suspend fun getById(uid: String): Business? =

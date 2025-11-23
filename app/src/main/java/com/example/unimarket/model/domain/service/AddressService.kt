@@ -1,25 +1,25 @@
 package com.example.unimarket.model.domain.service
 
-import com.example.unimarket.model.data.dao.BuyersDao
-import com.example.unimarket.model.data.dao.BusinessesDao
+import com.example.unimarket.model.data.serviceAdapter.BuyersServiceAdapter
+import com.example.unimarket.model.data.serviceAdapter.BusinessesServiceAdapter
 import com.example.unimarket.model.data.firebase.FirebaseAuthProvider
 import com.example.unimarket.model.domain.entity.Address
 import com.example.unimarket.model.domain.validation.Validators.requireNotBlank
 
 class AddressService(
-    private val buyersDao: BuyersDao = BuyersDao(),
-    private val businessesDao: BusinessesDao = BusinessesDao()
+    private val buyersServiceAdapter: BuyersServiceAdapter = BuyersServiceAdapter(),
+    private val businessesServiceAdapter: BusinessesServiceAdapter = BusinessesServiceAdapter()
 ) {
     suspend fun setBusinessAddress(address: Address): Result<Unit> = runCatching {
         validateAddress(address)
         val uid = FirebaseAuthProvider.auth.currentUser?.uid ?: error("Not authenticated")
-        businessesDao.setAddress(uid, address)
+        businessesServiceAdapter.setAddress(uid, address)
     }
 
     suspend fun addBuyerAddress(address: Address): Result<Unit> = runCatching {
         validateAddress(address)
         val uid = FirebaseAuthProvider.auth.currentUser?.uid ?: error("Not authenticated")
-        buyersDao.appendAddress(uid, address)
+        buyersServiceAdapter.appendAddress(uid, address)
     }
 
     private fun validateAddress(a: Address) {

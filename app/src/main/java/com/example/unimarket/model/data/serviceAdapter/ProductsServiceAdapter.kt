@@ -1,11 +1,11 @@
-package com.example.unimarket.model.data.dao
+package com.example.unimarket.model.data.serviceAdapter
 
 import com.example.unimarket.model.data.firebase.FirestoreProvider
 import com.example.unimarket.model.domain.entity.Product
 import com.google.firebase.firestore.DocumentSnapshot
 import kotlinx.coroutines.tasks.await
 
-class ProductsDao {
+class ProductsServiceAdapter {
     private val col = FirestoreProvider.products()
 
     suspend fun getById(id: String): Product? =

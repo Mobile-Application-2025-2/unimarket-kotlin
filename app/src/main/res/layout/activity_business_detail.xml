@@ -191,15 +191,25 @@
                 android:layout_marginTop="10dp"
                 android:scrollbars="none"
                 android:overScrollMode="never"
-                android:paddingBottom="2dp">
+                android:paddingBottom="2dp"
+                android:fillViewport="true">
 
-                <com.google.android.material.chip.ChipGroup
-                    android:id="@+id/chipGroupProductFilters"
-                    android:layout_width="wrap_content"
+                <!-- Contenedor que ocupa todo el ancho y centra el ChipGroup -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:singleSelection="true"
-                    app:selectionRequired="true"
-                    app:chipSpacingHorizontal="10dp"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_horizontal">
+
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/chipGroupProductFilters"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:singleSelection="true"
+                        app:selectionRequired="true"
+                        app:chipSpacingHorizontal="10dp" />
+
+                </LinearLayout>
             </HorizontalScrollView>
 
             <TextView

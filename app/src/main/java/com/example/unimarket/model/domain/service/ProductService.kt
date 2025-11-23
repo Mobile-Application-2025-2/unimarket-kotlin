@@ -1,14 +1,14 @@
 package com.example.unimarket.model.domain.service
 
-import com.example.unimarket.model.data.dao.BusinessesDao
-import com.example.unimarket.model.data.dao.ProductsDao
+import com.example.unimarket.model.data.serviceAdapter.BusinessesServiceAdapter
+import com.example.unimarket.model.data.serviceAdapter.ProductsServiceAdapter
 import com.example.unimarket.model.data.firebase.FirebaseAuthProvider
 import com.example.unimarket.model.domain.entity.Product
 import com.example.unimarket.model.domain.validation.Validators.requireNotBlank
 
 class ProductService(
-    private val productsDao: ProductsDao = ProductsDao(),
-    private val businessesDao: BusinessesDao = BusinessesDao()
+    private val productsServiceAdapter: ProductsServiceAdapter = ProductsServiceAdapter(),
+    private val businessesServiceAdapter: BusinessesServiceAdapter = BusinessesServiceAdapter()
 ) {
     suspend fun createProduct(p: Product): Result<String> = runCatching {
         requireNotBlank(p.name, "name")
@@ -19,27 +19,27 @@ class ProductService(
         val businessUid = p.business.ifBlank { uid }
         require(businessUid == uid) { "You can only create products for your own business" }
 
-        val biz = businessesDao.getById(businessUid) ?: error("Business profile not found")
+        val biz = businessesServiceAdapter.getById(businessUid) ?: error("Business profile not found")
 
         val toSave = p.copy(business = biz.id.ifBlank { businessUid })
-        productsDao.create(toSave)
+        productsServiceAdapter.create(toSave)
     }
 
     suspend fun updateProduct(id: String, p: Product): Result<Unit> = runCatching {
         requireNotBlank(id, "productId")
         val uid = FirebaseAuthProvider.auth.currentUser?.uid ?: error("Not authenticated")
         require(p.business == uid) { "You can only update your own business products" }
-        productsDao.update(id, p)
+        productsServiceAdapter.update(id, p)
     }
 
     suspend fun deleteProduct(id: String): Result<Unit> = runCatching {
         requireNotBlank(id, "productId")
-        productsDao.delete(id)
+        productsServiceAdapter.delete(id)
     }
 
     suspend fun getById(id: String) = runCatching {
         requireNotBlank(id, "productId")
-        productsDao.getById(id) ?: error("Product not found")
+        productsServiceAdapter.getById(id) ?: error("Product not found")
     }
 
     suspend fun listByIds(ids: List<String>): Result<List<Product>> = runCatching {
@@ -50,7 +50,7 @@ class ProductService(
         for (rawId in ids) {
             requireNotBlank(rawId, "productId")
 
-            val p = productsDao.getById(rawId)
+            val p = productsServiceAdapter.getById(rawId)
             if (p != null) {
                 result += p
             }

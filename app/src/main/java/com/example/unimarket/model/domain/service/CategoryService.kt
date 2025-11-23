@@ -1,11 +1,11 @@
 package com.example.unimarket.model.domain.service
 
-import com.example.unimarket.model.data.dao.CategoriesDao
+import com.example.unimarket.model.data.serviceAdapter.CategoriesServiceAdapter
 import com.example.unimarket.model.domain.entity.Category
 import com.example.unimarket.model.domain.validation.Validators.requireNotBlank
 
 class CategoryService(
-    private val dao: CategoriesDao = CategoriesDao()
+    private val dao: CategoriesServiceAdapter = CategoriesServiceAdapter()
 ) {
     suspend fun listAll() = runCatching { dao.listAll() }
     suspend fun getById(id: String) = runCatching {

@@ -60,10 +60,12 @@ class WelcomePage : AppCompatActivity() {
 
                     when (ui.nav) {
                         AuthNavDestination.ToCreateAccount -> {
+                            viewModel.welcome_prefetchTopData(applicationContext)
                             startActivity(Intent(this@WelcomePage, CreateAccountActivity::class.java))
                             viewModel.welcome_clearNav()
                         }
                         AuthNavDestination.ToLogin -> {
+                            viewModel.welcome_prefetchTopData(applicationContext)
                             startActivity(Intent(this@WelcomePage, LoginActivity::class.java))
                             viewModel.welcome_clearNav()
                         }

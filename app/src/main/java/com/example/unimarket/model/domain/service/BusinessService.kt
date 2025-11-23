@@ -1,8 +1,6 @@
 package com.example.unimarket.model.domain.service
 
 import android.util.Log
-import com.example.unimarket.model.data.local.dao.BusinessLocalDao
-import com.example.unimarket.model.data.local.entity.BusinessLocalEntity
 import com.example.unimarket.model.domain.entity.Address
 import com.example.unimarket.model.domain.entity.Business
 import com.example.unimarket.model.domain.entity.Category
@@ -33,25 +31,6 @@ class BusinessService(
                 null
             }
         }
-    }
-
-    suspend fun getAllAndPersist(localDao: BusinessLocalDao?): Result<List<Business>> = runCatching {
-        val items = getAllBusinesses().getOrThrow()
-
-        localDao?.let { dao ->
-            val entities = items.map { b ->
-                BusinessLocalEntity(
-                    id = b.id,
-                    name = b.name,
-                    logoUrl = b.logo.ifBlank { null },
-                    categoryNames = b.categories.joinToString(",") { it.name }
-                )
-            }
-            dao.clear()
-            dao.upsertAll(entities)
-        }
-
-        items
     }
 
     suspend fun updateBusiness(
