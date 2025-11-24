@@ -432,4 +432,9 @@ class BusinessDetailActivity : AppCompatActivity() {
             show()
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.detail_reloadLocalIfRemoteEmpty()
+    }
 }
