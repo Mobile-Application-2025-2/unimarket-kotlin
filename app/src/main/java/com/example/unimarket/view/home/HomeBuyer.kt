@@ -237,7 +237,9 @@ class HomeBuyerActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        val online = isOnline()
         viewModel.reloadBusinesses(isOnline())
+        if (online) viewModel.flushOfflineCategoryClicks()
     }
 
 }

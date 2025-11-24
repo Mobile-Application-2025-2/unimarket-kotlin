@@ -14,12 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import android.content.Context
-import android.util.Log
-import kotlinx.coroutines.Dispatchers
-import com.example.unimarket.model.data.local.AppDatabase
-import com.example.unimarket.model.data.local.entity.CategoryLocalEntity
-import com.example.unimarket.model.data.local.entity.TopBusinessLocalEntity
-import com.example.unimarket.model.domain.entity.Business
+import com.example.unimarket.model.prefetch.TopPrefetch
 
 sealed class AuthNavDestination {
     object None : AuthNavDestination()
@@ -140,6 +135,15 @@ class AuthViewModel(
         _signIn.update { it.copy(password = newPass, passwordError = null) }
     }
 
+    private fun isOnline(ctx: android.content.Context): Boolean {
+        val cm = ctx.getSystemService(android.net.ConnectivityManager::class.java)
+        val net = cm.activeNetwork ?: return false
+        val caps = cm.getNetworkCapabilities(net) ?: return false
+        return caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) ||
+            caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) ||
+            caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_ETHERNET)
+    }
+
     fun signIn_submit() {
         val email = _signIn.value.email.trim().lowercase()
         val pass  = _signIn.value.password
@@ -171,7 +175,7 @@ class AuthViewModel(
                         AuthNavDestination.ToStudentCode
                     } else {
                         when (role) {
-                            "buyer" -> AuthNavDestination.ToBuyerHome
+                            "buyer"    -> AuthNavDestination.ToBuyerHome
                             "business" -> AuthNavDestination.ToBusinessProfile
                             else -> {
                                 _signIn.update { it.copy(errorMessage = "Tipo de usuario desconocido: $role") }
@@ -487,123 +491,8 @@ class AuthViewModel(
     }
 
     fun welcome_prefetchTopData(context: Context) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                // 1) Traer remoto; si falla, seguimos sin romper
-                val categories = categoryService.listAll().getOrElse { emptyList() }
-                val businesses = businessService.getAllBusinesses().getOrElse { emptyList() }
-                if (categories.isEmpty() || businesses.isEmpty()) {
-                    Log.d("AuthVM", "Prefetch: sin datos (cats=${categories.size}, biz=${businesses.size})")
-                    return@launch
-                }
-
-                // 2) DAOs
-                val db = AppDatabase.getInstance(context.applicationContext)
-                val topDao = db.topBusinessDao()
-
-                // 3) Ranking helper para remotos (top 2 por categoría)
-                fun remoteTop2(catId: String, catName: String): List<Business> =
-                    businesses
-                        .filter { b -> b.categories.any { it.id == catId || it.name == catName } }
-                        .sortedWith(
-                            compareByDescending<Business> { it.rating }
-                                .thenByDescending { it.amountRatings }
-                        )
-                        .take(2)
-
-                val now = System.currentTimeMillis()
-
-                // 4) Por cada categoría: unir (existentes + remotos), elegir mejores 2 y aplicar si mejora
-                for (cat in categories) {
-                    val existing = topDao.getTopByCategory(cat.id) // lo guardado localmente (0..2)
-                    val remoteTop = remoteTop2(cat.id, cat.name)   // candidatos online (0..2)
-
-                    // Mapear existentes a una forma comparable (Business-like)
-                    data class BKey(val businessId: String)
-                    data class BScore(val rating: Double, val amount: Long)
-
-                    val existingAsPair: List<Pair<BKey, BScore>> = existing.map {
-                        BKey(it.businessId) to BScore(it.rating, it.amountRatings)
-                    }
-
-                    val remoteAsPair: List<Pair<BKey, BScore>> = remoteTop.map {
-                        BKey(it.id) to BScore(it.rating, it.amountRatings)
-                    }
-
-                    // Combinar por businessId quedándome con el MEJOR score de cada uno
-                    val combined = (existingAsPair + remoteAsPair)
-                        .groupBy({ it.first.businessId }, { it.second })
-                        .map { (bizId, scores) ->
-                            val best = scores.maxWith(
-                                compareBy<BScore> { it.rating }.thenBy { it.amount }
-                            )
-                            bizId to best
-                        }
-
-                    // Elegir top 2 del combinado por (rating desc, amount desc)
-                    val bestTwo = combined
-                        .sortedWith(
-                            compareByDescending<Pair<String, BScore>> { it.second.rating }
-                                .thenByDescending { it.second.amount }
-                        )
-                        .take(2)
-
-                    // ¿Cambió realmente contra lo existente?
-                    fun toComparableIds(xs: List<Pair<String, BScore>>) = xs.map { it.first }
-                    val existingIds = existing.map { it.businessId }
-                    val newIds = toComparableIds(bestTwo)
-
-                    val sameSet = existingIds.size == newIds.size && existingIds.toSet() == newIds.toSet()
-                    val replacedByBetter =
-                        !sameSet || // si el set cambió
-                        // o si mantuvo los mismos ids pero alguno mejora en score
-                        existing.any { e ->
-                            val candidate = bestTwo.firstOrNull { it.first == e.businessId }?.second
-                            candidate != null && (candidate.rating > e.rating ||
-                                    (candidate.rating == e.rating && candidate.amount > e.amountRatings))
-                        }
-
-                    if (!replacedByBetter) {
-                        // Nada que mejorar para esta categoría
-                        continue
-                    }
-
-                    // Construir entidades nuevas con rank correcto
-                    val newEntities = bestTwo.mapIndexed { idx, (bizId, score) ->
-                        val fromRemote = businesses.firstOrNull { it.id == bizId }
-                        val fromLocal  = existing.firstOrNull { it.businessId == bizId }
-
-                        val productCsv = fromRemote?.products
-                            ?.joinToString(",") { it.trim() }
-                            ?.ifBlank { null }
-                            ?: fromLocal?.productIdsCsv
-
-                        TopBusinessLocalEntity(
-                            id = "${cat.id}_$bizId",
-                            categoryId = cat.id,
-                            categoryName = cat.name,
-
-                            businessId = bizId,
-                            businessName = fromRemote?.name ?: fromLocal?.businessName ?: "(unknown)",
-                            logoUrl = fromRemote?.logo?.takeIf { it.isNotBlank() } ?: fromLocal?.logoUrl,
-
-                            rating = fromRemote?.rating ?: fromLocal?.rating ?: score.rating,
-                            amountRatings = fromRemote?.amountRatings ?: fromLocal?.amountRatings ?: score.amount,
-
-                            rank = idx + 1,
-                            updatedAtEpochMillis = now,
-                            productIdsCsv = productCsv
-                        )
-                    }
-                    
-                    topDao.clearForCategory(cat.id)
-                    if (newEntities.isNotEmpty()) topDao.upsertAll(newEntities)
-                    Log.d("AuthVM", "Top actualizado [${cat.name}]: ${newIds.joinToString()}")
-                }
-
-            } catch (t: Throwable) {
-                Log.e("AuthVM", "Prefetch top falló: ${t.message}", t)
-            }
+        viewModelScope.launch{
+           TopPrefetch.prefetchTopBusinessesAndProducts(context.applicationContext)
         }
     }
 

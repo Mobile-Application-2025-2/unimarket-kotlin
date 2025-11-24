@@ -28,7 +28,6 @@ import com.example.unimarket.viewmodel.AuthViewModel
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.launch
-// ⛔️ removed: import com.example.unimarket.workers.PrefetchBusinessesWorker
 
 class CreateAccountActivity : AppCompatActivity() {
 
@@ -51,102 +50,108 @@ class CreateAccountActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_create_account)
-        val root = findViewById<NestedScrollView>(R.id.createAccountRoot)
-        b = ActivityCreateAccountBinding.bind(root)
+        val root = findViewById<androidx.core.widget.NestedScrollView>(R.id.createAccountRoot)
+        b = com.example.unimarket.databinding.ActivityCreateAccountBinding.bind(root)
 
-        // Límite de 50 caracteres
+        // Límite 50 chars + validación local
         attachMaxLengthBehavior(b.etName)
         attachMaxLengthBehavior(b.etEmail)
         attachMaxLengthBehavior(b.etPassword)
 
-        // Restaurar selección si hay estado previo
+        // Restaurar tipo si venimos de recreación
         selectedTypeId = (savedInstanceState?.getString(STATE_TYPE_ID) ?: "buyer").lowercase()
 
         // Back
         b.btnBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
 
-        // Botones federados (TODO)
+        // Botones federados (placeholder)
         b.btnOutlook.setOnClickListener { showFeatureUnavailableToast() }
         b.btnGoogle.setOnClickListener  { showFeatureUnavailableToast() }
 
-        // Inputs -> VM (normalizados) + limpieza de helpers en tiempo real
+        // Inputs -> VM (esto persiste el borrador en DataStore mediante el VM)
         b.etName.doAfterTextChanged {
-            val nameNorm = normalize(it?.toString())
-            viewModel.create_onNameChanged(nameNorm)
-
-            if (nameNorm.length >= 3) {
-                b.tilName.error = null
-            }
+            val v = it?.toString()?.trim()?.lowercase().orEmpty()
+            viewModel.create_onNameChanged(v)
+            if (v.length >= 3) b.tilName.error = null
             refreshLocalValidation()
         }
-
         b.etEmail.doAfterTextChanged {
-            val emailNorm = normalize(it?.toString())
-            viewModel.create_onEmailChanged(emailNorm)
-
-            if (EMAIL_REGEX.matches(emailNorm)) {
-                b.tilEmail.error = null
-            }
+            val v = it?.toString()?.trim()?.lowercase().orEmpty()
+            viewModel.create_onEmailChanged(v)
+            if (EMAIL_REGEX.matches(v)) b.tilEmail.error = null
             refreshLocalValidation()
         }
-
         b.etPassword.doAfterTextChanged {
-            val pass = it?.toString().orEmpty()
-            viewModel.create_onPasswordChanged(pass)
-
-            if (pass.length >= 8) {
-                b.tilPassword.error = null
-            }
+            val v = it?.toString().orEmpty()
+            viewModel.create_onPasswordChanged(v)
+            if (v.length >= 8) b.tilPassword.error = null
             refreshLocalValidation()
         }
-
         b.cbAccept.setOnCheckedChangeListener { _, checked ->
             viewModel.create_onPolicyToggled(checked)
             refreshLocalValidation()
         }
 
-        // Ojo de contraseña
+        // Ojo de contraseña + dropdown
         setupPasswordToggle()
-
-        // Dropdown de tipo de cuenta (id ya viene en minúsculas)
         setupAccountTypeDropdown()
 
-        // Estado inicial de controles
+        // Estado inicial
         refreshLocalValidation()
 
-        // Crear cuenta (envía el type normalizado)
+        // Crear cuenta
         b.btnSignIn.setOnClickListener {
-            if (!canProceed) {
+            val nameNorm  = b.etName.text?.toString()?.trim().orEmpty()
+            val emailNorm = b.etEmail.text?.toString()?.trim()?.lowercase().orEmpty()
+            val pass      = b.etPassword.text?.toString().orEmpty()
+            val accepted  = b.cbAccept.isChecked
+
+            val ok = nameNorm.length >= 3 &&
+                    EMAIL_REGEX.matches(emailNorm) &&
+                    pass.length >= 8 &&
+                    accepted
+
+            if (!ok) {
                 showInlineErrors()
-                Toast.makeText(this, getString(R.string.complete_the_fields), Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(
+                    this, getString(R.string.complete_the_fields), android.widget.Toast.LENGTH_SHORT
+                ).show()
                 return@setOnClickListener
             }
+
+            if (!isOnline()) {
+                // 🚫 Sin internet: muestra aviso y NO intenta crear la cuenta
+                com.google.android.material.snackbar.Snackbar
+                    .make(root, "No hay conexión. No se puede crear la cuenta.", com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
+                    .setAction("OK") { /* no-op */ }
+                    .show()
+                return@setOnClickListener
+            }
+
+            // Online → flujo normal
             viewModel.create_submit(type = selectedTypeId.lowercase())
         }
 
-        // Observa estado del VM
+        // Observa estado
         lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
+            repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                 viewModel.create.collect { ui ->
-                    // Estado actual de campos (para decidir si mostramos error del VM o no)
-                    val nameNow  = normalize(b.etName.text?.toString())
-                    val emailNow = normalize(b.etEmail.text?.toString())
+                    val nameNow  = b.etName.text?.toString()?.trim().orEmpty()
+                    val emailNow = b.etEmail.text?.toString()?.trim()?.lowercase().orEmpty()
                     val passNow  = b.etPassword.text?.toString().orEmpty()
 
                     val validName  = nameNow.length >= 3
                     val validEmail = EMAIL_REGEX.matches(emailNow)
                     val validPass  = passNow.length >= 8
 
-                    // Solo mostramos errores del VM si el campo sigue siendo inválido
-                    b.tilName.error = if (!validName) ui.nameError else null
-                    b.tilEmail.error = if (!validEmail) ui.emailError else null
-                    b.tilPassword.error = if (!validPass) ui.passwordError else null
+                    b.tilName.error     = if (!validName)  ui.nameError else null
+                    b.tilEmail.error    = if (!validEmail) ui.emailError else null
+                    b.tilPassword.error = if (!validPass)  ui.passwordError else null
 
                     ui.acceptedPolicyError?.let {
-                        Toast.makeText(this@CreateAccountActivity, it, Toast.LENGTH_SHORT).show()
+                        android.widget.Toast.makeText(this@CreateAccountActivity, it, android.widget.Toast.LENGTH_SHORT).show()
                     }
 
-                    // Loading / botón
                     if (ui.isSubmitting) {
                         b.btnSignIn.isEnabled = false
                         b.btnSignIn.text = getString(R.string.creating_account)
@@ -156,21 +161,19 @@ class CreateAccountActivity : AppCompatActivity() {
                         b.btnSignIn.text = getString(R.string.action_sign_up)
                     }
 
-                    // Toast one-shot
                     ui.toastMessage?.let { msg ->
-                        Toast.makeText(this@CreateAccountActivity, msg, Toast.LENGTH_LONG).show()
+                        android.widget.Toast.makeText(this@CreateAccountActivity, msg, android.widget.Toast.LENGTH_LONG).show()
                         viewModel.create_clearNavAndToast()
                     }
 
-                    // Navegación
                     when (ui.nav) {
-                        AuthNavDestination.ToLogin -> {
-                            startActivity(Intent(this@CreateAccountActivity, LoginActivity::class.java))
+                        com.example.unimarket.viewmodel.AuthNavDestination.ToLogin -> {
+                            startActivity(Intent(this@CreateAccountActivity, com.example.unimarket.view.auth.LoginActivity::class.java))
                             finish()
                             viewModel.create_clearNavAndToast()
                         }
-                        AuthNavDestination.ToStudentCode -> {
-                            startActivity(Intent(this@CreateAccountActivity, StudentCodeActivity::class.java))
+                        com.example.unimarket.viewmodel.AuthNavDestination.ToStudentCode -> {
+                            startActivity(Intent(this@CreateAccountActivity, com.example.unimarket.view.auth.StudentCodeActivity::class.java))
                             finish()
                             viewModel.create_clearNavAndToast()
                         }
@@ -372,6 +375,15 @@ class CreateAccountActivity : AppCompatActivity() {
             view = container
             show()
         }
+    }
+
+    private fun isOnline(): Boolean {
+        val cm = getSystemService(android.net.ConnectivityManager::class.java)
+        val net = cm.activeNetwork ?: return false
+        val caps = cm.getNetworkCapabilities(net) ?: return false
+        return caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) ||
+            caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) ||
+            caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_ETHERNET)
     }
 
     private fun dp(value: Int): Int =

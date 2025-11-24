@@ -6,25 +6,28 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.unimarket.model.data.local.dao.CategoriesDao
 import com.example.unimarket.model.data.local.dao.TopBusinessDao
+import com.example.unimarket.model.data.local.dao.TopProductDao
 import com.example.unimarket.model.data.local.entity.CategoryLocalEntity
 import com.example.unimarket.model.data.local.entity.TopBusinessLocalEntity
+import com.example.unimarket.model.data.local.entity.TopProductLocalEntity
 
 @Database(
     entities = [
-        CategoryLocalEntity::class,
-        TopBusinessLocalEntity::class
+        TopBusinessLocalEntity::class,
+        TopProductLocalEntity::class,
+        CategoryLocalEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
 
-    abstract fun categoriesDao(): CategoriesDao
     abstract fun topBusinessDao(): TopBusinessDao
+    abstract fun topProductDao(): TopProductDao
+    abstract fun categoryLocalDao(): CategoriesDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
-
         fun getInstance(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(

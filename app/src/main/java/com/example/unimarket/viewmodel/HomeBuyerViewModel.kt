@@ -20,6 +20,7 @@ import kotlinx.coroutines.CancellationException
 // Room local
 import com.example.unimarket.model.data.local.AppDatabase
 import com.example.unimarket.model.data.local.entity.TopBusinessLocalEntity
+import com.example.unimarket.model.data.local.entity.TopProductLocalEntity
 
 enum class Filter { ALL, FOOD, STATIONERY, TUTORING, ACCESSORIES }
 
@@ -73,7 +74,20 @@ class HomeBuyerViewModel(
 
     private var loadJob: Job? = null
 
-    init { reloadBusinesses(remoteFirst = true) }
+    private val detailPrefs = com.example.unimarket.model.data.local.DetailPrefs(getApplication())
+    private val prefs = com.example.unimarket.model.data.local.HomePrefs(getApplication())
+    private val offlineClicks = com.example.unimarket.model.data.local.OfflineClicks(getApplication())
+
+
+    init {
+        viewModelScope.launch {
+            prefs.filterFlow.collect { saved ->
+                val f = runCatching { Filter.valueOf(saved) }.getOrDefault(Filter.ALL)
+                _ui.update { it.copy(selected = f) }
+            }
+        }
+        reloadBusinesses(remoteFirst = true)
+    }
 
     private fun loadBusinesses() {
         loadJob?.cancel()
@@ -213,6 +227,7 @@ class HomeBuyerViewModel(
             val filtered = filterBy(filter, st.businessesAll)
             st.copy(selected = filter, businessesFiltered = filtered)
         }
+        viewModelScope.launch { prefs.saveFilter(filter.name) }
         incrementCategoryCount(filter)
     }
 
@@ -237,44 +252,100 @@ class HomeBuyerViewModel(
     fun navHandled()     { _nav.value = HomeNav.None }
 
     // --------- DETALLE ---------
-
     fun detail_init(businessId: String, businessName: String) {
         _detail.value = BusinessDetailUiState(
             businessId = businessId,
             businessName = businessName,
-            currentFilter = FILTER_ALL,
-            categories = emptyList(),
-            products = emptyList(),
-            loading = false,
-            error = null
+            currentFilter = FILTER_ALL
         )
+        // restaurar filtro guardado por negocio
+        viewModelScope.launch {
+            detailPrefs.filterFlow(businessId).collect { saved ->
+                _detail.update { it.copy(currentFilter = saved) }
+            }
+        }
     }
 
     fun detail_loadProducts(productIds: List<String>) {
-        if (productIds.isEmpty()) {
-            _detail.update { it.copy(products = emptyList(), loading = false, error = null) }
-            return
-        }
-
         viewModelScope.launch {
             _detail.update { it.copy(loading = true, error = null) }
+            val ctx = getApplication<Application>()
+            val rp  = com.example.unimarket.model.data.local.RecentProducts(ctx, detail.value.businessId)
 
-            productService.listByIds(productIds)
-                .onSuccess { list ->
-                    val cats = list.map { it.category.trim() }.filter { it.isNotEmpty() }
-                        .distinct().sorted()
-                    _detail.update {
-                        it.copy(products = list, categories = cats, loading = false, error = null)
+            val ids = if (productIds.isNotEmpty()) productIds else rp.load()
+
+            if (ids.isNotEmpty()) {
+                productService.listByIds(ids)
+                    .onSuccess { list ->
+                        // guardar ids recientes
+                        rp.save(list.map { it.id })
+                        val cats = list.map { it.category.trim() }.filter { it.isNotEmpty() }.distinct().sorted()
+                        _detail.update { it.copy(products = list, categories = cats, loading = false) }
                     }
-                }
-                .onFailure { ex ->
-                    _detail.update { it.copy(loading = false, error = ex.message ?: "Error cargando productos") }
-                }
+                    .onFailure {
+                        // Fallback → Room (top products)
+                        loadProductsLocalOnly()
+                    }
+            } else {
+                // No tengo ni ids → Room
+                loadProductsLocalOnly()
+            }
+        }
+    }
+
+    fun detail_reloadLocalIfRemoteEmpty() {
+        val st = detail.value
+        if (st.products.isEmpty() && st.businessId.isNotBlank()) {
+            viewModelScope.launch { loadProductsLocalOnly() }
+        }
+    }
+
+    private suspend fun loadProductsLocalOnly() {
+        val st = detail.value
+        val bid = st.businessId
+        if (bid.isBlank()) {
+            _detail.update { it.copy(loading = false, error = "Negocio inválido") }
+            return
+        }
+        try {
+            val ctx = getApplication<Application>().applicationContext
+            val db  = AppDatabase.getInstance(ctx)
+            val dao = db.topProductDao()
+
+            // Lee todos los top-products del negocio (ya guardados por subcategoría)
+            val locals: List<TopProductLocalEntity> = dao.getByBusinessOnce(bid)
+
+            if (locals.isEmpty()) {
+                _detail.update { it.copy(loading = false, error = null, products = emptyList()) }
+                return
+            }
+
+            val mapped: List<Product> = locals.map { it.toDomainProduct() }
+
+            val cats = mapped.map { it.category.trim() }
+                .filter { it.isNotEmpty() }
+                .distinct().sorted()
+
+            _detail.update {
+                it.copy(
+                    products = mapped,
+                    categories = cats,
+                    loading = false,
+                    error = null // viene de cache local → no mostrar error
+                )
+            }
+        } catch (t: Throwable) {
+            if (t is CancellationException) {
+                _detail.update { it.copy(loading = false) }
+            } else {
+                _detail.update { it.copy(loading = false, error = t.message ?: "Error leyendo productos locales") }
+            }
         }
     }
 
     fun detail_onFilterSelected(filterTag: String) {
         _detail.update { st -> st.copy(currentFilter = filterTag) }
+        viewModelScope.launch { detailPrefs.saveFilter(detail.value.businessId, filterTag) }
     }
 
     fun detail_errorShown() {
@@ -301,16 +372,32 @@ class HomeBuyerViewModel(
 
     private fun incrementCategoryCount(filter: Filter) {
         val docId = when (filter) {
-            Filter.FOOD        -> "comida"
-            Filter.STATIONERY  -> "papeleria"
-            Filter.TUTORING    -> "tutorias"
+            Filter.FOOD -> "comida"
+            Filter.STATIONERY -> "papeleria"
+            Filter.TUTORING -> "tutorias"
             Filter.ACCESSORIES -> "accesorios"
-            Filter.ALL         -> null
+            Filter.ALL -> null
         } ?: return
 
         viewModelScope.launch {
-            try { categoryService.update(docId, mapOf("count" to FieldValue.increment(1))) }
-            catch (_: Exception) { }
+            try {
+                categoryService.update(docId, mapOf("count" to com.google.firebase.firestore.FieldValue.increment(1)))
+            } catch (_: Exception) {
+                offlineClicks.enqueue(docId)
+            }
+        }
+    }
+
+    fun flushOfflineCategoryClicks() {
+        viewModelScope.launch {
+            val docIds = offlineClicks.drain()
+            docIds.groupingBy { it }.eachCount().forEach { (id, times) ->
+                repeat(times) {
+                    runCatching {
+                        categoryService.update(id, mapOf("count" to com.google.firebase.firestore.FieldValue.increment(1)))
+                    }
+                }
+            }
         }
     }
 
@@ -341,7 +428,6 @@ class HomeBuyerViewModel(
     companion object { const val FILTER_ALL = "all" }
 }
 
-/* ======= MAPPER LOCAL → DOMAIN ======= */
 private fun TopBusinessLocalEntity.toDomainBusiness(): Business {
     val productIds: List<String> =
         this.productIdsCsv?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
@@ -357,5 +443,19 @@ private fun TopBusinessLocalEntity.toDomainBusiness(): Business {
             Category(id = this.categoryId, name = this.categoryName, count = 0L)
         ),
         address = com.example.unimarket.model.domain.entity.Address()
+    )
+}
+
+private fun TopProductLocalEntity.toDomainProduct(): Product {
+    return Product(
+        id          = productId,
+        name        = productName,
+        price       = price,
+        description = "",
+        category    = subcategory,
+        business    = businessId,
+        rating      = rating,
+        comments    = emptyList(),
+        image       = imageUrl ?: ""
     )
 }
