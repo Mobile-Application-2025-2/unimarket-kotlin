@@ -29,7 +29,10 @@ data class MapUi(
     val error: String? = null
 )
 
-sealed class MapNav { data object None : MapNav(); data object Close : MapNav() }
+sealed class MapNav {
+    data object None : MapNav()
+    data object Close : MapNav()
+}
 
 class BusinessMapViewModel(
     private val nearbyService: NearbyBusinessesService,
@@ -40,7 +43,7 @@ class BusinessMapViewModel(
     private val _ui = MutableStateFlow(MapUi())
     val ui: StateFlow<MapUi> = _ui
 
-    fun onInit() {}
+    fun onInit() { /* reservado para futuras inicializaciones */ }
 
     fun loadNearby() {
         _ui.value = _ui.value.copy(isLoading = true, error = null)
@@ -52,37 +55,40 @@ class BusinessMapViewModel(
 
                         val markerOptions = MarkerOptions()
                             .position(pin.position)
-                            .title(b.name ?: "Negocio")  // ajusta si tu campo se llama distinto
+                            .title(b.name ?: "Negocio")
                             .snippet(b.address?.direccion ?: "")
-                            .icon(
-                                BitmapDescriptorFactory.defaultMarker(
-                                    markerHue
-                                )
-                            )
+                            .icon(BitmapDescriptorFactory.defaultMarker(markerHue))
 
                         MapMarkerUi(
                             options = markerOptions,
                             businessId = b.id ?: "",
-
                             businessName = b.name ?: "",
                             rating = (b.rating ?: 0.0).toFloat(),
                             amountRatings = (b.amountRatings ?: 0L).toInt(),
-                            logoUrl = b.logo, // si se llama distinto, cámbialo
-
+                            logoUrl = b.logo,
                             productIds = b.products ?: emptyList()
                         )
                     }
 
-                    _ui.value = MapUi(
-                        isLoading = false,
-                        myLocation = nearby.myLocation,
-                        markers = markers
-                    )
-                }
-                .onFailure {
                     _ui.value = _ui.value.copy(
                         isLoading = false,
-                        error = it.message ?: "Error cargando negocios cercanos"
+                        myLocation = nearby.myLocation,
+                        markers = markers,
+                        error = null,
+                        nav = MapNav.None
+                    )
+                }
+                .onFailure { ex ->
+                    // No cierres la vista por errores; conserva el estado y muestra mensaje
+                    val msg = when (ex) {
+                        is java.net.UnknownHostException,
+                        is java.io.IOException -> "Sin conexión. No se pudo actualizar el mapa."
+                        else -> ex.message ?: "Error cargando negocios cercanos"
+                    }
+                    _ui.value = _ui.value.copy(
+                        isLoading = false,
+                        error = msg,
+                        nav = MapNav.None
                     )
                 }
         }

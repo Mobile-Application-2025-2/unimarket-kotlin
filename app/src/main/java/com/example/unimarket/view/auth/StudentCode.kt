@@ -2,10 +2,16 @@ package com.example.unimarket.view.auth
 
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.Color
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -15,6 +21,7 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.example.unimarket.R
 import com.example.unimarket.databinding.ActivityStudentCodeBinding
 import com.example.unimarket.view.home.HomeBuyerActivity
 import com.example.unimarket.view.profile.BusinessAccountActivity
@@ -31,7 +38,7 @@ class StudentCodeActivity : AppCompatActivity() {
     // Preview de la foto
     private var photoPreview: ImageView? = null
 
-    // Launcher de cámara (igual al que tenías antes, pero aquí)
+    // Launcher de cámara
     private val cameraLauncher =
         registerForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap: Bitmap? ->
             if (bitmap != null) {
@@ -57,8 +64,29 @@ class StudentCodeActivity : AppCompatActivity() {
             viewModel.student_onInputChanged(text?.toString().orEmpty())
         }
 
-        // CTA
-        b.btnGetStarted.setOnClickListener { viewModel.student_next() }
+        // CTA con estrategia de conectividad
+        b.btnGetStarted.setOnClickListener {
+            val ui = viewModel.student.value
+
+            // Pasos que requieren red:
+            // 1) LOGO -> next carga categorías desde backend (CategoryService.listAll())
+            val requiresFetchCategories = (ui.step == OnbStep.LOGO)
+
+            // 2) Finalizar Buyer: en ADDRESS cuando rol != business
+            val finishingBuyer = (ui.step == OnbStep.ADDRESS && ui.role != "business")
+
+            // 3) Finalizar Business: en CATEGORIES
+            val finishingBusiness = (ui.step == OnbStep.CATEGORIES)
+
+            val needsNetwork = requiresFetchCategories || finishingBuyer || finishingBusiness
+
+            if (needsNetwork && !isOnline()) {
+                showTopToast("Sin conexión a internet. No se puede continuar.")
+                return@setOnClickListener
+            }
+
+            viewModel.student_next()
+        }
 
         // End icon:
         // - CODE -> cámara
@@ -138,22 +166,12 @@ class StudentCodeActivity : AppCompatActivity() {
                     // Navegación final
                     when (ui.nav) {
                         AuthNavDestination.ToBuyerHome -> {
-                            startActivity(
-                                Intent(
-                                    this@StudentCodeActivity,
-                                    HomeBuyerActivity::class.java
-                                )
-                            )
+                            startActivity(Intent(this@StudentCodeActivity, HomeBuyerActivity::class.java))
                             finish()
                             viewModel.student_clearNavAndErrors()
                         }
                         AuthNavDestination.ToBusinessProfile -> {
-                            startActivity(
-                                Intent(
-                                    this@StudentCodeActivity,
-                                    BusinessAccountActivity::class.java
-                                )
-                            )
+                            startActivity(Intent(this@StudentCodeActivity, BusinessAccountActivity::class.java))
                             finish()
                             viewModel.student_clearNavAndErrors()
                         }
@@ -204,10 +222,7 @@ class StudentCodeActivity : AppCompatActivity() {
     }
 
     // -------- Cámara y preview --------
-
-    private fun openCamera() {
-        cameraLauncher.launch(null)
-    }
+    private fun openCamera() { cameraLauncher.launch(null) }
 
     /** Crea (si hace falta) un ImageView pequeño centrado debajo del campo. */
     private fun ensurePhotoPreview(): ImageView {
@@ -227,11 +242,8 @@ class StudentCodeActivity : AppCompatActivity() {
 
         root.post {
             val marginTop = dp(8)
-
-            val centerX =
-                b.tilStudentId.x + (b.tilStudentId.width - sizePx) / 2f
+            val centerX = b.tilStudentId.x + (b.tilStudentId.width - sizePx) / 2f
             val topY = b.tilStudentId.y + b.tilStudentId.height + marginTop
-
             iv.x = centerX
             iv.y = topY
             iv.bringToFront()
@@ -239,6 +251,48 @@ class StudentCodeActivity : AppCompatActivity() {
 
         photoPreview = iv
         return iv
+    }
+
+    // -------- Conectividad + toast superior --------
+
+    private fun isOnline(): Boolean {
+        val cm = getSystemService(ConnectivityManager::class.java) ?: return false
+        val net = cm.activeNetwork ?: return false
+        val caps = cm.getNetworkCapabilities(net) ?: return false
+        return caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+               caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+               caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+    }
+
+    private fun showTopToast(message: String) {
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+            setBackgroundColor(Color.parseColor("#FFFFFF"))
+        }
+
+        val icon = ImageView(this).apply {
+            setImageResource(R.drawable.personajesingup)
+            val s = dp(20)
+            layoutParams = LinearLayout.LayoutParams(s, s).apply { rightMargin = dp(8) }
+        }
+
+        val text = TextView(this).apply {
+            this.text = message
+            setTextColor(Color.BLACK)
+            textSize = 14f
+        }
+
+        container.addView(icon)
+        container.addView(text)
+
+        Toast(this).apply {
+            duration = Toast.LENGTH_SHORT
+            view = container
+            setGravity(Gravity.TOP or Gravity.CENTER_HORIZONTAL, 0, dp(24))
+            show()
+        }
     }
 
     private fun dp(value: Int): Int =
