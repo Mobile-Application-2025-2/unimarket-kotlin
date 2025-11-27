@@ -1,7 +1,11 @@
 package com.example.unimarket.view.profile
 
 import android.content.Intent
+import android.graphics.Color
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
+import android.view.Gravity
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -10,15 +14,14 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.unimarket.R
 import com.example.unimarket.databinding.BusinessProfileBinding
+import com.example.unimarket.model.session.SessionManager
 import com.example.unimarket.view.auth.WelcomePage
 import com.example.unimarket.viewmodel.BusinessNavDestination
 import com.example.unimarket.viewmodel.BusinessViewModel
 import kotlinx.coroutines.launch
-import android.view.Gravity
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.graphics.Color
 
 class BusinessAccountActivity : AppCompatActivity() {
 
@@ -50,7 +53,22 @@ class BusinessAccountActivity : AppCompatActivity() {
         b.rowProducts.setOnClickListener { ping("Productos") }
         b.rowReviews.setOnClickListener  { showFeatureUnavailableToast() }
 
-        b.rowLogout.setOnClickListener { vm.logout() }
+        // —— Logout con estrategia de conectividad ——
+        b.rowLogout.setOnClickListener {
+            if (isOnline()) {
+                // Online: logout normal (AuthService limpia sesión remota + local)
+                vm.logout()
+            } else {
+                // Offline: limpia sesión LOCAL ya mismo para evitar “seguir logueada”
+                runCatching { SessionManager.clear() }
+                showTopToast("Sin conexión. Cerraremos tu sesión remota cuando tengas internet.")
+                // Vuelve a Welcome para que no pueda navegar con sesión cacheada
+                val intent = Intent(this, WelcomePage::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                startActivity(intent)
+                finish()
+            }
+        }
 
         // Footer
         b.navHome.setOnClickListener    { showFeatureUnavailableToast() }
@@ -85,6 +103,7 @@ class BusinessAccountActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_USER_NAME = "extra.USER_NAME"
     }
+
     private fun showFeatureUnavailableToast() {
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -94,12 +113,10 @@ class BusinessAccountActivity : AppCompatActivity() {
         }
 
         val iconView = ImageView(this).apply {
-            // usa un drawable que ya tengas; aquí reutilizo el del header
+            // usa un drawable existente
             setImageResource(R.drawable.personajesingup)
             val size = dp(20)
-            layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                rightMargin = dp(8)
-            }
+            layoutParams = LinearLayout.LayoutParams(size, size).apply { rightMargin = dp(8) }
         }
 
         val textView = TextView(this).apply {
@@ -116,6 +133,48 @@ class BusinessAccountActivity : AppCompatActivity() {
             view = container
             show()
         }
+    }
+
+    // —— Toast arriba centrado ——
+    private fun showTopToast(message: String) {
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+            setBackgroundColor(Color.parseColor("#FFFFFF"))
+        }
+
+        val icon = ImageView(this).apply {
+            setImageResource(R.drawable.personajesingup)
+            val s = dp(20)
+            layoutParams = LinearLayout.LayoutParams(s, s).apply { rightMargin = dp(8) }
+        }
+
+        val text = TextView(this).apply {
+            this.text = message
+            setTextColor(Color.BLACK)
+            textSize = 14f
+        }
+
+        container.addView(icon)
+        container.addView(text)
+
+        Toast(this).apply {
+            duration = Toast.LENGTH_SHORT
+            view = container
+            setGravity(Gravity.TOP or Gravity.CENTER_HORIZONTAL, 0, dp(24))
+            show()
+        }
+    }
+
+    // —— Chequeo de conectividad ——
+    private fun isOnline(): Boolean {
+        val cm = getSystemService(ConnectivityManager::class.java) ?: return false
+        val net = cm.activeNetwork ?: return false
+        val caps = cm.getNetworkCapabilities(net) ?: return false
+        return caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+               caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+               caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
     }
 
     private fun dp(value: Int): Int =

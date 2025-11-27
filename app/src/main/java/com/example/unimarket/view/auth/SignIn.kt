@@ -25,7 +25,7 @@ import com.example.unimarket.viewmodel.AuthNavDestination
 import com.example.unimarket.viewmodel.AuthViewModel
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
-import com.google.android.material.snackbar.Snackbar
+// import com.google.android.material.snackbar.Snackbar // <- ya no usamos Snackbar
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.launch
@@ -115,7 +115,7 @@ class LoginActivity : AppCompatActivity() {
         btnBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
         tvSignUp.setOnClickListener { startActivity(Intent(this, CreateAccountActivity::class.java)) }
 
-        // Sign In con validación local + verificación de conectividad
+        // Sign In con validación local + verificación de conectividad (toast arriba)
         btnSignIn.setOnClickListener {
             val emailNow = etEmail.text?.toString()?.trim().orEmpty()
             val passNow  = etPassword.text?.toString().orEmpty()
@@ -128,12 +128,7 @@ class LoginActivity : AppCompatActivity() {
             if (!validEmail || !validPass) return@setOnClickListener
 
             if (!isOnline()) {
-                Snackbar
-                    .make(findViewById(android.R.id.content),
-                        "No hay conexión. No se puede iniciar sesión.",
-                        Snackbar.LENGTH_LONG)
-                    .setAction("OK") { }
-                    .show()
+                showTopToast("Sin conexión. No puedes iniciar sesión.")
                 return@setOnClickListener
             }
 
@@ -278,6 +273,12 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
+    private fun showTopToast(msg: String) {
+        val t = Toast.makeText(this, msg, Toast.LENGTH_SHORT)
+        t.setGravity(Gravity.TOP or Gravity.CENTER_HORIZONTAL, 0, dp(24))
+        t.show()
+    }
+
     private fun isOnline(): Boolean {
         val cm = getSystemService(ConnectivityManager::class.java) ?: return false
         val net = cm.activeNetwork ?: return false
@@ -285,16 +286,6 @@ class LoginActivity : AppCompatActivity() {
         return caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
-    }
-
-    override fun onStart() {
-        super.onStart()
-        val online = isOnline()
-        val hasSession = com.example.unimarket.model.session.SessionManager.get() != null
-        if (!online && hasSession) {
-            startActivity(Intent(this, HomeBuyerActivity::class.java))
-            finish()
-        }
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()

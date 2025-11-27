@@ -60,13 +60,9 @@ class BusinessViewModel(
     }
 
     fun logout() {
-        viewModelScope.launch {
-            try {
-                auth.signOut()
-            } finally {
-                _ui.update { it.copy(nav = BusinessNavDestination.ToWelcome) }
-            }
-        }
+        SessionManager.clear()
+        _ui.update { it.copy(nav = BusinessNavDestination.ToWelcome) }
+        viewModelScope.launch { runCatching { auth.signOut() } }
     }
 
     fun clearNavAndError() {

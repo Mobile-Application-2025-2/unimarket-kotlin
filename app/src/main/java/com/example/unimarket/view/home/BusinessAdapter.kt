@@ -10,6 +10,7 @@ import coil.load
 import com.example.unimarket.R
 import com.example.unimarket.model.domain.entity.Business
 import java.util.Locale
+import coil.request.CachePolicy
 
 class BusinessAdapter(
     private var items: List<Business>,
@@ -64,6 +65,9 @@ class BusinessAdapter(
                     crossfade(true)
                     placeholder(R.drawable.personajesingup)
                     error(R.drawable.personajesingup)
+                    memoryCachePolicy(CachePolicy.ENABLED)
+                    diskCachePolicy(CachePolicy.ENABLED)
+                    networkCachePolicy(CachePolicy.ENABLED)
                 }
             } else {
                 imgCover.setImageResource(R.drawable.personajesingup)
