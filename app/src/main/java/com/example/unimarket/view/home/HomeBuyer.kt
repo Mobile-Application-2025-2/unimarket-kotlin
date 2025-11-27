@@ -29,6 +29,7 @@ import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.launch
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.util.Log
 
 class HomeBuyerActivity : AppCompatActivity() {
 
@@ -55,7 +56,7 @@ class HomeBuyerActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.homepage)
-
+        Log.d("HomeBuyerActivity", "onCreate() llamado")
         initViews()
         setupRecycler()
         setupClicks()

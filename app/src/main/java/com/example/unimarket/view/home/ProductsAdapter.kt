@@ -8,6 +8,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
+import coil.request.CachePolicy
 import com.example.unimarket.R
 
 data class BusinessProductItem(
@@ -48,18 +49,18 @@ class ProductsAdapter(
         private val onAddClick: (BusinessProductItem) -> Unit
     ) : RecyclerView.ViewHolder(itemView) {
 
-        private val imgProduct: ImageView = itemView.findViewById(R.id.imgProduct)
-        private val tvName: TextView = itemView.findViewById(R.id.tvProductName)
-        private val tvSubtitle: TextView = itemView.findViewById(R.id.tvProductSubtitle)
-        private val tvPrice: TextView = itemView.findViewById(R.id.tvProductPrice)
-        private val tvRating: TextView = itemView.findViewById(R.id.tvProductRating)
-        private val btnAdd: ImageButton = itemView.findViewById(R.id.btnAdd)
+        private val imgProduct: ImageView   = itemView.findViewById(R.id.imgProduct)
+        private val tvName: TextView        = itemView.findViewById(R.id.tvProductName)
+        private val tvSubtitle: TextView    = itemView.findViewById(R.id.tvProductSubtitle)
+        private val tvPrice: TextView       = itemView.findViewById(R.id.tvProductPrice)
+        private val tvRating: TextView      = itemView.findViewById(R.id.tvProductRating)
+        private val btnAdd: ImageButton     = itemView.findViewById(R.id.btnAdd)
 
         fun bind(item: BusinessProductItem) {
-            tvName.text = item.name
+            tvName.text     = item.name
             tvSubtitle.text = item.subtitle
-            tvPrice.text = item.price
-            tvRating.text = item.rating
+            tvPrice.text    = item.price
+            tvRating.text   = item.rating
 
             val url = item.imageUrl.trim()
             if (url.isNotEmpty()) {
@@ -67,12 +68,16 @@ class ProductsAdapter(
                     crossfade(true)
                     placeholder(R.drawable.personajesingup)
                     error(R.drawable.personajesingup)
+
+                    // Dejamos explícito que usamos la caché de Coil
+                    memoryCachePolicy(CachePolicy.ENABLED)
+                    diskCachePolicy(CachePolicy.ENABLED)
+                    networkCachePolicy(CachePolicy.ENABLED)
                 }
             } else {
                 imgProduct.setImageResource(R.drawable.personajesingup)
             }
 
-            // Clicks
             itemView.setOnClickListener { onAddClick(item) }
             btnAdd.setOnClickListener { onAddClick(item) }
         }

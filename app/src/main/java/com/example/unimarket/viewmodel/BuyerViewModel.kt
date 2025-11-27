@@ -60,12 +60,15 @@ class BuyerViewModel(
     }
 
     fun logout() {
+        SessionManager.clear()
+
+        // 2) Mandar al Welcome inmediatamente
+        _ui.update { it.copy(nav = BuyerNavDestination.ToWelcome) }
+
+        // 3) Intentar sign-out remoto SI hay red (no bloquea la UX)
         viewModelScope.launch {
-            try {
-                auth.signOut()
-            } finally {
-                _ui.update { it.copy(nav = BuyerNavDestination.ToWelcome) }
-            }
+            runCatching { auth.signOut() }
+            // No vuelvas a tocar SessionManager aquí; ya está limpio
         }
     }
 
