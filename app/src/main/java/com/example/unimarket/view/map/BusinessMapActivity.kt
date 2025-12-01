@@ -30,6 +30,7 @@ import com.example.unimarket.model.domain.service.NearbyBusinessesService
 import com.example.unimarket.view.home.BusinessDetailActivity
 import com.example.unimarket.view.home.HomeBuyerActivity
 import com.example.unimarket.view.profile.BuyerAccountActivity
+import com.example.unimarket.view.home.ExploreBuyerActivity
 import com.example.unimarket.viewmodel.BusinessMapViewModel
 import com.example.unimarket.viewmodel.MapMarkerUi
 import com.example.unimarket.viewmodel.MapNav
@@ -240,7 +241,7 @@ class BusinessMapActivity : AppCompatActivity(R.layout.business_map_page) {
             startActivity(Intent(this, HomeBuyerActivity::class.java)); finish()
         }
         findViewById<ImageButton>(R.id.nav_search).setOnClickListener {
-            Snackbar.make(findViewById(R.id.root_map), "Esta opción aún no está habilitada", Snackbar.LENGTH_SHORT).show()
+            startActivity(Intent(this, ExploreBuyerActivity::class.java))
         }
         findViewById<ImageButton>(R.id.nav_map).setOnClickListener { /* ya estás aquí */ }
         findViewById<ImageButton>(R.id.nav_profile).setOnClickListener {

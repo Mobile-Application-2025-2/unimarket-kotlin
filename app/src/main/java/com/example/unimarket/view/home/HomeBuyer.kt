@@ -21,6 +21,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.unimarket.R
 import com.example.unimarket.model.domain.entity.Business
 import com.example.unimarket.view.map.BusinessMapActivity
+import com.example.unimarket.view.profile.CartActivity
+import com.example.unimarket.viewmodel.CartViewModel
 import com.example.unimarket.viewmodel.Filter
 import com.example.unimarket.viewmodel.HomeBuyerViewModel
 import com.example.unimarket.viewmodel.HomeNav
@@ -34,6 +36,8 @@ import android.util.Log
 class HomeBuyerActivity : AppCompatActivity() {
 
     private val viewModel: HomeBuyerViewModel by viewModels()
+    // ViewModel de carrito
+    private val cartViewModel: CartViewModel by viewModels()
 
     private lateinit var rvBusinesses: RecyclerView
     private lateinit var businessAdapter: BusinessAdapter
@@ -99,6 +103,10 @@ class HomeBuyerActivity : AppCompatActivity() {
             items = emptyList(),
             onClick = { business: Business ->
                 viewModel.onBusinessSelected(business)
+            },
+            // nuevo callback: agregar producto al carrito
+            onAddProductClick = { productItem ->
+                cartViewModel.addProduct(productItem.id)
             }
         )
 
@@ -122,9 +130,13 @@ class HomeBuyerActivity : AppCompatActivity() {
         }
 
         btnFavorites.setOnClickListener { showFeatureUnavailableToast() }
-        btnOrdersTop.setOnClickListener { showFeatureUnavailableToast() }
-        navHome.setOnClickListener { showFeatureUnavailableToast() }
-        navSearch.setOnClickListener { showFeatureUnavailableToast() }
+        btnOrdersTop.setOnClickListener {
+            startActivity(Intent(this, CartActivity::class.java))
+        }
+        navHome.setOnClickListener {}
+        navSearch.setOnClickListener {
+            startActivity(Intent(this, ExploreBuyerActivity::class.java))
+        }
     }
 
     private fun observeUi() {
@@ -230,7 +242,6 @@ class HomeBuyerActivity : AppCompatActivity() {
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
     }
 
-    // 🔁 Recarga cada vez que la activity vuelve al frente
     override fun onStart() {
         super.onStart()
         viewModel.reloadBusinesses(isOnline())
@@ -242,5 +253,4 @@ class HomeBuyerActivity : AppCompatActivity() {
         viewModel.reloadBusinesses(isOnline())
         if (online) viewModel.flushOfflineCategoryClicks()
     }
-
 }
