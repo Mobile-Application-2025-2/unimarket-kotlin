@@ -22,6 +22,7 @@ import com.example.unimarket.view.auth.WelcomePage
 import com.example.unimarket.view.map.BusinessMapActivity
 import com.example.unimarket.viewmodel.BuyerNavDestination
 import com.example.unimarket.viewmodel.BuyerViewModel
+import com.example.unimarket.view.home.ExploreBuyerActivity
 import kotlinx.coroutines.launch
 
 class BuyerAccountActivity : AppCompatActivity() {
@@ -56,7 +57,7 @@ class BuyerAccountActivity : AppCompatActivity() {
         val navProfile: ImageButton = findViewById(R.id.nav_profile)
 
         btnFavorites.setOnClickListener { showFeatureUnavailableToast() }
-        btnOrdersTop.setOnClickListener { showFeatureUnavailableToast() }
+        btnOrdersTop.setOnClickListener { startActivity(Intent(this, CartActivity::class.java)) }
 
         rowBusinessInfo.setOnClickListener { showFeatureUnavailableToast() }
         rowAddresses.setOnClickListener { showFeatureUnavailableToast() }
@@ -87,8 +88,10 @@ class BuyerAccountActivity : AppCompatActivity() {
             }
         }
 
-        navHome.setOnClickListener { finish() } // volver al Home
-        navSearch.setOnClickListener { showFeatureUnavailableToast() }
+        navHome.setOnClickListener { finish() }
+        navSearch.setOnClickListener {
+            startActivity(Intent(this, ExploreBuyerActivity::class.java))
+        }
         navMap.setOnClickListener { startActivity(Intent(this, BusinessMapActivity::class.java)) }
         navProfile.setOnClickListener { /* ya estás aquí */ }
 

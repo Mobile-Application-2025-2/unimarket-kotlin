@@ -33,6 +33,9 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 import com.google.android.material.button.MaterialButton
 import android.content.res.ColorStateList
+import com.example.unimarket.view.profile.CartActivity
+import com.example.unimarket.viewmodel.CartViewModel
+
 
 class BusinessDetailActivity : AppCompatActivity() {
 
@@ -59,6 +62,11 @@ class BusinessDetailActivity : AppCompatActivity() {
     private lateinit var navProfile: ImageButton
 
     private lateinit var btnRateBusiness: MaterialButton
+
+    private val cartViewModel: CartViewModel by viewModels()
+
+    private lateinit var rvProducts: RecyclerView
+    private lateinit var productsAdapter: ProductsAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -123,12 +131,14 @@ class BusinessDetailActivity : AppCompatActivity() {
 
     private fun setupTopBarAndFooter() {
         btnFavorites.setOnClickListener { showFeatureUnavailableToast() }
-        btnOrdersTop.setOnClickListener { showFeatureUnavailableToast() }
+        btnOrdersTop.setOnClickListener { startActivity(Intent(this, CartActivity::class.java)) }
 
         navHome.setOnClickListener {
             onBackPressedDispatcher.onBackPressed()
         }
-        navSearch.setOnClickListener { showFeatureUnavailableToast() }
+        navSearch.setOnClickListener {
+            startActivity(Intent(this, ExploreBuyerActivity::class.java))
+        }
 
         navMap.setOnClickListener {
             startActivity(Intent(this, BusinessMapActivity::class.java))
@@ -169,7 +179,11 @@ class BusinessDetailActivity : AppCompatActivity() {
 
     private fun setupRecycler() {
         adapter = ProductsAdapter(onAddClick = { product ->
-            Toast.makeText(this, "Añadido: ${product.name}", Toast.LENGTH_SHORT).show()
+            // 1. Agregar el producto al carrito (1 unidad)
+            cartViewModel.addProduct(product.id)
+
+            // 2. (Opcional) feedback visual
+            Toast.makeText(this, "Añadido al carrito: ${product.name}", Toast.LENGTH_SHORT).show()
         })
         rvProducts.layoutManager = GridLayoutManager(this, 2)
         rvProducts.adapter = adapter
