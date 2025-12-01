@@ -13,6 +13,8 @@ class ProductsServiceAdapter {
     suspend fun listByCategory(categoryId: String): List<Product> =
         col.whereEqualTo("category", categoryId).get().await().documents.mapNotNull { it.toProduct() }
 
+    suspend fun getAll(): List<Product> =
+        col.get().await().documents.mapNotNull { it.toProduct() }
 
     suspend fun listByBusiness(businessUid: String): List<Product> =
         col.whereEqualTo("business", businessUid).get().await().documents.mapNotNull { it.toProduct() }
