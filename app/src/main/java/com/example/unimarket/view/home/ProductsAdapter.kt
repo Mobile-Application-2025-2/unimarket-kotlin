@@ -20,7 +20,12 @@ data class BusinessProductItem(
     val imageUrl: String
 )
 
+/**
+ * onCardClick  -> cuando el usuario toca la tarjeta completa (abrir detalle).
+ * onAddClick   -> cuando toca el botón "+" (agregar al carrito).
+ */
 class ProductsAdapter(
+    private val onCardClick: (BusinessProductItem) -> Unit,
     private val onAddClick: (BusinessProductItem) -> Unit
 ) : RecyclerView.Adapter<ProductsAdapter.ProductViewHolder>() {
 
@@ -35,7 +40,7 @@ class ProductsAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProductViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.product_card, parent, false)
-        return ProductViewHolder(view, onAddClick)
+        return ProductViewHolder(view, onCardClick, onAddClick)
     }
 
     override fun onBindViewHolder(holder: ProductViewHolder, position: Int) {
@@ -46,6 +51,7 @@ class ProductsAdapter(
 
     class ProductViewHolder(
         itemView: View,
+        private val onCardClick: (BusinessProductItem) -> Unit,
         private val onAddClick: (BusinessProductItem) -> Unit
     ) : RecyclerView.ViewHolder(itemView) {
 
@@ -69,7 +75,7 @@ class ProductsAdapter(
                     placeholder(R.drawable.personajesingup)
                     error(R.drawable.personajesingup)
 
-                    // Dejamos explícito que usamos la caché de Coil
+                    // Caché Coil explícita
                     memoryCachePolicy(CachePolicy.ENABLED)
                     diskCachePolicy(CachePolicy.ENABLED)
                     networkCachePolicy(CachePolicy.ENABLED)
@@ -78,7 +84,10 @@ class ProductsAdapter(
                 imgProduct.setImageResource(R.drawable.personajesingup)
             }
 
-            itemView.setOnClickListener { onAddClick(item) }
+            // Card completa → detalle
+            itemView.setOnClickListener { onCardClick(item) }
+
+            // Botón "+" → carrito
             btnAdd.setOnClickListener { onAddClick(item) }
         }
     }

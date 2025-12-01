@@ -14,11 +14,22 @@
         <FrameLayout
             android:id="@+id/header"
             android:layout_width="0dp"
-            android:layout_height="360dp"
+            android:layout_height="420dp"
             android:background="@color/accent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
+
+            <ImageView
+                android:id="@+id/headerWave"
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:layout_gravity="bottom"
+                android:layout_marginBottom="-40dp"
+                android:adjustViewBounds="true"
+                android:scaleType="fitXY"
+                android:src="@drawable/header_wave"
+                app:tint="@null" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -27,7 +38,7 @@
                 android:gravity="center_horizontal"
                 android:paddingStart="24dp"
                 android:paddingEnd="24dp"
-                android:paddingTop="18dp">
+                android:paddingTop="8dp">
 
                 <LinearLayout
                     android:layout_width="wrap_content"
@@ -57,17 +68,15 @@
                     style="@style/TextAppearance.App.Title"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="18dp"
-                    android:text="Hi Camilo!"
-                    android:textColor="@android:color/white" />
+                    android:visibility="gone" />
 
                 <TextView
                     android:id="@+id/subtitle"
                     style="@style/TextAppearance.App.Body"
                     android:layout_width="340dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="Before starting, we will need your student ID or identity ID for business outside college"
+                    android:layout_marginTop="16dp"
+                    android:text="Antes de empezar, necesitamos esta información para crear tu cuenta."
                     android:textAlignment="center"
                     android:textColor="@android:color/white"
                     android:lineSpacingExtra="2dp"
@@ -79,13 +88,12 @@
                     style="@style/Widget.App.FilledInput"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="20dp"
                     app:boxBackgroundColor="@color/lightGray"
                     app:boxCornerRadiusTopStart="16dp"
                     app:boxCornerRadiusTopEnd="16dp"
                     app:boxCornerRadiusBottomStart="16dp"
                     app:boxCornerRadiusBottomEnd="16dp"
-
                     app:endIconMode="custom"
                     app:endIconDrawable="@android:drawable/ic_menu_camera"
                     app:endIconContentDescription="Open camera"
@@ -94,47 +102,123 @@
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etStudentId"
                         style="@style/TextAppearance.App.Input"
-                        android:layout_width="320dp"
+                        android:layout_width="match_parent"
                         android:layout_height="56dp"
-                        android:layout_marginStart="20dp"
-                        android:hint="ID"
+                        android:hint="NIT o documento"
                         android:maxLength="50"
                         android:paddingStart="16dp"
                         android:paddingEnd="16dp"
                         android:textColorHint="@color/textGray" />
                 </com.google.android.material.textfield.TextInputLayout>
-            </LinearLayout>
 
-            <ImageView
-                android:id="@+id/headerWave"
-                android:layout_width="match_parent"
-                android:layout_height="140dp"
-                android:layout_gravity="bottom"
-                android:src="@drawable/header_wave"
-                android:scaleType="fitXY"
-                android:adjustViewBounds="true"
-                app:tint="@null"
-                android:layout_marginBottom="-1dp" />
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilAddress"
+                    style="@style/Widget.App.FilledInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    app:boxBackgroundColor="@color/lightGray"
+                    app:boxCornerRadiusTopStart="16dp"
+                    app:boxCornerRadiusTopEnd="16dp"
+                    app:boxCornerRadiusBottomStart="16dp"
+                    app:boxCornerRadiusBottomEnd="16dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etAddress"
+                        style="@style/TextAppearance.App.Input"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:hint="Address"
+                        android:maxLength="100"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:textColorHint="@color/textGray" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <LinearLayout
+                    android:id="@+id/businessExtraContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginTop="12dp"
+                    android:visibility="gone">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilLogo"
+                        style="@style/Widget.App.FilledInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:boxBackgroundColor="@color/lightGray"
+                        app:boxCornerRadiusTopStart="16dp"
+                        app:boxCornerRadiusTopEnd="16dp"
+                        app:boxCornerRadiusBottomStart="16dp"
+                        app:boxCornerRadiusBottomEnd="16dp">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etLogo"
+                            style="@style/TextAppearance.App.Input"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:hint="URL del logo (https://)"
+                            android:maxLength="200"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp"
+                            android:textColorHint="@color/textGray" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilCategories"
+                        style="@style/Widget.App.FilledInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        app:boxBackgroundColor="@color/lightGray"
+                        app:boxCornerRadiusTopStart="16dp"
+                        app:boxCornerRadiusTopEnd="16dp"
+                        app:boxCornerRadiusBottomStart="16dp"
+                        app:boxCornerRadiusBottomEnd="16dp"
+                        app:endIconMode="custom"
+                        app:endIconDrawable="@android:drawable/arrow_down_float"
+                        app:endIconContentDescription="Select category"
+                        app:endIconTint="@color/textGray">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etCategories"
+                            style="@style/TextAppearance.App.Input"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:hint="Categoría del negocio"
+                            android:focusable="false"
+                            android:clickable="true"
+                            android:inputType="none"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp"
+                            android:textColorHint="@color/textGray" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+            </LinearLayout>
         </FrameLayout>
 
         <ImageView
             android:id="@+id/illustration"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:src="@drawable/personajeid"
+            android:layout_marginTop="-50dp"
             android:scaleType="fitCenter"
+            android:src="@drawable/personajeid"
             app:layout_constraintTop_toBottomOf="@id/header"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintWidth_percent="0.94"
-            app:layout_constraintDimensionRatio="1:0.88"
-            android:layout_marginTop="-50dp" />
+            app:layout_constraintDimensionRatio="1:0.88" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnGetStarted"
             style="@style/Widget.Material3.Button"
             android:layout_width="0dp"
             android:layout_height="66dp"
+            android:layout_marginTop="-20dp"
+            android:layout_marginBottom="24dp"
             android:text="GET STARTED"
             android:textAllCaps="true"
             android:textAppearance="@style/TextAppearance.App.Button"
@@ -143,10 +227,6 @@
             app:layout_constraintTop_toBottomOf="@id/illustration"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintWidth_percent="0.78"
-            android:layout_marginTop="-20dp"
-            android:layout_marginBottom="24dp" />
+            app:layout_constraintWidth_percent="0.78" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>
-
-

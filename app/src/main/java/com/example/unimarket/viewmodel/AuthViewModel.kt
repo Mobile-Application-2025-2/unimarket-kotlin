@@ -400,7 +400,8 @@ class AuthViewModel(
                         )
                     }
                 } else {
-                    finalizeBuyer()
+                    // Cambia a versión con parámetros
+                    finalizeBuyer(tmpCode, tmpAddress)
                 }
             }
             OnbStep.LOGO -> {
@@ -427,31 +428,89 @@ class AuthViewModel(
                 }
             }
             OnbStep.CATEGORIES -> {
-                finalizeBusinessWithCategories(st.selectedCats)
+                // Ahora se pasan todos los datos explícitamente
+                finalizeBusinessWithCategories(tmpCode, tmpAddress, tmpLogoUrl, st.selectedCats)
             }
         }
     }
 
+    fun student_loadCategories() {
+        viewModelScope.launch {
+            if (availableCats.isNotEmpty() && _student.value.categories.isNotEmpty()) return@launch
+
+            val cats = categoryService.listAll().getOrElse { emptyList() }
+            availableCats = cats
+            val names = cats.map { it.name }.sorted()
+            _student.update { it.copy(categories = names) }
+        }
+    }
+
+    fun student_submitSingle(
+        document: String,
+        address: String,
+        logoUrl: String?,
+        selectedCatNames: List<String>
+    ) {
+        val role = _student.value.role
+        val docT = document.trim()
+        val addrT = address.trim()
+        val logoT = logoUrl?.trim().orEmpty()
+
+        if (docT.length < 3) {
+            _student.update { it.copy(errorMessage = "Ingresa un documento válido") }
+            return
+        }
+        if (addrT.isEmpty()) {
+            _student.update { it.copy(errorMessage = "Ingresa una dirección") }
+            return
+        }
+
+        if (role == "business") {
+            if (!URL_REGEX.matches(logoT)) {
+                _student.update { it.copy(errorMessage = "Ingresa una URL de logo válida (http/https)") }
+                return
+            }
+            if (selectedCatNames.size != 1) {
+                _student.update { it.copy(errorMessage = "Selecciona exactamente una categoría") }
+                return
+            }
+            finalizeBusinessWithCategories(docT, addrT, logoT, selectedCatNames.take(3))
+        } else {
+            finalizeBuyer(docT, addrT)
+        }
+    }
+
     fun student_onCategoriesPicked(selected: List<String>) {
-        val limited = selected.take(3)
+        val limited = selected.take(1)
         _student.update {
             it.copy(
                 selectedCats = limited,
                 subtitle = formatCatsSubtitle(limited),
-                canProceed = limited.isNotEmpty() && limited.size <= 3,
+                canProceed = limited.size == 1,
                 errorMessage = null
             )
         }
     }
 
-    private fun finalizeBusinessWithCategories(selectedNames: List<String>) {
+    private fun finalizeBusinessWithCategories(
+        document: String,
+        address: String,
+        logoUrl: String,
+        selectedNames: List<String>
+    ) {
         viewModelScope.launch {
             try {
-                authService.completeOnboarding(tmpCode).getOrThrow()
-                authService.updateBusinessAddressAndLogo(tmpAddress, tmpLogoUrl).getOrThrow()
+                authService.completeOnboarding(document).getOrThrow()
+                authService.updateBusinessAddressAndLogo(address, logoUrl).getOrThrow()
 
                 val uid = authService.currentUser().getOrNull()?.id
                     ?: error("No authenticated user")
+
+                // Asegurar categorías cargadas
+                if (availableCats.isEmpty()) {
+                    val cats = categoryService.listAll().getOrElse { emptyList() }
+                    availableCats = cats
+                }
 
                 val chosen: List<Category> = selectedNames.mapNotNull { name ->
                     availableCats.firstOrNull { it.name == name }
@@ -467,14 +526,14 @@ class AuthViewModel(
     }
 
     private fun formatCatsSubtitle(selected: List<String>): String =
-        if (selected.isEmpty()) "Selecciona hasta 3 categorías."
+        if (selected.isEmpty()) "Selecciona 1 categoría."
         else "Seleccionadas: " + selected.joinToString(", ")
 
-    private fun finalizeBuyer() {
+    private fun finalizeBuyer(code: String, address: String) {
         viewModelScope.launch {
             try {
-                authService.completeOnboarding(tmpCode).getOrThrow()
-                authService.updateBuyerAddress(tmpAddress).getOrThrow()
+                authService.completeOnboarding(code).getOrThrow()
+                authService.updateBuyerAddress(address).getOrThrow()
                 _student.update { it.copy(nav = AuthNavDestination.ToBuyerHome) }
             } catch (e: Exception) {
                 _student.update { it.copy(errorMessage = e.message ?: "No se pudo guardar") }

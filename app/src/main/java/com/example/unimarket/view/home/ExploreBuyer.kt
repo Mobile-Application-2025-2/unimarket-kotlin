@@ -26,10 +26,14 @@ import com.example.unimarket.view.profile.BuyerAccountActivity
 import com.example.unimarket.view.profile.CartActivity
 import com.example.unimarket.viewmodel.ExploreBuyerViewModel
 import kotlinx.coroutines.launch
+import com.example.unimarket.viewmodel.CartViewModel
+import com.example.unimarket.view.home.ProductDetailActivity
+
 
 class ExploreBuyerActivity : AppCompatActivity() {
 
     private val viewModel: ExploreBuyerViewModel by viewModels()
+    private val cartViewModel: CartViewModel by viewModels()
 
     // Lista de productos
     private lateinit var rvProducts: RecyclerView
@@ -74,11 +78,20 @@ class ExploreBuyerActivity : AppCompatActivity() {
 
     private fun setupRecycler() {
         productsAdapter = ProductsAdapter(
+            onCardClick = { item: BusinessProductItem ->
+                // Navegar a ProductDetail con el id del producto
+                val intent = Intent(this, ProductDetailActivity::class.java).apply {
+                    putExtra(ProductDetailActivity.EXTRA_PRODUCT_ID, item.id)
+                }
+                startActivity(intent)
+            },
             onAddClick = { item: BusinessProductItem ->
-                // Hook para futuro: navegar al detalle del producto
+                // Agregar 1 unidad al carrito
+                cartViewModel.addProduct(item.id)
+
                 Toast.makeText(
                     this,
-                    "Producto: ${item.name}",
+                    "Añadido al carrito: ${item.name}",
                     Toast.LENGTH_SHORT
                 ).show()
             }

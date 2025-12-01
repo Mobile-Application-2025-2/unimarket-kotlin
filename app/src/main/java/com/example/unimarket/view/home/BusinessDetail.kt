@@ -23,27 +23,28 @@ import coil.load
 import com.example.unimarket.R
 import com.example.unimarket.model.domain.entity.Product
 import com.example.unimarket.view.map.BusinessMapActivity
+import com.example.unimarket.view.profile.BuyerAccountActivity
+import com.example.unimarket.view.profile.CartActivity
 import com.example.unimarket.viewmodel.BusinessDetailUiState
+import com.example.unimarket.viewmodel.CartViewModel
 import com.example.unimarket.viewmodel.HomeBuyerViewModel
 import com.example.unimarket.viewmodel.HomeNav
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 import java.util.Locale
-import com.google.android.material.button.MaterialButton
-import android.content.res.ColorStateList
-import com.example.unimarket.view.profile.CartActivity
-import com.example.unimarket.viewmodel.CartViewModel
-
 
 class BusinessDetailActivity : AppCompatActivity() {
 
     private val viewModel: HomeBuyerViewModel by viewModels()
+    private val cartViewModel: CartViewModel by viewModels()
 
     private var businessId: String = ""
     private var currentRatingAvg: Float = 0f
     private var currentRatingCount: Int = 0
+
     private lateinit var ivHero: ImageView
     private lateinit var tvBusinessName: TextView
     private lateinit var tvRating: TextView
@@ -52,7 +53,7 @@ class BusinessDetailActivity : AppCompatActivity() {
     private lateinit var chipGroupProductFilters: ChipGroup
 
     private lateinit var rvProducts: RecyclerView
-    private lateinit var adapter: ProductsAdapter
+    private lateinit var productsAdapter: ProductsAdapter
 
     private lateinit var btnFavorites: ImageButton
     private lateinit var btnOrdersTop: ImageButton
@@ -62,11 +63,6 @@ class BusinessDetailActivity : AppCompatActivity() {
     private lateinit var navProfile: ImageButton
 
     private lateinit var btnRateBusiness: MaterialButton
-
-    private val cartViewModel: CartViewModel by viewModels()
-
-    private lateinit var rvProducts: RecyclerView
-    private lateinit var productsAdapter: ProductsAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -117,7 +113,7 @@ class BusinessDetailActivity : AppCompatActivity() {
         tvVotes        = findViewById(R.id.tvVotes)
 
         chipGroupProductFilters = findViewById(R.id.chipGroupProductFilters)
-        rvProducts   = findViewById(R.id.rvProducts)
+        rvProducts              = findViewById(R.id.rvProducts)
 
         btnFavorites = findViewById(R.id.btnFavorites)
         btnOrdersTop = findViewById(R.id.btnOrdersTop)
@@ -156,7 +152,7 @@ class BusinessDetailActivity : AppCompatActivity() {
             translationZ = strongElevation
 
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                val darkShadow = androidx.core.content.ContextCompat.getColor(
+                val darkShadow = ContextCompat.getColor(
                     context,
                     android.R.color.black
                 )
@@ -165,7 +161,7 @@ class BusinessDetailActivity : AppCompatActivity() {
             }
 
             setTextColor(
-                androidx.core.content.ContextCompat.getColor(
+                ContextCompat.getColor(
                     context,
                     R.color.white
                 )
@@ -178,15 +174,25 @@ class BusinessDetailActivity : AppCompatActivity() {
     }
 
     private fun setupRecycler() {
-        adapter = ProductsAdapter(onAddClick = { product ->
-            // 1. Agregar el producto al carrito (1 unidad)
-            cartViewModel.addProduct(product.id)
+        productsAdapter = ProductsAdapter(
+            onCardClick = { item: BusinessProductItem ->
+                val intent = Intent(this, ProductDetailActivity::class.java).apply {
+                    putExtra(ProductDetailActivity.EXTRA_PRODUCT_ID, item.id)
+                }
+                startActivity(intent)
+            },
+            onAddClick = { item: BusinessProductItem ->
+                cartViewModel.addProduct(item.id)
+                Toast.makeText(
+                    this,
+                    "Añadido al carrito: ${item.name}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        )
 
-            // 2. (Opcional) feedback visual
-            Toast.makeText(this, "Añadido al carrito: ${product.name}", Toast.LENGTH_SHORT).show()
-        })
         rvProducts.layoutManager = GridLayoutManager(this, 2)
-        rvProducts.adapter = adapter
+        rvProducts.adapter = productsAdapter
     }
 
     private fun observeDetail() {
@@ -208,7 +214,7 @@ class BusinessDetailActivity : AppCompatActivity() {
                             startActivity(
                                 Intent(
                                     this@BusinessDetailActivity,
-                                    com.example.unimarket.view.profile.BuyerAccountActivity::class.java
+                                    BuyerAccountActivity::class.java
                                 )
                             )
                             viewModel.navHandled()
@@ -230,7 +236,7 @@ class BusinessDetailActivity : AppCompatActivity() {
         val items = filterProducts(ui.products, ui.currentFilter)
             .map { it.toBusinessProductItem() }
 
-        adapter.submit(items)
+        productsAdapter.submit(items)
 
         ui.error?.let {
             Toast.makeText(this, it, Toast.LENGTH_LONG).show()
@@ -246,12 +252,11 @@ class BusinessDetailActivity : AppCompatActivity() {
         chipGroupProductFilters.setOnCheckedStateChangeListener(null)
         chipGroupProductFilters.removeAllViews()
 
-        // Colores desde colors.xml
-        val selectedBg  = ContextCompat.getColor(this, R.color.yellowLight)
+        val selectedBg   = ContextCompat.getColor(this, R.color.yellowLight)
         val unselectedBg = ContextCompat.getColor(this, android.R.color.white)
-        val textColor   = ContextCompat.getColor(this, R.color.text_primary)
+        val textColor    = ContextCompat.getColor(this, R.color.text_primary)
 
-        val bgColors = ColorStateList(
+        val bgColors = android.content.res.ColorStateList(
             arrayOf(
                 intArrayOf(android.R.attr.state_checked),
                 intArrayOf(-android.R.attr.state_checked)
@@ -275,8 +280,6 @@ class BusinessDetailActivity : AppCompatActivity() {
                 text = label
                 isCheckable = true
                 isClickable = true
-
-                // colores personalizados
                 chipBackgroundColor = bgColors
                 setTextColor(textColor)
                 isCheckedIconVisible = false
@@ -368,7 +371,6 @@ class BusinessDetailActivity : AppCompatActivity() {
         showRatingThanksToast()
     }
 
-
     private fun showFeatureUnavailableToast() {
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -399,20 +401,6 @@ class BusinessDetailActivity : AppCompatActivity() {
             view = container
             show()
         }
-    }
-
-    private fun dp(value: Int): Int =
-        (value * resources.displayMetrics.density).toInt()
-
-    companion object {
-        const val FILTER_ALL = "all"
-
-        const val EXTRA_BUSINESS_ID = "EXTRA_BUSINESS_ID"
-        const val EXTRA_BUSINESS_NAME = "EXTRA_BUSINESS_NAME"
-        const val EXTRA_BUSINESS_RATING = "EXTRA_BUSINESS_RATING"
-        const val EXTRA_BUSINESS_AMOUNT_RATINGS = "EXTRA_BUSINESS_AMOUNT_RATINGS"
-        const val EXTRA_BUSINESS_LOGO_URL = "EXTRA_BUSINESS_LOGO_URL"
-        const val EXTRA_BUSINESS_PRODUCT_IDS = "EXTRA_BUSINESS_PRODUCT_IDS"
     }
 
     private fun showRatingThanksToast() {
@@ -447,8 +435,22 @@ class BusinessDetailActivity : AppCompatActivity() {
         }
     }
 
+    private fun dp(value: Int): Int =
+        (value * resources.displayMetrics.density).toInt()
+
     override fun onResume() {
         super.onResume()
         viewModel.detail_reloadLocalIfRemoteEmpty()
+    }
+
+    companion object {
+        const val FILTER_ALL = "all"
+
+        const val EXTRA_BUSINESS_ID = "EXTRA_BUSINESS_ID"
+        const val EXTRA_BUSINESS_NAME = "EXTRA_BUSINESS_NAME"
+        const val EXTRA_BUSINESS_RATING = "EXTRA_BUSINESS_RATING"
+        const val EXTRA_BUSINESS_AMOUNT_RATINGS = "EXTRA_BUSINESS_AMOUNT_RATINGS"
+        const val EXTRA_BUSINESS_LOGO_URL = "EXTRA_BUSINESS_LOGO_URL"
+        const val EXTRA_BUSINESS_PRODUCT_IDS = "EXTRA_BUSINESS_PRODUCT_IDS"
     }
 }

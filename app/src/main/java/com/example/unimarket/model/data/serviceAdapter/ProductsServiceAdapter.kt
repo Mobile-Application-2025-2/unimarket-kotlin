@@ -89,4 +89,20 @@ class ProductsServiceAdapter {
             else -> normalized
         }
     }
+
+    suspend fun getRatingMeta(id: String): Pair<Double, Long> {
+        val snap = col.document(id).get().await()
+        if (!snap.exists()) return 0.0 to 0L
+
+        val rating = snap.get("rating").toDoubleOrZero(default = 0.0)
+
+        val rawCount = snap.get("amountRatings")
+        val count: Long = when (rawCount) {
+            is Number -> rawCount.toLong()
+            is String -> rawCount.cleanNumericString().toLongOrNull() ?: 0L
+            else      -> 0L
+        }
+
+        return rating to count
+    }
 }

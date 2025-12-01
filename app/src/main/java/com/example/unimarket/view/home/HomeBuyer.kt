@@ -103,10 +103,6 @@ class HomeBuyerActivity : AppCompatActivity() {
             items = emptyList(),
             onClick = { business: Business ->
                 viewModel.onBusinessSelected(business)
-            },
-            // nuevo callback: agregar producto al carrito
-            onAddProductClick = { productItem ->
-                cartViewModel.addProduct(productItem.id)
             }
         )
 

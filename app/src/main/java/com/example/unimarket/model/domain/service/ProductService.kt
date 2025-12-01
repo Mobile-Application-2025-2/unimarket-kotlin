@@ -62,4 +62,25 @@ class ProductService(
     suspend fun listAllProducts(): Result<List<Product>> = runCatching {
         productsServiceAdapter.getAll()
     }
+
+    suspend fun updateRating(
+        productId: String,
+        newAvg: Double,
+        newCount: Long
+    ): Result<Unit> = runCatching {
+        requireNotBlank(productId, "productId")
+
+        productsServiceAdapter.updatePartial(
+            productId,
+            mapOf(
+                "rating"        to newAvg,
+                "amountRatings" to newCount
+            )
+        )
+    }
+
+    suspend fun getRatingMeta(productId: String): Result<Pair<Double, Long>> = runCatching {
+        requireNotBlank(productId, "productId")
+        productsServiceAdapter.getRatingMeta(productId)
+    }
 }
