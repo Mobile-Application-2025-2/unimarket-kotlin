@@ -58,4 +58,8 @@ class ProductService(
 
         result.toList()
     }
+
+    suspend fun listAllProducts(): Result<List<Product>> = runCatching {
+        productsServiceAdapter.getAll()
+    }
 }

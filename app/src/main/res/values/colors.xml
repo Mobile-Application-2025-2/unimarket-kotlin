@@ -16,4 +16,8 @@
     <color name="yellowLight">#FFC436</color>
     <color name="yellowStroke">#FFD27C</color>
     <color name="divider">#E8EBE6</color>
+    <color name="cart">#A0A5BA</color>
+    <color name="methodcart">#F0F5FA</color>
+    <color name="method">#32343E</color>
+    <color name="back">#ECF0F4</color>
 </resources>
