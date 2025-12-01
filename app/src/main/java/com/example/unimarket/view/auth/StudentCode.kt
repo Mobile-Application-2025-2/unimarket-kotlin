@@ -56,122 +56,146 @@ class StudentCodeActivity : AppCompatActivity() {
         (b.root.parent as? ViewGroup)?.removeView(b.root)
         setContentView(b.root)
 
-        // Init del flujo (define rol y primer paso)
         viewModel.student_init()
 
-        // Inputs -> VM (para pasos CODE / ADDRESS / LOGO)
-        b.etStudentId.doAfterTextChanged { text ->
-            viewModel.student_onInputChanged(text?.toString().orEmpty())
+        // Documento / código
+        b.etStudentId.doAfterTextChanged {
+            // Si quieres, puedes seguir informando al VM, pero ya no es obligatorio:
+            // viewModel.student_onInputChanged(it?.toString().orEmpty())
+            updateSubmitEnabled()
         }
 
-        // CTA con estrategia de conectividad
+        // Dirección
+        b.etAddress.doAfterTextChanged {
+            updateSubmitEnabled()
+        }
+
+        // Logo (solo business)
+        b.etLogo.doAfterTextChanged {
+            updateSubmitEnabled()
+        }
+
+        // Campo de categorías: solo lectura; abre el selector
+        b.etCategories.setOnClickListener {
+            maybeOpenCategoriesPicker()
+        }
+
+        // End icon del documento -> cámara
+        b.tilStudentId.setEndIconOnClickListener {
+            openCamera()
+        }
+
+        // End icon de categorías -> selector
+        b.tilCategories.setEndIconOnClickListener {
+            maybeOpenCategoriesPicker()
+        }
+
+        // Botón principal
         b.btnGetStarted.setOnClickListener {
             val ui = viewModel.student.value
 
-            // Pasos que requieren red:
-            // 1) LOGO -> next carga categorías desde backend (CategoryService.listAll())
-            val requiresFetchCategories = (ui.step == OnbStep.LOGO)
-
-            // 2) Finalizar Buyer: en ADDRESS cuando rol != business
-            val finishingBuyer = (ui.step == OnbStep.ADDRESS && ui.role != "business")
-
-            // 3) Finalizar Business: en CATEGORIES
-            val finishingBusiness = (ui.step == OnbStep.CATEGORIES)
-
-            val needsNetwork = requiresFetchCategories || finishingBuyer || finishingBusiness
-
-            if (needsNetwork && !isOnline()) {
+            // Toda la operación de submit requiere red
+            if (!isOnline()) {
                 showTopToast("Sin conexión a internet. No se puede continuar.")
                 return@setOnClickListener
             }
 
-            viewModel.student_next()
-        }
+            val document = b.etStudentId.text?.toString().orEmpty()
+            val address  = b.etAddress.text?.toString().orEmpty()
+            val logo     = if (ui.role == "business") b.etLogo.text?.toString().orEmpty() else null
+            val selectedCats = if (ui.role == "business") ui.selectedCats else emptyList()
 
-        // End icon:
-        // - CODE -> cámara
-        // - CATEGORIES -> selector categorías
-        b.tilStudentId.setEndIconOnClickListener {
-            val ui = viewModel.student.value
-            when (ui.step) {
-                OnbStep.CODE -> openCamera()
-                OnbStep.CATEGORIES -> maybeOpenCategoriesPicker()
-                else -> Unit
-            }
-        }
-
-        // Tap sobre el campo abre el selector SOLO en CATEGORIES
-        b.etStudentId.setOnClickListener {
-            val ui = viewModel.student.value
-            if (ui.step == OnbStep.CATEGORIES) {
-                maybeOpenCategoriesPicker()
-            }
+            viewModel.student_submitSingle(document, address, logo, selectedCats)
         }
 
         observeStudentUi()
+    }
+
+    private fun updateSubmitEnabled() {
+        val ui = viewModel.student.value
+        val document = b.etStudentId.text?.toString()?.trim().orEmpty()
+        val address  = b.etAddress.text?.toString()?.trim().orEmpty()
+        val logo     = b.etLogo.text?.toString()?.trim().orEmpty()
+
+        val enabled = if (ui.role == "business") {
+            document.length >= 3 && address.isNotEmpty() && logo.isNotEmpty()
+        } else {
+            document.length >= 3 && address.isNotEmpty()
+        }
+
+        b.btnGetStarted.isEnabled = enabled
     }
 
     private fun observeStudentUi() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.student.collect { ui ->
-                    // Bind de textos
-                    b.title.text = ui.title
-                    b.subtitle.text = ui.subtitle
-                    b.tilStudentId.hint = ui.hint
-                    b.btnGetStarted.text = ui.cta
 
-                    // Config UI según paso
-                    when (ui.step) {
-                        OnbStep.CODE, OnbStep.ADDRESS, OnbStep.LOGO -> {
-                            b.etStudentId.isEnabled = true
-                            b.etStudentId.isFocusable = true
-                            b.etStudentId.isFocusableInTouchMode = true
-                            b.etStudentId.isClickable = true
-                            b.tilStudentId.isEndIconVisible = true
-                        }
-                        OnbStep.CATEGORIES -> {
-                            b.etStudentId.isEnabled = false
-                            b.etStudentId.isFocusable = false
-                            b.etStudentId.isFocusableInTouchMode = false
-                            b.etStudentId.isClickable = true
-                            b.tilStudentId.isEndIconVisible = true
+                    // 1) Título oculto siempre
+                    b.title.visibility = View.GONE
 
-                            val display =
-                                if (ui.selectedCats.isEmpty()) "" else ui.selectedCats.joinToString(", ")
-                            if (b.etStudentId.text?.toString() != display) {
-                                b.etStudentId.setText(display)
-                            }
-                        }
+                    // 2) Subtítulo fijo
+                    b.subtitle.text =
+                        "Antes de empezar, necesitamos esta información para crear tu cuenta."
+
+                    // 3) Hint del campo documento según rol
+                    b.tilStudentId.hint = if (ui.role == "business") {
+                        "NIT o documento"
+                    } else {
+                        "Código estudiantil"
                     }
 
-                    // Sincroniza texto en pasos NO-CATEGORIES
-                    if (ui.step != OnbStep.CATEGORIES) {
-                        val current = b.etStudentId.text?.toString().orEmpty()
-                        if (current != ui.textValue) {
-                            b.etStudentId.setText(ui.textValue)
-                            b.etStudentId.setSelection(b.etStudentId.text?.length ?: 0)
+                    // Si quieres, el texto interno del input también:
+                    // val currentDoc = b.etStudentId.text?.toString().orEmpty()
+                    // if (currentDoc != ui.textValue) {
+                    //     b.etStudentId.setText(ui.textValue)
+                    //     b.etStudentId.setSelection(b.etStudentId.text?.length ?: 0)
+                    // }
+
+                    val isBusiness = ui.role == "business"
+
+                    // Mostrar/ocultar campos extra negocio
+                    b.businessExtraContainer.visibility =
+                        if (isBusiness) View.VISIBLE else View.GONE
+
+                    if (isBusiness) {
+                        val display = if (ui.selectedCats.isEmpty())
+                            ""
+                        else
+                            ui.selectedCats.joinToString(", ")
+                        if (b.etCategories.text?.toString() != display) {
+                            b.etCategories.setText(display)
                         }
+                    } else {
+                        b.etCategories.setText("")
                     }
 
-                    // Habilitar/Deshabilitar CTA
-                    b.btnGetStarted.isEnabled = ui.canProceed
+                    // Habilitar botón según lo que haya escrito
+                    updateSubmitEnabled()
 
-                    // Error one-shot
                     ui.errorMessage?.let { msg ->
                         Toast.makeText(this@StudentCodeActivity, msg, Toast.LENGTH_SHORT).show()
                         viewModel.student_clearNavAndErrors()
                     }
 
-                    // Navegación final
                     when (ui.nav) {
                         AuthNavDestination.ToBuyerHome -> {
-                            startActivity(Intent(this@StudentCodeActivity, HomeBuyerActivity::class.java))
+                            startActivity(
+                                Intent(
+                                    this@StudentCodeActivity,
+                                    HomeBuyerActivity::class.java
+                                )
+                            )
                             finish()
                             viewModel.student_clearNavAndErrors()
                         }
                         AuthNavDestination.ToBusinessProfile -> {
-                            startActivity(Intent(this@StudentCodeActivity, BusinessAccountActivity::class.java))
+                            startActivity(
+                                Intent(
+                                    this@StudentCodeActivity,
+                                    BusinessAccountActivity::class.java
+                                )
+                            )
                             finish()
                             viewModel.student_clearNavAndErrors()
                         }
@@ -184,38 +208,34 @@ class StudentCodeActivity : AppCompatActivity() {
 
     private fun maybeOpenCategoriesPicker() {
         val ui = viewModel.student.value
-        if (ui.step != OnbStep.CATEGORIES) return
+        if (ui.role != "business") return
+
         if (ui.categories.isEmpty()) {
-            Toast.makeText(this, "No hay categorías para mostrar.", Toast.LENGTH_SHORT).show()
-            return
+            viewModel.student_loadCategories()
+            if (ui.categories.isEmpty()) {
+                Toast.makeText(this, "No hay categorías para mostrar.", Toast.LENGTH_SHORT).show()
+                return
+            }
         }
 
         val items = ui.categories.toTypedArray()
-        val checked = BooleanArray(items.size) { idx -> ui.selectedCats.contains(items[idx]) }
+        val currentSelection = ui.selectedCats.firstOrNull()
+        val selectedIndex = items.indexOf(currentSelection).let { if (it >= 0) it else -1 }
 
-        val current = ui.selectedCats.toMutableList()
+        var chosen: String? = currentSelection
 
         AlertDialog.Builder(this)
-            .setTitle("Selecciona hasta 3 categorías")
-            .setMultiChoiceItems(items, checked) { dialog, which, isChecked ->
-                val name = items[which]
-
-                if (isChecked) {
-                    if (current.size >= 3 && !current.contains(name)) {
-                        (dialog as AlertDialog).listView.setItemChecked(which, false)
-                        Toast.makeText(this, "Máximo 3 categorías", Toast.LENGTH_SHORT).show()
-                        return@setMultiChoiceItems
-                    }
-                    if (!current.contains(name)) current.add(name)
-                } else {
-                    current.remove(name)
-                }
-
-                viewModel.student_onCategoriesPicked(current)
+            .setTitle("Selecciona una categoría")
+            .setSingleChoiceItems(items, selectedIndex) { _, which ->
+                chosen = items[which]
             }
             .setPositiveButton("OK") { _, _ ->
-                viewModel.student_onCategoriesPicked(current)
-                b.etStudentId.setText(current.joinToString(", "))
+                val list = chosen?.let { listOf(it) } ?: emptyList()
+                viewModel.student_onCategoriesPicked(list)
+                // Si sigues usando etStudentId para mostrar las categorías:
+                b.etStudentId.setText(list.joinToString(", "))
+                // Si estás usando un campo separado (etCategories), cambia por:
+                // b.etCategories.setText(list.joinToString(", "))
             }
             .setNegativeButton("Cancelar", null)
             .show()

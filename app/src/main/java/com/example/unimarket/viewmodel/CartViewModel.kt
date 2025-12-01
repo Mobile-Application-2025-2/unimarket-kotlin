@@ -1,10 +1,8 @@
-// com/example/unimarket/viewmodel/CartViewModel.kt
 package com.example.unimarket.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.unimarket.R
-import com.example.unimarket.model.data.orders.OrderFirestoreAdapter
+import com.example.unimarket.model.data.serviceAdapter.OrderServiceAdapter
 import com.example.unimarket.model.data.serviceAdapter.ProductsServiceAdapter
 import com.example.unimarket.model.domain.entity.Cart
 import com.example.unimarket.model.domain.entity.CartItem
@@ -12,6 +10,9 @@ import com.example.unimarket.model.domain.service.CartService
 import com.example.unimarket.view.profile.CartItemUi
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -29,12 +30,16 @@ class CartViewModel : ViewModel() {
     private val _total = MutableStateFlow(0.0)
     val total: StateFlow<Double> = _total
 
+    // Flujo de error para mostrar mensajes en la UI (por ejemplo, sin internet)
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error
+
     init {
         val auth = FirebaseAuth.getInstance()
         userId = auth.currentUser?.uid.orEmpty()
 
         val firestore = FirebaseFirestore.getInstance()
-        val orderAdapter = OrderFirestoreAdapter(firestore)
+        val orderAdapter = OrderServiceAdapter(firestore)
         val productsService = ProductsServiceAdapter()
 
         cartService = CartService(orderAdapter, productsService)
@@ -46,14 +51,20 @@ class CartViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Agrega [quantity] unidades del producto al carrito.
+     * [quantity] se fuerza a ser al menos 1.
+     */
     fun addProduct(productId: String, quantity: Int = 1) {
         if (userId.isBlank()) return
+
+        val safeQty = quantity.coerceAtLeast(1)
 
         viewModelScope.launch {
             val updated = cartService.addProductToCart(
                 userId = userId,
                 productId = productId,
-                quantity = quantity
+                quantity = safeQty
             )
             updateCart(updated)
         }
@@ -92,16 +103,39 @@ class CartViewModel : ViewModel() {
     }
 
     fun checkout(paymentMethod: String) {
+        val cartSnapshot = currentCart ?: return
         if (userId.isBlank()) return
 
         viewModelScope.launch {
-            cartService.checkoutCart(
-                userId = userId,
-                paymentMethod = paymentMethod
-            )
-            // El servicio ya limpió el cache; aquí limpias la UI
-            updateCart(null)
+            try {
+                // Concurrencia: enviar órdenes + limpiar cache en paralelo
+                coroutineScope {
+                    val sendJob = async(Dispatchers.IO) {
+                        cartService.sendOrdersFromCart(
+                            cart = cartSnapshot,
+                            paymentMethod = paymentMethod
+                        )
+                    }
+
+                    val clearCacheJob = async(Dispatchers.Default) {
+                        cartService.clearCart(userId)
+                    }
+
+                    sendJob.await()
+                    clearCacheJob.await()
+                }
+
+                // Si todo salió bien, limpiar carrito en UI
+                updateCart(null)
+            } catch (e: Exception) {
+                _error.value =
+                    "No se pudo completar el pedido. Verifica tu conexión a internet."
+            }
         }
+    }
+
+    fun errorShown() {
+        _error.value = null
     }
 
     private fun updateCart(cart: Cart?) {
@@ -119,10 +153,10 @@ class CartViewModel : ViewModel() {
 
     private fun CartItem.toUi(): CartItemUi =
         CartItemUi(
-            id = productId,
-            name = name,
-            price = unitPrice,
+            id       = productId,
+            name     = name,
+            price    = unitPrice,
             quantity = quantity,
-            imageResId = R.drawable.ic_launcher_foreground
+            imageUrl = imageUrl
         )
 }

@@ -4,6 +4,5 @@ import com.google.firebase.firestore.Exclude
 
 data class Buyer(
     val address: List<Address> = emptyList(),
-    val cart: Cart = Cart(),
     @get:Exclude @set:Exclude var id: String = "" // uid
 )

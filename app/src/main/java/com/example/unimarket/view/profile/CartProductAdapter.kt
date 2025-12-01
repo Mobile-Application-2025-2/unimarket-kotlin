@@ -8,13 +8,14 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.unimarket.R
+import coil.load
 
 data class CartItemUi(
     val id: String,
     val name: String,
     val price: Double,
     val quantity: Int,
-    val imageResId: Int
+    val imageUrl: String?
 )
 
 class CartProductAdapter(
@@ -63,7 +64,18 @@ class CartProductAdapter(
             tvProductName.text = item.name
             tvQuantity.text = item.quantity.toString()
             tvProductPrice.text = formatPrice(item.price)
-            ivProduct.setImageResource(item.imageResId)
+
+            val url = item.imageUrl?.trim().orEmpty()
+            if (url.isNotEmpty()) {
+                ivProduct.load(url) {
+                    crossfade(true)
+                    placeholder(R.drawable.personajesingup)
+                    error(R.drawable.personajesingup)
+                    
+                }
+            } else {
+                ivProduct.setImageResource(R.drawable.personajesingup)
+            }
 
             btnPlus.setOnClickListener  { onPlusClick(item) }
             btnMinus.setOnClickListener { onMinusClick(item) }

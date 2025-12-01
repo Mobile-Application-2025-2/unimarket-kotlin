@@ -11,5 +11,6 @@ data class Product(
     val rating: Double = 0.0,
     val comments: List<String> = emptyList(),
     val image: String = "",
+    val amountRatings: Long = 0L,
     @get:Exclude @set:Exclude var id: String = "" // docId
 )

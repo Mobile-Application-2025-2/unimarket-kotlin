@@ -1,7 +1,7 @@
 package com.example.unimarket.model.domain.service
 
 import android.util.LruCache
-import com.example.unimarket.model.data.orders.OrderFirestoreAdapter
+import com.example.unimarket.model.data.serviceAdapter.OrderServiceAdapter
 import com.example.unimarket.model.data.serviceAdapter.ProductsServiceAdapter
 import com.example.unimarket.model.domain.entity.Cart
 import com.example.unimarket.model.domain.entity.CartItem
@@ -10,7 +10,7 @@ import com.example.unimarket.model.domain.entity.Product
 import java.util.Date
 
 class CartService(
-    private val orderAdapter: OrderFirestoreAdapter,
+    private val orderAdapter: OrderServiceAdapter,
     private val productsService: ProductsServiceAdapter
 ) {
 
@@ -20,7 +20,7 @@ class CartService(
 
         fun getCachedCart(userId: String): Cart? = cartCache.get(userId)
 
-        private fun saveCart(userId: String, cart: Cart?) {
+        internal fun saveCart(userId: String, cart: Cart?) {
             if (cart == null) {
                 cartCache.remove(userId)
             } else {
@@ -53,9 +53,10 @@ class CartService(
             items.add(
                 CartItem(
                     productId = productId,
-                    name = product.name,
+                    name      = product.name,
                     unitPrice = product.price,
-                    quantity = quantity
+                    quantity  = quantity,
+                    imageUrl  = product.image
                 )
             )
         }
@@ -68,9 +69,6 @@ class CartService(
         return updated
     }
 
-    /**
-     * Elimina completamente un producto del carrito del usuario.
-     */
     fun removeProductFromCart(
         userId: String,
         productId: String
@@ -86,10 +84,6 @@ class CartService(
         return updated
     }
 
-    /**
-     * Cambia la cantidad de un producto en ±delta.
-     * Si la cantidad llega a 0 o menos, lo elimina del carrito.
-     */
     fun changeQuantity(
         userId: String,
         productId: String,
@@ -119,18 +113,26 @@ class CartService(
     }
 
     /**
-     * Checkout del carrito del usuario:
-     * - Lee el carrito desde cache.
-     * - Separa productos por negocio.
-     * - Crea las Order en Firestore.
-     * - Limpia el carrito en cache.
+     * Versión original secuencial (por si la usa algo más).
      */
     suspend fun checkoutCart(
         userId: String,
         paymentMethod: String
     ) {
         val cart = getCachedCart(userId) ?: return
+        sendOrdersFromCart(cart, paymentMethod)
+        clearCart(userId)
+    }
 
+    /**
+     * SOLO envía las órdenes a Firestore a partir del carrito dado.
+     * No toca el cache.
+     */
+    suspend fun sendOrdersFromCart(
+        cart: Cart,
+        paymentMethod: String
+    ) {
+        android.util.Log.d("CartService", "sendOrdersFromCart START thread=${Thread.currentThread().name}")
         val productById = loadProductsForCart(cart)
 
         val itemsByBusiness = cart.products.groupBy { item ->
@@ -153,7 +155,13 @@ class CartService(
             orderAdapter.upsertOrder(order)
         }
 
-        // Limpia carrito del cache tras el checkout
+        android.util.Log.d("CartService", "sendOrdersFromCart END")
+    }
+
+    /**
+     * SOLO limpia el carrito del cache (memoria).
+     */
+    fun clearCart(userId: String) {
         saveCart(userId, null)
     }
 

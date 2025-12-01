@@ -1,9 +1,13 @@
 package com.example.unimarket.view.profile
 
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageButton
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
@@ -28,6 +32,9 @@ class CartActivity : AppCompatActivity() {
 
     private lateinit var cartProductAdapter: CartProductAdapter
     private val viewModel: CartViewModel by viewModels()
+
+    private var connectivityManager: ConnectivityManager? = null
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     // Método de pago seleccionado
     private var currentPaymentMethod: String = "Efectivo"
@@ -77,6 +84,16 @@ class CartActivity : AppCompatActivity() {
         }
 
         btnOrder.setOnClickListener {
+            // SOLO aquí se valida red antes de intentar el checkout
+            if (!isOnline()) {
+                Toast.makeText(
+                    this,
+                    "Sin conexión. Intenta de nuevo cuando tengas internet.",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@setOnClickListener
+            }
+
             viewModel.checkout(currentPaymentMethod)
         }
 
@@ -101,6 +118,18 @@ class CartActivity : AppCompatActivity() {
                 }
             }
         }
+
+        // Mensajes de error del ViewModel (por ejemplo, fallo al hacer checkout)
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.error.collect { msg ->
+                    if (msg != null) {
+                        Toast.makeText(this@CartActivity, msg, Toast.LENGTH_LONG).show()
+                        viewModel.errorShown()
+                    }
+                }
+            }
+        }
     }
 
     private fun showPaymentDropdown(anchor: View) {
@@ -120,5 +149,61 @@ class CartActivity : AppCompatActivity() {
         }
 
         popup.show()
+    }
+
+    // --- Conectividad ---
+
+    private fun isOnline(): Boolean {
+        val cm = getSystemService(ConnectivityManager::class.java) ?: return false
+        val net = cm.activeNetwork ?: return false
+        val caps = cm.getNetworkCapabilities(net) ?: return false
+
+        // Red válida con capacidad de internet y validada
+        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+    }
+
+    private fun registerNetworkCallback() {
+        val cm = getSystemService(ConnectivityManager::class.java) ?: return
+        connectivityManager = cm
+
+        if (networkCallback != null) return
+
+        networkCallback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                // SOLO mensaje positivo cuando vuelve la conexión
+                runOnUiThread {
+                    Toast.makeText(
+                        this@CartActivity,
+                        "Conexión restaurada. Ya puedes hacer tu compra.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+
+            // No mostramos mensaje automático cuando se pierde la red:
+            // el mensaje de "sin conexión" solo sale al oprimir el botón.
+        }
+
+        cm.registerDefaultNetworkCallback(networkCallback!!)
+    }
+
+    private fun unregisterNetworkCallback() {
+        val cm = connectivityManager
+        val cb = networkCallback
+        if (cm != null && cb != null) {
+            cm.unregisterNetworkCallback(cb)
+        }
+        networkCallback = null
+    }
+
+    override fun onStart() {
+        super.onStart()
+        registerNetworkCallback()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        unregisterNetworkCallback()
     }
 }

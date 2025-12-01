@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:allowBackup="true"
@@ -42,6 +43,7 @@
         <activity android:name=".view.home.HomeBuyerActivity" android:exported="false" />
         <activity android:name=".view.home.BusinessDetailActivity" android:exported="false" />
         <activity android:name=".view.home.ExploreBuyerActivity" android:exported="false" />
+        <activity android:name=".view.home.ProductDetailActivity" android:exported="false" />
 
         <!-- Perfiles -->
         <activity android:name=".view.profile.BuyerAccountActivity" android:exported="false" />

@@ -24,7 +24,8 @@ data class CartItem(
     val productId: String,
     val name: String,
     val unitPrice: Double,
-    val quantity: Int
+    val quantity: Int,
+    val imageUrl: String
 ) {
     val totalPrice: Double
         get() = unitPrice * quantity

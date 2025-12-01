@@ -45,9 +45,7 @@ class AuthService(
         when (created.type) {
             "buyer" -> {
                 val buyer = Buyer(
-                    address = buyerAddresses ?: emptyList(),
-                    cart = Cart(products = emptyMap(), price = 0.0)
-                )
+                    address = buyerAddresses ?: emptyList())
                 buyersServiceAdapter.create(created.id, buyer)
             }
             "business" -> {
